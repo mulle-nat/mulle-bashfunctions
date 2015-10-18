@@ -38,15 +38,17 @@ gcc_sdk_parameter()
 
    if [ "`uname`" = "Darwin" ]
    then
-      if [ "${sdk}" != "Default" ]
+      if [ "${sdk}" = "Default" ]
       then
-         sdkpath="`xcrun --sdk macosx --show-sdk-path`"
-         if [ "${sdkpath}" = "" ]
-         then
-            fail "SDK \"${sdk}\" is not installed"
-         fi
-         echo "${sdkpath}"
+         sdkpath="`xcrun --show-sdk-path`"
+      else
+         sdkpath="`xcrun --sdk "${sdk}" --show-sdk-path`"
       fi
+      if [ "${sdkpath}" = "" ]
+      then
+         fail "SDK \"${sdk}\" is not installed"
+      fi
+      echo "${sdkpath}"
    fi
 }
 
