@@ -1,28 +1,13 @@
 SCRIPTS=install.sh \
-	src/mulle-bootstrap-array.sh \
-	src/mulle-bootstrap-auto-update.sh \
-	src/mulle-bootstrap-brew.sh \
-	src/mulle-bootstrap-build.sh \
-	src/mulle-bootstrap-clean.sh \
-	src/mulle-bootstrap-common-settings.sh \
-	src/mulle-bootstrap-copy.sh \
-	src/mulle-bootstrap-dependency-resolve.sh \
-	src/mulle-bootstrap-fetch.sh \
-	src/mulle-bootstrap-functions.sh \
-	src/mulle-bootstrap-gcc.sh \
-	src/mulle-bootstrap-init.sh \
-	src/mulle-bootstrap-local-environment.sh \
-	src/mulle-bootstrap-logging.sh \
-	src/mulle-bootstrap-mingw.sh \
-	src/mulle-bootstrap-repositories.sh \
-	src/mulle-bootstrap-scm.sh \
-	src/mulle-bootstrap-scripts.sh \
-	src/mulle-bootstrap-settings.sh \
-	src/mulle-bootstrap-systeminstall.sh \
-	src/mulle-bootstrap-tag.sh \
-	src/mulle-bootstrap-warn-scripts.sh \
-	src/mulle-bootstrap-xcode.sh \
-	src/mulle-bootstrap-zombify.sh
+	src/mulle-array.sh \
+	src/mulle-coreoptions.sh \
+	src/mulle-functions.sh \
+	src/mulle-exekutor.sh \
+	src/mulle-process.sh \
+	src/mulle-logging.sh \
+	src/mulle-snip.sh \
+	src/mulle-string.sh \
+
 
 CHECKSTAMPS=$(SCRIPTS:.sh=.chk)
 SHELLFLAGS=-x -e SC2164,SC2166,SC2006,SC1091,SC2039,SC2181,SC2059 -s sh
@@ -35,9 +20,9 @@ SHELLFLAGS=-x -e SC2164,SC2166,SC2006,SC1091,SC2039,SC2181,SC2059 -s sh
 	- shellcheck $(SHELLFLAGS) $<
 	(shellcheck -f json $(SHELLFLAGS) $< | jq '.[].level' | grep -w error > /dev/null ) && exit 1 || touch $@
 
-all:	$(CHECKSTAMPS) mulle-bootstrap.chk shellcheck_check jq_check
+all:	$(CHECKSTAMPS) mulle-bashfunctions-env.chk shellcheck_check jq_check
 
-mulle-bootstrap.chk:	mulle-bootstrap
+mulle-bashfunctions-env.chk:	mulle-bashfunctions-env
 	- shellcheck $(SHELLFLAGS) $<
 	(shellcheck -f json $(SHELLFLAGS) $< | jq '.[].level' | grep -w error > /dev/null ) && exit 1 || touch $@
 

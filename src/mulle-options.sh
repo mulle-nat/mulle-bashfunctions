@@ -29,7 +29,7 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-MULLE_BOOTSTRAP_CORE_OPTIONS_SH="included"
+MULLE_OPTIONS_SH="included"
 
 
 ## core option parsing
@@ -197,12 +197,76 @@ core_technical_flags()
 }
 
 
+## option parsing common
 
-core_options_initialize()
+#
+# variables called flag. because they are indirectly set by flags
+#
+bootstrap_dump_env()
 {
-   [ -z "${MULLE_BOOTSTRAP_LOGGING_SH}" ] && . mulle-bootstrap-logging.sh
+   log_trace "FULL trace started"
+   log_trace "ARGS:${C_TRACE2} ${MULLE_ARGUMENTS}"
+   log_trace "PWD :${C_TRACE2} `pwd -P 2> /dev/null`"
+   log_trace "ENV :${C_TRACE2} `env | sort`"
+   log_trace "LS  :${C_TRACE2} `ls -a1F`"
 }
 
-core_options_initialize
+
+bootstrap_setup_trace()
+{
+   case "${1}" in
+      VERBOSE)
+         MULLE_FLAG_LOG_VERBOSE="YES"
+      ;;
+
+      FLUFF)
+         MULLE_FLAG_LOG_FLUFF="YES"
+         MULLE_FLAG_LOG_VERBOSE="YES"
+         MULLE_FLAG_LOG_EXEKUTOR="YES"
+      ;;
+
+      TRACE)
+         MULLE_FLAG_LOG_SETTINGS="YES"
+         MULLE_FLAG_LOG_EXEKUTOR="YES"
+         MULLE_FLAG_LOG_FLUFF="YES"
+         MULLE_FLAG_LOG_VERBOSE="YES"
+         bootstrap_dump_env
+      ;;
+
+      1848)
+         MULLE_FLAG_LOG_SETTINGS="YES"
+         MULLE_FLAG_LOG_FLUFF="YES"
+         MULLE_FLAG_LOG_VERBOSE="YES"
+         MULLE_FLAG_VERBOSE_BUILD="YES"
+
+         bootstrap_dump_env
+
+         if [ "${MULLE_TRACE_POSTPONE}" = "NO" ]
+         then
+            log_trace "1848 trace (set -x) started"
+            set -x
+            PS4="+ ${ps4string} + "
+         fi
+      ;;
+   esac
+}
+
+
+unpostpone_trace()
+{
+   if [ ! -z "${MULLE_TRACE_POSTPONE}" -a "${MULLE_TRACE}" = "1848" ]
+   then
+      set -x
+      PS4="+ ${ps4string} + "
+   fi
+}
+
+
+options_initialize()
+{
+   [ -z "${MULLE_LOGGING_SH}" ] && . mulle-logging.sh
+}
+
+options_initialize
 
 :

@@ -29,10 +29,7 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-MULLE_BOOTSTRAP_LOGGING_SH="included"
-
-
-MULLE_BOOTSTRAP_LOGGING_VERSION="3.0"
+MULLE_LOGGING_SH="included"
 
 #
 # WARNING! THIS FILE IS A LIBRARY USE BY OTHER PROJECTS
@@ -249,7 +246,7 @@ logging_initialize()
       UNAME="`uname | cut -d_ -f1 | sed 's/64$//' | tr 'A-Z' 'a-z'`"
    fi
 
-   if [ "${MULLE_BOOTSTRAP_NO_COLOR}" != "YES" ]
+   if [ "${MULLE_NO_COLOR}" != "YES" ]
    then
       case "${UNAME}" in
          *)
@@ -280,7 +277,7 @@ logging_initialize()
    C_TRACE="${C_FLUFF}${C_FAINT}"
    C_TRACE2="${C_RESET}${C_FAINT}"
 
-   if [ ! -z "${MULLE_BOOTSTRAP_LIBEXEC_TRACE}" ]
+   if [ ! -z "${MULLE_LIBEXEC_TRACE}" ]
    then
       local exedir
       local exedirpath

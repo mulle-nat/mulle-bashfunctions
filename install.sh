@@ -2,8 +2,9 @@
 #
 # (c) 2015, coded by Nat!, Mulle KybernetiK
 #
+PROJECT_VERSION="1.0.0"
 
-if [ "${MULLE_BOOTSTRAP_NO_COLOR}" != "YES" ]
+if [ "${MULLE_NO_COLOR}" != "YES" ]
 then
    # Escape sequence and resets
    C_RESET="\033[0m"
@@ -54,7 +55,8 @@ _prepend_path_if_relative()
 
 resolve_symlinks()
 {
-   local dir_context path
+   local dir_context
+   local path
 
    path="`readlink "$1"`"
    if [ $? -eq 0 ]
@@ -156,7 +158,7 @@ main()
    local libexec
 
    bin="${prefix}/bin"
-   libexec="${prefix}/libexec/mulle-bootstrap"
+   libexec="${prefix}/libexec/mulle-bashfunctions/${PROJECT_VERSION}"
 
    if [ ! -d "${bin}" ]
    then
@@ -168,47 +170,14 @@ main()
       mkdir -p "${libexec}" || fail "could not create ${libexec}"
    fi
 
-
-   install -m "${mode}" "mulle-bootstrap" "${bin}/mulle-bootstrap" || exit 1
-   printf "install: ${C_MAGENTA}${C_BOLD}%s${C_RESET}\n" "${bin}/mulle-bootstrap" >&2
-
-   install -m "${mode}" "mulle-bootstrap-dotdump" "${bin}/mulle-bootstrap-dotdump" || exit 1
-   printf "install: ${C_MAGENTA}${C_BOLD}%s${C_RESET}\n" "${bin}/mulle-bootstrap-dotdump" >&2
-
-   case `uname` in
-      MINGW*)
-         for i in mulle-mingw-*sh
-         do
-            install -m "${mode}" "${i}" "${bin}/$i" || exit 1
-            printf "install: ${C_MAGENTA}${C_BOLD}%s${C_RESET}\n" "$bin/$i" >&2
-         done
-
-         SH_PATH="`get_sh_windows_path | sed_mangle_escape_slashes`"
-         INSTALL_PATH="${bin}" # `get_windows_path "${bin}" | sed_mangle_escape_slashes`"
-
-         for i in mulle-mingw-*bat
-         do
-            cat "${i}" \
-               | sed -e 's|C:\\Program\ Files\\Git\\usr\\bin\\shx\.exe|'"${SH_PATH}|g" \
-               | sed -e 's|mulle-mingw-dumpdef.sh|'"${INSTALL_PATH}/mulle-mingw-dumpdef.sh|g" > "${bin}/$i" || exit 1
-            chmod "${mode}" "${bin}/${i}" || exit 1
-            printf "install: ${C_MAGENTA}${C_BOLD}%s${C_RESET}\n" "$bin/$i" >&2
-         done
-      ;;
-   esac
+   install -m "${mode}" "mulle-bashfunctions-env" "${bin}/mulle-bashfunctions-env" || exit 1
+   printf "install: ${C_MAGENTA}${C_BOLD}%s${C_RESET}\n" "${bin}/mulle-bashfunctions-env" >&2
 
    for i in src/mulle*.sh
    do
       mkdir -p "${libexec}" 2> /dev/null
       install -v -m "${mode}" "${i}" "${libexec}" || exit 1
    done
-
-   if [ -d "test" ]
-   then
-      # use attractive colors :)
-      printf "${C_GREEN}If you are new to mulle-bootstrap I would suggest checking out\n" >&2
-      printf "the ${C_YELLOW}README.md${C_GREEN} in ${C_CYAN}./test${C_GREEN} and doing the examples.\n" >&2
-   fi
 }
 
 main "$@"

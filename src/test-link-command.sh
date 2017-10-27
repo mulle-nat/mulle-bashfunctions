@@ -1,9 +1,8 @@
 #! /bin/sh
 
 
-. mulle-bootstrap-logging.sh
-. mulle-bootstrap-repositories.sh
-. mulle-bootstrap-fetch.sh
+. mulle-logging.sh
+. mulle-functions.sh
 
 set -x
 

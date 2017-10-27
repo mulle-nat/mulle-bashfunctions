@@ -1,0 +1,339 @@
+#! /usr/bin/env bash
+#
+#   Copyright (c) 2015-2017 Nat! - Mulle kybernetiK
+#   All rights reserved.
+#
+#   Redistribution and use in source and binary forms, with or without
+#   modification, are permitted provided that the following conditions are met:
+#
+#   Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+#   Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+#   Neither the name of Mulle kybernetiK nor the names of its contributors
+#   may be used to endorse or promote products derived from this software
+#   without specific prior written permission.
+#
+#   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+#   AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+#   IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+#   ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+#   LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+#   CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+#   SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+#   INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+#   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+#   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+#   POSSIBILITY OF SUCH DAMAGE.
+#
+MULLE_BASHFUNCTIONS_VERSION="1.0.0"
+
+
+usage()
+{
+   local  verbose="${1:-NO}"
+
+   cat <<EOF
+Usage:
+   ${MULLE_EXECUTABLE} [command]
+
+Commands:
+   library-path [version]  : print best library path for desired version
+   list                    : list installed versions
+   version                 : print most recent version
+EOF
+
+   exit 1
+}
+
+
+
+#
+# stolen from:
+# http://stackoverflow.com/questions/1055671/how-can-i-get-the-behavior-of-gnus-readlink-f-on-a-mac
+# ----
+#
+_prepend_path_if_relative()
+{
+   case "$2" in
+      /*)
+         echo "$2"
+      ;;
+      *)
+         echo "$1/$2"
+      ;;
+   esac
+}
+
+
+resolve_symlinks()
+{
+   local dir_context
+   local linkpath
+
+   if linkpath="`readlink "$1"`"
+   then
+      dir_context=`dirname -- "$1"`
+      resolve_symlinks "`_prepend_path_if_relative "${dir_context}" "${linkpath}"`"
+   else
+      echo "$1"
+   fi
+}
+
+
+get_libexec_path()
+{
+   local executablepath="$1"
+
+   local exedir
+   local exedirpath
+   local prefix
+   local libexecpath
+
+   case "${executablepath}" in
+      \.*|/*|~*)
+      ;;
+
+      *)
+         executablepath="`command -v "${executablepath}"`"
+      ;;
+   esac
+
+   executablepath="`resolve_symlinks "${executablepath}"`"
+   exedirpath="`dirname "${executablepath}"`"
+   prefix="`dirname "${exedirpath}"`"
+   libexecpath="${prefix}/libexec/mulle-bashfunctions/${MULLE_BASHFUNCTIONS_VERSION}"
+
+   if [ ! -x "${libexecpath}/mulle-functions.sh" ]
+   then
+      libexecpath="${exedirpath}/src"
+   fi
+
+   case "$libexecpath" in
+      /*|~*)
+      ;;
+
+      *)
+         libexecpath="$PWD/$libexecpath"
+      ;;
+   esac
+
+   if [ -x "${libexecpath}/mulle-functions.sh" ]
+   then
+      echo "${libexecpath}"
+   fi
+}
+
+
+
+list_libraries()
+{
+   for i in "${MULLE_LIBEXECBASE_PATH}"/[0-9]*.[0-9]*.[0-9]*
+   do
+      if [ -d "${i}" ]
+      then
+         basename -- "${i}"
+      fi
+   done
+}
+
+
+#
+# Usually one requests the library by major.minor number
+# and one gets that with the latest patch
+#
+_find_library_path()
+{
+   local version="$1"
+
+   local major
+   local minor
+   local patch
+
+   major="`get_version_major "${version}"`"
+   minor="`get_version_minor "${version}"`"
+   patch="`get_version_patch "${version}"`"
+
+   local majorpattern
+   local minorpattern
+   local patchpattern
+
+   majorpattern="${major:-[0-9]*}"
+   minorpattern="${minor:-[0-9]*}"
+   patchpattern="${patch:-[0-9]*}"
+
+   local prefix
+
+   prefix="`dirname -- "${MULLE_LIBEXEC_PATH}"`"
+
+   ls -1 "${prefix}"/${major}.${minor}.${patch} 2> /dev/null | sort -nr | head -1
+}
+
+
+_find_local_library_path()
+{
+   local version="$1"
+
+   if ! is_compatible_version "${MULLE_BASHFUNCTIONS_VERSION}" "${version}"
+   then
+      return 1
+   fi
+   echo "${MULLE_LIBEXEC_PATH}"
+}
+
+
+find_library_path()
+{
+   case "${MULLE_LIBEXEC_PATH}" in
+      */src)
+         if _find_local_library_path "$@"
+         then
+            return
+         fi
+      ;;
+   esac
+
+   _find_library_path "$@"
+}
+
+
+main()
+{
+   MULLE_EXECUTABLE_FAIL_PREFIX="${MULLE_EXECUTABLE}"
+
+   #
+   # simple option handling
+   #
+   while [ $# -ne 0 ]
+   do
+      case "$1" in
+         -h|--help)
+            usage
+         ;;
+
+         --version)
+            echo "${MULLE_BASHFUNCTIONS_VERSION}"
+            exit 0
+         ;;
+
+         -v|-vv|-vvv)
+         ;;
+
+         -t)
+            set -x
+         ;;
+
+         -*)
+            log_error "${MULLE_EXECUTABLE_FAIL_PREFIX}: Unknown option \"$1\""
+            usage
+         ;;
+
+         *)
+            break
+         ;;
+      esac
+
+      shift
+   done
+
+   local cmd
+
+   cmd="${1:-library-path}"
+
+   MULLE_EXECUTABLE_FAIL_PREFIX="${MULLE_EXECUTABLE} ${cmd}"
+   [ $# -eq 0 ] || shift
+
+   case "${cmd}" in
+      help)
+         usage
+      ;;
+
+      library-path)
+         if [ $# -eq 0 ]
+         then
+            echo "${MULLE_LIBEXEC_PATH}"
+            return 0
+         fi
+
+         find_library_path "$@"
+      ;;
+
+      list)
+         list_libraries "$@" || exit 1
+      ;;
+
+      version)
+         echo "${MULLE_BASHFUNCTIONS_VERSION}"
+      ;;
+
+      *)
+         log_error "${MULLE_EXECUTABLE_FAIL_PREFIX}: Unknown command \"${command}\""
+         usage
+      ;;
+   esac
+}
+
+
+
+init()
+{
+   # nice for tests
+   if [ -z "${MULLE_LIBEXEC_PATH}" ]
+   then
+      MULLE_LIBEXEC_PATH="`get_libexec_path "$0"`"
+      if [ -z "${MULLE_LIBEXEC_PATH}" ]
+      then
+         echo "Fatal Error: Could not find libexec for ${MULLE_EXECUTABLE} ($PWD)" >&2
+         exit 1
+      fi
+   fi
+
+   #
+   # commands with minimal trap setup
+   #
+   if [ $# -eq 1 ]
+   then
+      case "${1}" in
+         library-path)
+            echo "${MULLE_LIBEXEC_PATH}"
+            exit 0
+         ;;
+
+         version)
+            echo "${MULLE_BASHFUNCTIONS_VERSION}"
+            exit 0
+         ;;
+      esac
+   fi
+
+   PATH="${MULLE_LIBEXEC_PATH}:$PATH"
+   export PATH
+
+   if [ ! -z "${MULLE_LIBEXEC_TRACE}" ]
+   then
+      echo "PATH=$PATH" >&2
+   fi
+
+   . mulle-logging.sh || exit 1
+   . mulle-version.sh || exit 1
+}
+
+#
+# leading backslash ? looks like we're getting called from
+# mingw via a .BAT or so
+#
+case "$PATH" in
+   '\\'*)
+      PATH="`tr '\\' '/' <<< "${PATH}"`"
+   ;;
+esac
+
+MULLE_EXECUTABLE="`basename -- "$0"`"
+
+init "$@"
+
+main "$@"
+

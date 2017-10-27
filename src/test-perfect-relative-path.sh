@@ -1,8 +1,6 @@
 #! /bin/sh
 
-. mulle-bootstrap-logging.sh
-. mulle-bootstrap-repositories.sh
-. mulle-bootstrap-fetch.sh
+. mulle-logging.sh
 
 
 test_symlink_relpath()

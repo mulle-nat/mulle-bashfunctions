@@ -30,7 +30,7 @@
 #   POSSIBILITY OF SUCH DAMAGE.
 #
 
-MULLE_BOOTSTRAP_SNIP_SH="included"
+MULLE_SNIP_SH="included"
 
 
 snip_start_upto()
@@ -185,7 +185,7 @@ snip_initialize()
 {
    log_debug ":snip_initialize:"
 
-   [ -z "${MULLE_BOOTSTRAP_FUNCTIONS_SH}" ] && . mulle-bootstrap-functions.sh
+   [ -z "${MULLE_FUNCTIONS_SH}" ] && . mulle-functions.sh
    :
 }
 

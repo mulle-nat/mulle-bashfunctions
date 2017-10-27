@@ -1,6 +1,6 @@
 #! /bin/sh -e
 
-. mulle-bootstrap-functions.sh
+. mulle-functions.sh
 
 run_test()
 {

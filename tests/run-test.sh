@@ -23,6 +23,4 @@ main()
    done
 }
 
-echo "mulle-bootstrap: `mulle-bootstrap version` (`mulle-bootstrap library-path`)" >&2
-
 main "$@"

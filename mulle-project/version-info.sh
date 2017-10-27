@@ -4,5 +4,5 @@
 # enough for you. If you don't have this file, there will be
 # not git operations.
 #
-VERSION="`./mulle-bootstrap version`"
+VERSION="`./mulle-bashfunctions-env version`"
 # VERSIONNAME=

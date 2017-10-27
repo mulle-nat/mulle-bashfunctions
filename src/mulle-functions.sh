@@ -29,315 +29,9 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
+[ ! -z "${MULLE_FUNCTIONS_SH}" ] && echo "double inclusion of functions" >&2 && exit 1
 
-[ ! -z "${MULLE_BOOTSTRAP_FUNCTIONS_SH}" ] && echo "double inclusion of functions" >&2 && exit 1
-
-MULLE_BOOTSTRAP_FUNCTIONS_SH="included"
-
-MULLE_BOOTSTRAP_FUNCTIONS_VERSION_MAJOR="3"
-MULLE_BOOTSTRAP_FUNCTIONS_VERSION_MINOR="12"
-
-MULLE_BOOTSTRAP_FUNCTIONS_VERSION="${MULLE_BOOTSTRAP_FUNCTIONS_VERSION_MAJOR}.${MULLE_BOOTSTRAP_FUNCTIONS_VERSION_MINOR}"
-
-#
-# WARNING! THIS FILE IS A LIBRARY USE BY OTHER PROJECTS
-#          DO NOT CASUALLY RENAME, REORGANIZE STUFF
-#
-# ####################################################################
-#                          Execution
-# ####################################################################
-# Execution
-#
-
-exekutor_trace()
-{
-   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = "YES" -o "${MULLE_FLAG_LOG_EXEKUTOR}" = "YES" ]
-   then
-      local arrow
-
-      [ -z "${MULLE_EXECUTABLE_PID}" ] && internal_fail "MULLE_EXECUTABLE_PID not set"
-
-      if [ "${PPID}" -ne "${MULLE_EXECUTABLE_PID}" ]
-      then
-         arrow="=[${PPID}]=>"
-      else
-         arrow="==>"
-      fi
-
-      if [ -z "${MULLE_EXEKUTOR_LOG_DEVICE}" ]
-      then
-         echo "${arrow}" "$@" >&2
-      else
-         echo "${arrow}" "$@" > "${MULLE_EXEKUTOR_LOG_DEVICE}"
-      fi
-   fi
-}
-
-
-exekutor_trace_output()
-{
-   local redirect="$1"; shift
-   local output="$1"; shift
-
-   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = "YES" -o "${MULLE_FLAG_LOG_EXEKUTOR}" = "YES" ]
-   then
-      local arrow
-
-      [ -z "${MULLE_EXECUTABLE_PID}" ] && internal_fail "MULLE_EXECUTABLE_PID not set"
-
-      if [ "${PPID}" -ne "${MULLE_EXECUTABLE_PID}" ]
-      then
-         arrow="=[${PPID}]=>"
-      else
-         arrow="==>"
-      fi
-
-      if [ -z "${MULLE_EXEKUTOR_LOG_DEVICE}" ]
-      then
-         echo "${arrow}" "$@" "${redirect}" "${output}" >&2
-      else
-         echo "${arrow}" "$@" "${redirect}" "${output}" > "${MULLE_EXEKUTOR_LOG_DEVICE}"
-      fi
-   fi
-}
-
-
-exekutor()
-{
-   exekutor_trace "$@"
-
-   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" != "YES" ]
-   then
-      "$@"
-   fi
-}
-
-
-eval_exekutor()
-{
-   exekutor_trace "$@"
-
-   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" != "YES" ]
-   then
-      ( eval "$@" )
-   fi
-}
-
-
-redirect_exekutor()
-{
-   local output="$1"; shift
-
-   exekutor_trace_output '>' "${output}" "$@"
-
-   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" != "YES" ]
-   then
-      ( "$@" ) > "${output}"
-   fi
-}
-
-
-redirect_append_exekutor()
-{
-   local output="$1"; shift
-
-   exekutor_trace_output '>>' "${output}" "$@"
-
-   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" != "YES" ]
-   then
-      ( "$@" ) >> "${output}"
-   fi
-}
-
-
-_redirect_append_eval_exekutor()
-{
-   local output="$1"; shift
-
-   exekutor_trace_output '>>' "${output}" "$@"
-
-   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" != "YES" ]
-   then
-      ( eval "$@" ) >> "${output}"
-   fi
-}
-
-#
-# output eval trace also into logfile
-#
-logging_redirekt_exekutor()
-{
-   local output="$1"; shift
-
-   local arrow
-
-   if [ "${PPID}" -ne "${MULLE_EXECUTABLE_PID}" ]
-   then
-      arrow="=[${PPID}]=>"
-   else
-      arrow="==>"
-   fi
-
-   echo "${arrow}" "$@" > "${output}"
-
-   redirect_append_exekutor "${output}" "$@"
-}
-
-
-logging_redirect_eval_exekutor()
-{
-   local output="$1"; shift
-
-   # overwrite
-   local arrow
-
-   if [ "${PPID}" -ne "${MULLE_EXECUTABLE_PID}" ]
-   then
-      arrow="=[${PPID}]=>"
-   else
-      arrow="==>"
-   fi
-
-   echo "${arrow}" "$*" > "${output}" # to stdout
-
-   # append
-   _redirect_append_eval_exekutor "${output}" "$@"
-}
-
-
-# ####################################################################
-#                            Strings
-# ####################################################################
-#
-is_yes()
-{
-   local s
-
-   s=`echo "$1" | tr '[:lower:]' '[:upper:]'`
-   case "${s}" in
-      YES|Y|1)
-         return 0
-      ;;
-      NO|N|0|"")
-         return 1
-      ;;
-
-      *)
-         fail "$2 should contain YES or NO (or be empty)"
-      ;;
-   esac
-}
-
-
-add_cmake_path_if_exists()
-{
-   local line="$1"
-   local path="$2"
-
-   if [ ! -e "${path}" ]
-   then
-      echo "${line}"
-   else
-      if [ -z "${line}" ]
-      then
-         echo "${path}"
-      else
-         echo "${line};${path}"
-      fi
-   fi
-}
-
-
-add_cmake_path()
-{
-   local line="$1"
-   local path="$2"
-
-
-   if [ -z "${line}" ]
-   then
-      echo "${path}"
-   else
-      echo "${line};${path}"
-   fi
-}
-
-
-add_line()
-{
-   local lines="$1"
-   local line="$2"
-
-   if [ -z "${lines}" ]
-   then
-      echo "${line}"
-   else
-      echo "${lines}
-${line}"
-   fi
-}
-
-
-escape_linefeeds()
-{
-   local text
-
-   text="`echo "$@" | sed -e 's/|/\\|/g'`"
-   /bin/echo -n "${text}" | tr '\012' '|'
-}
-
-
-_unescape_linefeeds()
-{
-   tr '|' '\012' | sed -e 's/\\$/|/g' -e '/^$/d'
-}
-
-
-unescape_linefeeds()
-{
-   echo "$@" | tr '|' '\012' | sed -e 's/\\$/|/g' -e '/^$/d'
-}
-
-escaped_sed_pattern()
-{
-   sed -e 's/[]\/$*.^|[]/\\&/g' <<< "${1}"
-}
-
-
-#
-# expands ${LOGNAME} and ${LOGNAME:-foo}
-#
-expand_environment_variables()
-{
-    local string="$1"
-
-    local key
-    local value
-    local prefix
-    local suffix
-    local next
-
-    key="`echo "${string}" | sed -n 's/^\(.*\)\${\([A-Za-z_][A-Za-z0-9_:-]*\)}\(.*\)$/\2/p'`"
-    if [ ! -z "${key}" ]
-    then
-       prefix="`echo "${string}" | sed 's/^\(.*\)\${\([A-Za-z_][A-Za-z0-9_:-]*\)}\(.*\)$/\1/'`"
-       suffix="`echo "${string}" | sed 's/^\(.*\)\${\([A-Za-z_][A-Za-z0-9_:-]*\)}\(.*\)$/\3/'`"
-       value="`eval echo \$\{${key}\}`"
-       if [ -z "${value}" ]
-       then
-          log_verbose "${key} expanded to empty string ($1)"
-       fi
-
-       next="${prefix}${value}${suffix}"
-       if [ "${next}" != "${string}" ]
-       then
-          expand_environment_variables "${prefix}${value}${suffix}"
-          return
-       fi
-    fi
-
-    echo "${string}"
-}
+MULLE_FUNCTIONS_SH="included"
 
 
 # ####################################################################
@@ -370,6 +64,8 @@ path_depth()
 }
 
 
+
+
 #
 # cuts off last extension only
 #
@@ -382,40 +78,6 @@ extension_less_basename()
 }
 
 
-path_concat()
-{
-   local i
-   local s
-   local sep
-
-   for i in "$@"
-   do
-      sep="/"
-      case "$i" in
-        ""|"."|"./")
-          continue
-        ;;
-
-        "/*")
-          sep=""
-        ;;
-
-        "*/")
-          i="`echo "${i}" | sed 's|/$||/g'`"
-        ;;
-
-      esac
-
-      if [ -z "${s}" ]
-      then
-        s="$i"
-      else
-        s="${s}/${i}"
-      fi
-   done
-
-   echo "${s}"
-}
 
 
 _canonicalize_dir_path()
@@ -741,7 +403,7 @@ _simplify_components()
    local i
    local result
 
-   [ -z "${MULLE_BOOTSTRAP_ARRAY_SH}" ] && . mulle-bootstrap-array.sh
+   [ -z "${MULLE_ARRAY_SH}" ] && . mulle-array.sh
 
    result= # voodoo linux fix ?
    IFS="
@@ -1013,7 +675,7 @@ prepend_to_search_path_if_missing()
       # shims stay in front (homebrew)
       case "$i" in
          */shims/*)
-            new_path="`add_path "${new_path}" "$i"`"
+            new_path="`slash_concat "${new_path}" "$i"`"
          ;;
       esac
    done
@@ -1047,7 +709,7 @@ prepend_to_search_path_if_missing()
          continue
       fi
 
-      tail_path="`add_path "${tail_path}" "${binpath}"`"
+      tail_path="`slash_concat "${tail_path}" "${binpath}"`"
    done
 
    IFS=":"
@@ -1062,13 +724,13 @@ prepend_to_search_path_if_missing()
          ;;
 
          *)
-            tail_path="`add_path "${tail_path}" "${i}"`"
+            tail_path="`slash_concat "${tail_path}" "${i}"`"
          ;;
       esac
    done
    IFS="${oldifs}"
 
-   add_path "${new_path}" "${tail_path}"
+   slash_concat "${new_path}" "${tail_path}"
 }
 
 
@@ -1217,6 +879,7 @@ make_tmp_directory()
    _make_tmp "$1" "-d"
 }
 
+
 # ####################################################################
 #                        Symbolic Links
 # ####################################################################
@@ -1308,6 +971,11 @@ create_symlink()
 }
 
 
+# ####################################################################
+#                        File stat
+# ####################################################################
+#
+#
 modification_timestamp()
 {
    case "${UNAME}" in
@@ -1329,6 +997,10 @@ lso()
    awk '{print $1}'
 }
 
+
+# ####################################################################
+#                        Directory stat
+# ####################################################################
 
 #
 # this does not check for hidden files, ignores directories
@@ -1359,6 +1031,19 @@ dir_has_files()
 }
 
 
+write_protect_directory()
+{
+   if [ -d "$1" ]
+   then
+      log_verbose "Write-protecting ${C_RESET_BOLD}$1${C_VERBOSE} to avoid spurious header edits"
+      exekutor chmod -R a-w "$1"
+   fi
+}
+
+
+# ####################################################################
+#                        System stat
+# ####################################################################
 
 has_usr_local_include()
 {
@@ -1377,52 +1062,17 @@ has_usr_local_include()
 }
 
 
-write_protect_directory()
-{
-   if [ -d "$1" ]
-   then
-      log_verbose "Write-protecting ${C_RESET_BOLD}$1${C_VERBOSE} to avoid spurious header edits"
-      exekutor chmod -R a-w "$1"
-   fi
-}
-
 
 # ####################################################################
 #                               Init
 # ####################################################################
 functions_initialize()
 {
-   [ -z "${MULLE_BOOTSTRAP_LOGGING_SH}" ] && . mulle-bootstrap-logging.sh
+   [ -z "${MULLE_LOGGING_SH}" ] && . mulle-logging.sh
 
    log_debug ":functions_initialize:"
 
-   if [ ! -z "${MULLE_EXECUTABLE_FUNCTIONS_MIN}" ]
-   then
-
-      major="`cut -d. -f1 <<< "${MULLE_EXECUTABLE_FUNCTIONS_MIN}"`"
-      minor="`cut -d. -f2 <<< "${MULLE_EXECUTABLE_FUNCTIONS_MIN}"`"
-
-      if [ "${MULLE_BOOTSTRAP_FUNCTIONS_VERSION_MAJOR}" -lt "${major}" ]
-      then
-         fail "Installed mulle-bootstrap library is too old. (installed is ${MULLE_BOOTSTRAP_FUNCTIONS_VERSION}, but ${MULLE_EXECUTABLE_FUNCTIONS_MIN} is required)"
-      fi
-
-      if [ "${MULLE_BOOTSTRAP_FUNCTIONS_VERSION_MAJOR}" -eq "${major}" ] &&
-         [ "${MULLE_BOOTSTRAP_FUNCTIONS_VERSION_MINOR}" -lt "${minor}" ]
-      then
-         fail "Installed mulle-bootstrap library is too old. (installed is ${MULLE_BOOTSTRAP_FUNCTIONS_VERSION}, but ${MULLE_EXECUTABLE_FUNCTIONS_MIN} is required)"
-      fi
-   fi
-
-   if [ ! -z "${MULLE_EXECUTABLE_FUNCTIONS_MAX}" ]
-   then
-      major="`cut -d. -f1 <<< "${MULLE_EXECUTABLE_FUNCTIONS_MAX}"`"
-
-      if [ "${MULLE_BOOTSTRAP_FUNCTIONS_VERSION_MAJOR}" -ge "${major}" ]
-      then
-         fail "Installed mulle-bootstrap library is too new. (${MULLE_BOOTSTRAP_FUNCTIONS_VERSION})"
-      fi
-   fi
+   [ -z "${MULLE_STRING_SH}" ] && . mulle-string.sh
 }
 
 

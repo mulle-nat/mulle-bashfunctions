@@ -1,6 +1,6 @@
-#! /bin/sh
+#! /usr/bin/env bash
 #
-#   Copyright (c) 2016 Nat! - Mulle kybernetiK
+#   Copyright (c) 2017 Nat! - Mulle kybernetiK
 #   All rights reserved.
 #
 #   Redistribution and use in source and binary forms, with or without
@@ -29,12 +29,29 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
+MULLE_BASHFUNCTIONS_SH="included"
 
-LIBEXEC_PATH="`mulle-bootstrap library-path`"
+__bashfunctions_loader()
+{
+  local old
+  local rval
 
-PATH="${LIBEXEC_PATH}:$PATH"
-export PATH
+  old="$PATH"
 
-[ -z "${MULLE_BOOTSTRAP_MINGW_SH}" ] && . "mulle-bootstrap-mingw.sh" 
+  PATH="${MULLE_LIBEXEC_PATH}:$PATH"
 
-PATH="`mingw_buildpath "${PATH}"`" cmake.exe "$@"
+  . mulle-string.sh &&
+  . mulle-logging.sh &&
+  . mulle-exekutor.sh &&
+  . mulle-version.sh &&
+  . mulle-options.sh
+
+  rval="$?"
+
+  PATH="$old"
+
+  return $rval
+}
+
+
+__bashfunctions_loader
