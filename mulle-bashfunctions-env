@@ -34,8 +34,6 @@ MULLE_BASHFUNCTIONS_VERSION="1.0.0"
 
 usage()
 {
-   local  verbose="${1:-NO}"
-
    cat <<EOF
 Usage:
    ${MULLE_EXECUTABLE} [command]
@@ -88,7 +86,6 @@ get_libexec_path()
 {
    local executablepath="$1"
 
-   local exedir
    local exedirpath
    local prefix
    local libexecpath
@@ -169,7 +166,7 @@ _find_library_path()
 
    prefix="`dirname -- "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}"`"
 
-   ls -1 "${prefix}"/${major}.${minor}.${patch} 2> /dev/null | sort -nr | head -1
+   ls -1 "${prefix}"/${majorpattern}.${minorpattern}.${patchpattern} 2> /dev/null | sort -nr | head -1
 }
 
 
@@ -270,7 +267,7 @@ main()
       ;;
 
       *)
-         log_error "${MULLE_EXECUTABLE_FAIL_PREFIX}: Unknown command \"${command}\""
+         log_error "${MULLE_EXECUTABLE_FAIL_PREFIX}: Unknown command \"${cmd}\""
          usage
       ;;
    esac

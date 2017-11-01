@@ -21,14 +21,14 @@ mulle-bashfunctions-env
 
 
 set( LIBRARY_SCRIPTS
-mulle-array.sh
-mulle-bashfunctions.sh
-mulle-exekutor.sh
-mulle-functions.sh
-mulle-logging.sh
-mulle-options.sh
-mulle-snip.sh
-mulle-string.sh
+src/mulle-array.sh
+src/mulle-bashfunctions.sh
+src/mulle-exekutor.sh
+src/mulle-functions.sh
+src/mulle-logging.sh
+src/mulle-options.sh
+src/mulle-snip.sh
+src/mulle-string.sh
 )
 
 INSTALL( FILES ${SCRIPTS}

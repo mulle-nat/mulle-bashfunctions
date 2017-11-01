@@ -49,14 +49,22 @@ __bashfunctions_loader()
 
    [ -z "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}" ] && echo "MULLE_BASHFUNCTIONS_LIBEXEC_DIR not set" && exit 1
 
-   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-string.sh" &&
-   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-logging.sh" &&
-   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-exekutor.sh" &&
-   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-options.sh" &&
-   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-array.sh" &&
-   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-functions.sh" &&
-   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-snip.sh"
+# shellcheck source=mulle-string.sh
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-string.sh"   || return 1
+# shellcheck source=mulle-logging.sh
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-logging.sh"   || return 1
+# shellcheck source=mulle-exekutor.sh
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-exekutor.sh"  || return 1
+# shellcheck source=mulle-options.sh
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-options.sh"   || return 1
+# shellcheck source=mulle-array.sh
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-array.sh"     || return 1
+# shellcheck source=mulle-functions.sh
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-functions.sh" || return 1
+# shellcheck source=mulle-snip.sh
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-snip.sh"      || return 1
 }
 
 
-__bashfunctions_loader "$@"
+__bashfunctions_loader "$@" || exit 1
+
