@@ -29,29 +29,34 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
+[ ! -z "${MULLE_BASHFUNCTIONS_SH}" ] && echo "double inclusion of mulle-bashfunctions.sh" >&2 && exit 1
+
 MULLE_BASHFUNCTIONS_SH="included"
+
 
 __bashfunctions_loader()
 {
-  local old
-  local rval
+   local tmp
 
-  old="$PATH"
+   if [ -z "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}" -a ! -z "$0" ]
+   then
+      tmp="`dirname -- "$0"`"
+      if [  -f "${tmp}/mulle-array.sh" ]
+      then
+         MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${tmp}"
+      fi
+   fi
 
-  PATH="${MULLE_LIBEXEC_PATH}:$PATH"
+   [ -z "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}" ] && echo "MULLE_BASHFUNCTIONS_LIBEXEC_DIR not set" && exit 1
 
-  . mulle-string.sh &&
-  . mulle-logging.sh &&
-  . mulle-exekutor.sh &&
-  . mulle-version.sh &&
-  . mulle-options.sh
-
-  rval="$?"
-
-  PATH="$old"
-
-  return $rval
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-string.sh" &&
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-logging.sh" &&
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-exekutor.sh" &&
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-options.sh" &&
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-array.sh" &&
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-functions.sh" &&
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-snip.sh"
 }
 
 
-__bashfunctions_loader
+__bashfunctions_loader "$@"

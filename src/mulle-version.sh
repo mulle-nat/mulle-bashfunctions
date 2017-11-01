@@ -29,6 +29,8 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
+[ ! -z "${MULLE_VERSION_SH}" ] && echo "double inclusion of mulle-version.sh" >&2 && exit 1
+
 MULLE_VERSION_SH="included"
 
 
@@ -143,6 +145,5 @@ is_compatible_version()
 {
    is_compatible_version_value_distance "`version_distance "$1" "$2"`"
 }
-
 
 :

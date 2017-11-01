@@ -29,6 +29,8 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
+[ ! -z "${MULLE_STRING_SH}" ] && echo "double inclusion of mulle-string.sh" >&2 && exit 1
+
 MULLE_STRING_SH="included"
 
 
@@ -261,3 +263,4 @@ expand_environment_variables()
     echo "${string}"
 }
 
+:

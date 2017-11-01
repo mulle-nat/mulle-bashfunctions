@@ -29,12 +29,11 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
+[ ! -z "${MULLE_LOGGING_SH}" ] && echo "double inclusion of mulle-logging.sh" >&2 && exit 1
+
 MULLE_LOGGING_SH="included"
 
-#
-# WARNING! THIS FILE IS A LIBRARY USE BY OTHER PROJECTS
-#          DO NOT CASUALLY RENAME, REORGANIZE STUFF
-#
+
 log_printf()
 {
    local format="$1" ; shift
@@ -50,13 +49,13 @@ log_printf()
 
 log_error()
 {
-   log_printf "${C_ERROR}${MULLE_EXECUTABLE_FAIL_PREFIX} error: %b${C_RESET}\n" "$*"
+   log_printf "${C_ERROR}${MULLE_EXECUTABLE_FAIL_PREFIX} error:${C_ERROR_TEXT} %b${C_RESET}\n" "$*"
 }
 
 
 log_fail()
 {
-   log_printf "${C_ERROR}${MULLE_EXECUTABLE_FAIL_PREFIX} fatal error: %b${C_RESET}\n" "$*"
+   log_printf "${C_ERROR}${MULLE_EXECUTABLE_FAIL_PREFIX} fatal error:${C_ERROR_TEXT} %b${C_RESET}\n" "$*"
 }
 
 
@@ -64,7 +63,7 @@ log_warning()
 {
    if [ "${MULLE_FLAG_LOG_TERSE}" != "YES" ]
    then
-      log_printf "${C_WARNING}${MULLE_EXECUTABLE_FAIL_PREFIX} warning: %b${C_RESET}\n" "$*"
+      log_printf "${C_WARNING}${MULLE_EXECUTABLE_FAIL_PREFIX} warning:${C_WARNING_TEXT} %b${C_RESET}\n" "$*"
    fi
 }
 
@@ -105,6 +104,7 @@ log_setting()
    fi
 }
 
+
 # for debugging, not for user. same as fluff
 log_debug()
 {
@@ -119,6 +119,28 @@ log_debug()
          ;;
       esac
    fi
+}
+
+
+log_entry()
+{
+   local function="$1" ; shift
+
+   local args
+
+   if [ $# -ne 0 ]
+   then
+      args="'$1'"
+      shift
+   fi
+
+   while [ $# -ne 0 ]
+   do
+      args="${args}, '$1'"
+      shift
+   done
+
+   log_debug "${function}" "${args}"
 }
 
 
@@ -161,7 +183,7 @@ stacktrace()
 
    while line="`caller $i`"
    do
-      log_info "$i: #${line}"
+      log_printf "${C_CYAN}%b${C_RESET}\n" "$i: #${line}"
       ((i++))
    done
 }
@@ -181,7 +203,7 @@ _bail()
 #         kill -INT $$  # actually useful
 #      fi
 #   fi
-
+   sleep 1
    exit 1
 }
 
@@ -193,47 +215,47 @@ fail()
    then
       log_fail "$*"
    fi
+
+   if [ "${MULLE_FLAG_LOG_DEBUG}" = "YES" ]
+   then
+      stacktrace
+   fi
+
    _bail
 }
 
 
 internal_fail()
 {
-   log_printf "${C_ERROR}${MULLE_EXECUTABLE_FAIL_PREFIX} *** internal error ***: %b${C_RESET}\n" "$*"
+   log_printf "${C_ERROR}${MULLE_EXECUTABLE_FAIL_PREFIX} *** internal error ***:${C_ERROR_TEXT} %b${C_RESET}\n" "$*"
    stacktrace
    _bail
 }
 
 
-#
-# here because often needed :-/
-# this puts a space between items
-#
-concat()
+# Escape sequence and resets, should use tput here instead of ANSI
+logging_reset()
 {
-   local i
-   local s
-
-   for i in "$@"
-   do
-      if [ -z "${i}" ]
-      then
-         continue
-      fi
-
-      if [ -z "${s}" ]
-      then
-         s="${i}"
-      else
-         s="${s} ${i}"
-      fi
-   done
-
-   echo "${s}"
+   printf "${C_RESET}" >&2
 }
 
 
-# Escape sequence and resets, should use tput here instead of ANSI
+logging_trap_install()
+{
+   trap 'logging_reset ; exit 1' TERM INT
+}
+
+
+logging_trap_remove()
+{
+   local rval
+
+   rval=$?
+   trap - TERM INT
+   return $rval
+}
+
+
 logging_initialize()
 {
    DEFAULT_IFS="${IFS}" # as early as possible
@@ -262,13 +284,17 @@ logging_initialize()
             C_FAINT="\033[2m"
 
             C_RESET_BOLD="${C_RESET}${C_BOLD}"
-            trap 'printf "${C_RESET}" >&2 ; exit 1' TERM INT
-            ;;
+
+            if [ "${MULLE_LOGGING_TRAP}" != "NO" ]
+            then
+               logging_trap_install
+            fi
+         ;;
       esac
    fi
 
 
-   C_ERROR="${C_RED}${C_BOLD}"
+   C_ERROR="${C_BR_RED}${C_BOLD}"
    C_WARNING="${C_RED}${C_BOLD}"
    C_INFO="${C_CYAN}${C_BOLD}"
    C_VERBOSE="${C_GREEN}${C_BOLD}"
@@ -277,13 +303,16 @@ logging_initialize()
    C_TRACE="${C_FLUFF}${C_FAINT}"
    C_TRACE2="${C_RESET}${C_FAINT}"
 
+   C_WARNING_TEXT="${C_RESET}${C_RED}${C_BOLD}"
+   C_ERROR_TEXT="${C_RESET}${C_BR_RED}${C_BOLD}"
+
    if [ ! -z "${MULLE_LIBEXEC_TRACE}" ]
    then
       local exedir
       local exedirpath
 
       exedir="`dirname "${BASH_SOURCE}"`"
-      exedirpath="`( cd "${exedir}" ; pwd -P )`" || fail "failed to get pwd"
+      exedirpath="$( cd "${exedir}" ; pwd -P )" || fail "failed to get pwd"
       echo "${MULLE_EXECUTABLE} libexec: ${exedirpath}" >&2
    fi
 }

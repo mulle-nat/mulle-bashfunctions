@@ -29,6 +29,8 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
+[ ! -z "${MULLE_OPTIONS_SH}" ] && echo "double inclusion of mulle-options.sh" >&2 && exit 1
+
 MULLE_OPTIONS_SH="included"
 
 
@@ -38,7 +40,7 @@ MULLE_OPTIONS_SH="included"
 #
 # variables called flag. because they are indirectly set by flags
 #
-core_dump_env()
+options_dump_env()
 {
    log_trace "FULL trace started"
    log_trace "ARGS:${C_TRACE2} ${MULLE_ARGUMENTS}"
@@ -48,7 +50,7 @@ core_dump_env()
 }
 
 
-core_setup_trace()
+options_setup_trace()
 {
    case "${1}" in
       VERBOSE)
@@ -66,7 +68,7 @@ core_setup_trace()
          MULLE_FLAG_LOG_EXEKUTOR="YES"
          MULLE_FLAG_LOG_FLUFF="YES"
          MULLE_FLAG_LOG_VERBOSE="YES"
-         core_dump_env
+         options_dump_env
       ;;
 
       1848)
@@ -75,7 +77,7 @@ core_setup_trace()
          MULLE_FLAG_LOG_VERBOSE="YES"
          MULLE_FLAG_VERBOSE_BUILD="YES"
 
-         core_dump_env
+         options_dump_env
 
          if [ "${MULLE_TRACE_POSTPONE}" != "YES" ]
          then
@@ -88,7 +90,7 @@ core_setup_trace()
 }
 
 
-core_technical_option_usage()
+_options_technical_flags_usage()
 {
    cat <<EOF
    -n        : dry run
@@ -110,7 +112,13 @@ EOF
 }
 
 
-core_technical_flags()
+options_technical_flags_usage()
+{
+   _options_technical_flags_usage | sort
+}
+
+
+options_technical_flags()
 {
    case "$1" in
       -n|--dry-run)
@@ -199,60 +207,8 @@ core_technical_flags()
 
 ## option parsing common
 
-#
-# variables called flag. because they are indirectly set by flags
-#
-bootstrap_dump_env()
-{
-   log_trace "FULL trace started"
-   log_trace "ARGS:${C_TRACE2} ${MULLE_ARGUMENTS}"
-   log_trace "PWD :${C_TRACE2} `pwd -P 2> /dev/null`"
-   log_trace "ENV :${C_TRACE2} `env | sort`"
-   log_trace "LS  :${C_TRACE2} `ls -a1F`"
-}
 
-
-bootstrap_setup_trace()
-{
-   case "${1}" in
-      VERBOSE)
-         MULLE_FLAG_LOG_VERBOSE="YES"
-      ;;
-
-      FLUFF)
-         MULLE_FLAG_LOG_FLUFF="YES"
-         MULLE_FLAG_LOG_VERBOSE="YES"
-         MULLE_FLAG_LOG_EXEKUTOR="YES"
-      ;;
-
-      TRACE)
-         MULLE_FLAG_LOG_SETTINGS="YES"
-         MULLE_FLAG_LOG_EXEKUTOR="YES"
-         MULLE_FLAG_LOG_FLUFF="YES"
-         MULLE_FLAG_LOG_VERBOSE="YES"
-         bootstrap_dump_env
-      ;;
-
-      1848)
-         MULLE_FLAG_LOG_SETTINGS="YES"
-         MULLE_FLAG_LOG_FLUFF="YES"
-         MULLE_FLAG_LOG_VERBOSE="YES"
-         MULLE_FLAG_VERBOSE_BUILD="YES"
-
-         bootstrap_dump_env
-
-         if [ "${MULLE_TRACE_POSTPONE}" = "NO" ]
-         then
-            log_trace "1848 trace (set -x) started"
-            set -x
-            PS4="+ ${ps4string} + "
-         fi
-      ;;
-   esac
-}
-
-
-unpostpone_trace()
+options_unpostpone_trace()
 {
    if [ ! -z "${MULLE_TRACE_POSTPONE}" -a "${MULLE_TRACE}" = "1848" ]
    then
@@ -262,11 +218,59 @@ unpostpone_trace()
 }
 
 
-options_initialize()
+_options_minimal_init()
 {
-   [ -z "${MULLE_LOGGING_SH}" ] && . mulle-logging.sh
+   #
+   # leading backslash ? looks like we're getting called from
+   # mingw via a .BAT or so
+   #
+   case "$PATH" in
+      '\\'*)
+         PATH="`tr '\\' '/' <<< "${PATH}"`"
+      ;;
+   esac
+
+
+   MULLE_EXECUTABLE="$1"
+   MULLE_EXECUTABLE_NAME="`basename -- "$1"`"
+
+   MULLE_EXECUTABLE_PATH="$1"
+   case "$MULLE_EXECUTABLE" in
+      /*|~*)
+         MULLE_EXECUTABLE_PATH="$MULLE_EXECUTABLE"
+      ;;
+
+      *)
+         MULLE_EXECUTABLE_PATH="$PWD/$MULLE_EXECUTABLE"
+      ;;
+   esac
+   MULLE_EXECUTABLE_FAIL_PREFIX="${MULLE_EXECUTABLE_NAME}"
+   MULLE_EXECUTABLE_PID="$$"
+   MULLE_EXECUTABLE_ENV_PATH="$PATH"
+   export MULLE_EXECUTABLE_PID
 }
 
-options_initialize
+
+#
+# this has very limited use, i only use it in some tests
+#
+_options_mini_main()
+{
+   _options_minimal_init "$0"
+
+   while [ $# -ne 0 ]
+   do
+      if options_technical_flags "$1"
+      then
+         shift
+         continue
+      fi
+
+      break
+   done
+
+   options_setup_trace "${MULLE_TRACE}"
+}
+
 
 :

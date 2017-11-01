@@ -29,6 +29,8 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
+[ ! -z "${MULLE_ARRAY_SH}" ] && echo "double inclusion of mulle-array.sh" >&2 && exit 1
+
 MULLE_ARRAY_SH="included"
 
 # declare "fail" outside
@@ -363,3 +365,4 @@ assoc_array_augment_with_array()
    echo "${array1}" "${array2}" | sort -u -t'=' -k1,1
 }
 
+:

@@ -193,19 +193,4 @@ logging_redirect_eval_exekutor()
    _redirect_append_eval_exekutor "${output}" "$@"
 }
 
-
-
-# ####################################################################
-#                               Init
-# ####################################################################
-exekutor_initialize()
-{
-   [ -z "${MULLE_LOGGING_SH}" ] && . mulle-logging.sh
-
-   log_debug ":exekutor_initialize:"
-}
-
-
-exekutor_initialize
-
 :

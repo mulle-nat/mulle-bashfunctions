@@ -22,12 +22,13 @@ mulle-bashfunctions-env
 
 set( LIBRARY_SCRIPTS
 mulle-array.sh
-mulle-coreoptions.sh
-mulle-forcemv.sh
+mulle-bashfunctions.sh
+mulle-exekutor.sh
 mulle-functions.sh
 mulle-logging.sh
-mulle-process.sh
+mulle-options.sh
 mulle-snip.sh
+mulle-string.sh
 )
 
 INSTALL( FILES ${SCRIPTS}

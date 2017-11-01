@@ -167,7 +167,7 @@ _find_library_path()
 
    local prefix
 
-   prefix="`dirname -- "${MULLE_LIBEXEC_PATH}"`"
+   prefix="`dirname -- "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}"`"
 
    ls -1 "${prefix}"/${major}.${minor}.${patch} 2> /dev/null | sort -nr | head -1
 }
@@ -181,13 +181,13 @@ _find_local_library_path()
    then
       return 1
    fi
-   echo "${MULLE_LIBEXEC_PATH}"
+   echo "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}"
 }
 
 
 find_library_path()
 {
-   case "${MULLE_LIBEXEC_PATH}" in
+   case "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}" in
       */src)
          if _find_local_library_path "$@"
          then
@@ -254,7 +254,7 @@ main()
       library-path)
          if [ $# -eq 0 ]
          then
-            echo "${MULLE_LIBEXEC_PATH}"
+            echo "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}"
             return 0
          fi
 
@@ -277,14 +277,19 @@ main()
 }
 
 
-
+#
+# Memo: to avoid confusion
+#    variables containing a filesystem path to a directory end with _DIR
+#    other variables containing a filesystem path end with _FILE
+#    variables containing search paths end with _PATH
+#
 init()
 {
    # nice for tests
-   if [ -z "${MULLE_LIBEXEC_PATH}" ]
+   if [ -z "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}" ]
    then
-      MULLE_LIBEXEC_PATH="`get_libexec_path "$0"`"
-      if [ -z "${MULLE_LIBEXEC_PATH}" ]
+      MULLE_BASHFUNCTIONS_LIBEXEC_DIR="`get_libexec_path "$0"`"
+      if [ -z "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}" ]
       then
          echo "Fatal Error: Could not find libexec for ${MULLE_EXECUTABLE} ($PWD)" >&2
          exit 1
@@ -298,7 +303,7 @@ init()
    then
       case "${1}" in
          library-path)
-            echo "${MULLE_LIBEXEC_PATH}"
+            echo "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}"
             exit 0
          ;;
 
@@ -309,7 +314,7 @@ init()
       esac
    fi
 
-   PATH="${MULLE_LIBEXEC_PATH}:$PATH"
+   PATH="${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}:$PATH"
    export PATH
 
    if [ ! -z "${MULLE_LIBEXEC_TRACE}" ]

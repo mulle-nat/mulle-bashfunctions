@@ -29,7 +29,7 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-[ ! -z "${MULLE_FUNCTIONS_SH}" ] && echo "double inclusion of functions" >&2 && exit 1
+[ ! -z "${MULLE_FUNCTIONS_SH}" ] && echo "double inclusion of mulle-functions.sh" >&2 && exit 1
 
 MULLE_FUNCTIONS_SH="included"
 
@@ -750,6 +750,25 @@ mkdir_if_missing()
 }
 
 
+mkdir_parent_if_missing()
+{
+   local dstdir="$1"
+
+   local parent
+
+   parent="`dirname -- "${dstdir}"`"
+   case "${parent}" in
+      ""|"\.")
+      ;;
+
+      *)
+         mkdir_if_missing "${parent}" || exit 1
+         echo "${parent}"
+      ;;
+   esac
+}
+
+
 dir_is_empty()
 {
    [ -z "$1" ] && internal_fail "empty path"
@@ -853,7 +872,7 @@ remove_file_if_present()
 
 _make_tmp()
 {
-   local name="${1:-mctmp}"
+   local name="${1:-mulle_tmp}"
    local type="${2}"
 
    case "${UNAME}" in
@@ -1039,43 +1058,5 @@ write_protect_directory()
       exekutor chmod -R a-w "$1"
    fi
 }
-
-
-# ####################################################################
-#                        System stat
-# ####################################################################
-
-has_usr_local_include()
-{
-   local name="$1"
-
-   if [ -d "${USR_LOCAL_INCLUDE}/${name}" ]
-   then
-      return 0
-   fi
-
-   local include_name
-
-   include_name="`echo "${name}" | tr '-' '_'`"
-
-   [ -d "${USR_LOCAL_INCLUDE}/${include_name}" ]
-}
-
-
-
-# ####################################################################
-#                               Init
-# ####################################################################
-functions_initialize()
-{
-   [ -z "${MULLE_LOGGING_SH}" ] && . mulle-logging.sh
-
-   log_debug ":functions_initialize:"
-
-   [ -z "${MULLE_STRING_SH}" ] && . mulle-string.sh
-}
-
-
-functions_initialize
 
 :

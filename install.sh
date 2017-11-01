@@ -143,7 +143,7 @@ main()
    mode=${1:-755}
    [ $# -eq 0 ] || shift
 
-   if [ -z "${prefix}" ] || [ -z "${mode}" ]
+   if [ -z "${prefix}" -o "${prefix}" = "--help" ] || [ -z "${mode}" ]
    then
       fail "usage: install.sh [prefix] [mode]"
    fi
