@@ -29,42 +29,46 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-[ ! -z "${MULLE_BASHFUNCTIONS_SH}" ] && echo "double inclusion of mulle-bashfunctions.sh" >&2 && exit 1
 
-MULLE_BASHFUNCTIONS_SH="included"
+# double inclusion of the main header file is OK!
+if [ -z "${MULLE_BASHFUNCTIONS_SH}" ]
+then
+   MULLE_BASHFUNCTIONS_SH="included"
 
+   __bashfunctions_loader()
+   {
+      local tmp
 
-__bashfunctions_loader()
-{
-   local tmp
-
-   if [ -z "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}" -a ! -z "$0" ]
-   then
-      tmp="`dirname -- "$0"`"
-      if [  -f "${tmp}/mulle-array.sh" ]
+      if [ -z "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}" -a ! -z "$0" ]
       then
-         MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${tmp}"
+         tmp="`dirname -- "$0"`"
+         if [  -f "${tmp}/mulle-bashfunctions.sh" ]
+         then
+            MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${tmp}"
+         fi
       fi
-   fi
 
-   [ -z "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}" ] && echo "MULLE_BASHFUNCTIONS_LIBEXEC_DIR not set" && exit 1
+      [ -z "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}" ] && echo "MULLE_BASHFUNCTIONS_LIBEXEC_DIR not set" && exit 1
 
-# shellcheck source=mulle-string.sh
-   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-string.sh"   || return 1
-# shellcheck source=mulle-logging.sh
-   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-logging.sh"   || return 1
-# shellcheck source=mulle-exekutor.sh
-   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-exekutor.sh"  || return 1
-# shellcheck source=mulle-options.sh
-   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-options.sh"   || return 1
-# shellcheck source=mulle-array.sh
-   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-array.sh"     || return 1
-# shellcheck source=mulle-functions.sh
-   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-functions.sh" || return 1
-# shellcheck source=mulle-snip.sh
-   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-snip.sh"      || return 1
-}
+      # shellcheck source=mulle-logging.sh
+         . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-logging.sh"   || return 1
+      # shellcheck source=mulle-exekutor.sh
+         . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-exekutor.sh"  || return 1
+      # shellcheck source=mulle-array.sh
+         . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-array.sh"     || return 1
+      # shellcheck source=mulle-string.sh
+         . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-string.sh"   || return 1
+      # shellcheck source=mulle-version.sh
+         . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-version.sh"   || return 1
+      # shellcheck source=mulle-options.sh
+         . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-options.sh"   || return 1
+      # shellcheck source=mulle-path.sh
+         . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-path.sh"      || return 1
+      # shellcheck source=mulle-file.sh
+         . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-file.sh"      || return 1
+      # shellcheck source=mulle-snip.sh
+         . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-snip.sh"      || return 1
+   }
 
-
-__bashfunctions_loader "$@" || exit 1
-
+   __bashfunctions_loader "$@" || exit 1
+fi

@@ -29,7 +29,8 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-[ ! -z "${MULLE_STRING_SH}" ] && echo "double inclusion of mulle-string.sh" >&2 && exit 1
+[ ! -z "${MULLE_STRING_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = "YES" ] && \
+   echo "double inclusion of mulle-string.sh" >&2
 
 MULLE_STRING_SH="included"
 
@@ -59,23 +60,25 @@ concat()
 # this is "cross-platform" because the paths on MINGW are converted to
 # '/' already
 #
-slash_concat()
+colon_concat()
 {
-   concat "$1" "$2" "/"
+   concat "$1" "$2" ":"
 }
 
+comma_concat()
+{
+   concat "$1" "$2" ","
+}
 
 semicolon_concat()
 {
    concat "$1" "$2" ";"
 }
 
-
-colon_concat()
+slash_concat()
 {
-   concat "$1" "$2" ":"
+   concat "$1" "$2" "/"
 }
-
 
 space_concat()
 {
@@ -166,8 +169,6 @@ filepath_concat()
    echo "${s}"
 }
 
-
-
 # ####################################################################
 #                            Strings
 # ####################################################################
@@ -186,7 +187,7 @@ is_yes()
       ;;
 
       *)
-         fail "$2 should contain YES or NO (or be empty)"
+         return 255
       ;;
    esac
 }
@@ -224,6 +225,11 @@ escaped_sed_pattern()
 }
 
 
+escaped_spaces()
+{
+   sed 's/ /\\ /g' <<< "${1}"
+}
+
 # ####################################################################
 #                            Expansion
 # ####################################################################
@@ -240,6 +246,7 @@ expand_environment_variables()
     local prefix
     local suffix
     local next
+    local rval=0
 
     key="`echo "${string}" | sed -n 's/^\(.*\)\${\([A-Za-z_][A-Za-z0-9_:-]*\)}\(.*\)$/\2/p'`"
     if [ ! -z "${key}" ]
@@ -249,18 +256,23 @@ expand_environment_variables()
        value="`eval echo \$\{${key}\}`"
        if [ -z "${value}" ]
        then
-          log_verbose "${key} expanded to empty string ($1)"
+          rval=1
        fi
 
        next="${prefix}${value}${suffix}"
        if [ "${next}" != "${string}" ]
        then
           expand_environment_variables "${prefix}${value}${suffix}"
-          return
+          if [ $? -eq 0 ]
+          then
+              return $rval
+          fi
+          return 1
        fi
     fi
 
     echo "${string}"
+    return $rval
 }
 
 :

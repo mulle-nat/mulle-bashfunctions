@@ -7,7 +7,7 @@ Use `mulle-bashfunctions --version 1` to find the place of the scripts that
 provide version 1 compatability.
 
 
-Install it with `brew install {{PUBLISHER}}/software/mulle-bashfunctions` or
+Install it with `brew install mulle-kybernetik/software/mulle-bashfunctions` or
 `apt-get install mulle-bashfunctions`.
 
 

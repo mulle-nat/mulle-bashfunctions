@@ -29,9 +29,13 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-[ ! -z "${MULLE_FUNCTIONS_SH}" ] && echo "double inclusion of mulle-functions.sh" >&2 && exit 1
+[ ! -z "${MULLE_PATH_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = "YES" ] && \
+   echo "double inclusion of mulle-path.sh" >&2
 
-MULLE_FUNCTIONS_SH="included"
+[ -z "${MULLE_STRING_SH}" ] && echo "mulle-string.sh must be included before mulle-path.sh" 2>&1 && exit 1
+
+
+MULLE_PATH_SH="included"
 
 
 # ####################################################################
@@ -64,8 +68,6 @@ path_depth()
 }
 
 
-
-
 #
 # cuts off last extension only
 #
@@ -78,14 +80,12 @@ extension_less_basename()
 }
 
 
-
-
 _canonicalize_dir_path()
 {
    (
       cd "$1" 2>/dev/null &&
       pwd -P
-   )  || exit 1
+   )  || return 1
 }
 
 
@@ -98,7 +98,7 @@ _canonicalize_file_path()
    (
      cd "${dir}" 2>/dev/null &&
      echo "`pwd -P`/${file}"
-   ) || exit 1
+   ) || return 1
 }
 
 
@@ -200,22 +200,22 @@ relative_path_between()
 
    case "${a}" in
       ../*|*/..|*/../*|..)
-         internal_fail "Path \"${a}\" mustn't contain ../"
+         internal_fail "Path \"${a}\" mustn't contain .."
       ;;
 
       ./*|*/.|*/./*|.)
-         internal_fail "Path \"${a}\" mustn't contain ./"
+         internal_fail "Filename \"${a}\" mustn't contain component \".\""
       ;;
 
 
       /*)
          case "${b}" in
             ../*|*/..|*/../*|..)
-               internal_fail "Path \"${b}\" mustn't contain ../"
+               internal_fail "Filename \"${b}\" mustn't contain \"..\""
             ;;
 
             ./*|*/.|*/./*|.)
-               internal_fail "Path \"${b}\" mustn't contain ./"
+               internal_fail "Filename \"${b}\" mustn't contain \".\""
             ;;
 
 
@@ -223,7 +223,7 @@ relative_path_between()
             ;;
 
             *)
-               internal_fail "Mixing absolute path \"${a}\" and relative path \"${b}\""
+               internal_fail "Mixing absolute filename \"${a}\" and relative filename \"${b}\""
             ;;
          esac
       ;;
@@ -231,15 +231,15 @@ relative_path_between()
       *)
          case "${b}" in
             ../*|*/..|*/../*|..)
-               internal_fail "Path \"${b}\" mustn't contain ../"
+               internal_fail "Filename \"${b}\" mustn't contain component \"..\"/"
             ;;
 
             ./*|*/.|*/./*|.)
-               internal_fail "Path \"${b}\" mustn't contain ./"
+               internal_fail "Filename \"${b}\" mustn't contain component \".\""
             ;;
 
             /*)
-               internal_fail "Mixing relative path \"${a}\" and absolute path \"${b}\""
+               internal_fail "Mixing relative filename \"${a}\" and absolute filename \"${b}\""
             ;;
 
             *)
@@ -297,15 +297,43 @@ remove_absolute_path_prefix_up_to()
 }
 
 
+# symlink helper
 #
 # this cds into a physical directory, so that .. is relative to it
-# e.g. cd a/b/c might  end up being a/c, so .. is a
+# e.g. cd a/b/c might  end up being a/c, so .. is 'a'
 # if you just go a/b/c then .. is b
 #
 cd_physical()
 {
-   cd "$1" || fail "cd: \"$1\" is not reachable from \"`pwd`\""
-   cd "`pwd -P`"
+   cd "$1" || fail "cd_physical: \"$1\" is not reachable from \"${PWD}\""
+   cd "`pwd -P`" # resolve symlinks and go there (changes PWD)
+}
+
+is_absolutepath()
+{
+   case "${1}" in
+      /*|~*)
+        return 0
+      ;;
+
+      *)
+        return 1
+      ;;
+   esac
+}
+
+
+is_relativepath()
+{
+   case "${1}" in
+      ""|/*|~*)
+        return 1
+      ;;
+
+      *)
+        return 0
+      ;;
+   esac
 }
 
 
@@ -315,16 +343,32 @@ absolutepath()
       "")
       ;;
 
-      '/'*|'~'*)
-        simplified_path "${1}"
+      /*|~*)
+        echo "$1"
       ;;
 
       *)
-        simplified_path "`pwd`/${1}"
+        echo "${PWD}/${1}"
       ;;
    esac
 }
 
+
+simplified_absolutepath()
+{
+   case "${1}" in
+      "")
+      ;;
+
+      /*|~*)
+        simplified_path "$1"
+      ;;
+
+      *)
+        simplified_path "${PWD}/${1}"
+      ;;
+   esac
+}
 
 #
 # Imagine you are in a working directory `dirname b`
@@ -336,16 +380,10 @@ symlink_relpath()
    local a
    local b
 
-   a="`absolutepath "$1"`"
-   b="`absolutepath "$2"`"
+   a="`simplified_absolutepath "$1"`"
+   b="`simplified_absolutepath "$2"`"
 
    _relative_path_between "${a}" "${b}"
-}
-
-
-escaped_spaces()
-{
-   echo "$1" | sed 's/ /\\ /g'
 }
 
 
@@ -571,6 +609,9 @@ ${i}"
 }
 
 
+#
+# works also on filepaths that do not exist
+#
 simplified_path()
 {
    #
@@ -582,7 +623,7 @@ simplified_path()
          echo "."
       ;;
 
-      */|*\.\.*|*\./*)
+      */|*\.\.*|*\./*|*/.)
          if [ "${MULLE_TRACE_PATHS_FLIP_X}" = "YES" ]
          then
             set +x
@@ -616,13 +657,12 @@ assert_sane_subdir_path()
 
    case "$file"  in
       "")
-         log_error "refuse empty subdirectory"
+         fail "refuse empty subdirectory \"${file}\""
          exit 1
       ;;
 
       \$*|~|..|.|/*)
-         log_error "refuse unsafe subdirectory path \"$1\""
-         exit 1
+         faile "refuse unsafe subdirectory path \"$1\""
       ;;
    esac
 }
@@ -688,7 +728,7 @@ prepend_to_search_path_if_missing()
       binpath="$1"
       shift
 
-      binpath="`absolutepath "${binpath}"`"
+      binpath="`simplified_absolutepath "${binpath}"`"
 
       IFS=":"
       for i in $fullpath
@@ -731,332 +771,6 @@ prepend_to_search_path_if_missing()
    IFS="${oldifs}"
 
    slash_concat "${new_path}" "${tail_path}"
-}
-
-
-# ####################################################################
-#                        Files and Directories
-# ####################################################################
-#
-mkdir_if_missing()
-{
-   [ -z "$1" ] && internal_fail "empty path"
-
-   if [ ! -d "$1" ]
-   then
-      log_fluff "Creating \"$1\" ($PWD)"
-      exekutor mkdir -p "$1" || fail "failed to create directory \"$1\" ($PWD)"
-   fi
-}
-
-
-mkdir_parent_if_missing()
-{
-   local dstdir="$1"
-
-   local parent
-
-   parent="`dirname -- "${dstdir}"`"
-   case "${parent}" in
-      ""|"\.")
-      ;;
-
-      *)
-         mkdir_if_missing "${parent}" || exit 1
-         echo "${parent}"
-      ;;
-   esac
-}
-
-
-dir_is_empty()
-{
-   [ -z "$1" ] && internal_fail "empty path"
-
-   if [ ! -d "$1" ]
-   then
-      return 2
-   fi
-
-   local empty
-
-   empty="`ls -A "$1" 2> /dev/null`"
-   [ "$empty" = "" ]
-}
-
-
-rmdir_safer()
-{
-   [ -z "$1" ] && internal_fail "empty path"
-
-   if [ -d "$1" ]
-   then
-      assert_sane_path "$1"
-      exekutor chmod -R u+w "$1"  >&2 || fail "Failed to make $1 writable"
-      exekutor rm -rf "$1"  >&2 || fail "failed to remove $1"
-   fi
-}
-
-
-rmdir_if_empty()
-{
-   [ -z "$1" ] && internal_fail "empty path"
-
-   if dir_is_empty "$1"
-   then
-      exekutor rmdir "$1"  >&2 || fail "failed to remove $1"
-   fi
-}
-
-
-_create_file_if_missing()
-{
-   local path="$1" ; shift
-
-   [ -z "${path}" ] && internal_fail "empty path"
-
-   if [ -f "${path}" ]
-   then
-      return
-   fi
-
-   local directory
-
-   directory="`dirname "${path}"`"
-   if [ ! -z "${directory}" ]
-   then
-      mkdir_if_missing "${directory}"
-   fi
-
-   log_fluff "Creating \"${path}\""
-   if [ ! -z "$*" ]
-   then
-      redirect_exekutor "${path}" echo "$*" || fail "failed to create \"{path}\""
-   else
-      exekutor touch "${path}"  || fail "failed to create \"${path}\""
-   fi
-}
-
-
-merge_line_into_file()
-{
-  local path="$1"
-  local line="$2"
-
-  if fgrep -s -q -x "${name}" "${path}" 2> /dev/null
-  then
-     return
-  fi
-  redirect_append_exekutor "${path}" echo "${line}"
-}
-
-
-create_file_if_missing()
-{
-  _create_file_if_missing "$1" "# intentionally blank file"
-}
-
-
-remove_file_if_present()
-{
-   [ -z "$1" ] && internal_fail "empty path"
-
-   if [ -e "$1" ]
-   then
-      log_fluff "Removing \"$1\""
-      exekutor chmod u+w "$1"  >&2 || fail "Failed to make $1 writable"
-      exekutor rm -f "$1"  >&2     || fail "failed to remove \"$1\""
-   fi
-}
-
-
-_make_tmp()
-{
-   local name="${1:-mulle_tmp}"
-   local type="${2}"
-
-   case "${UNAME}" in
-      darwin|freebsd)
-         exekutor mktemp ${type} "/tmp/${name}.XXXXXX"
-      ;;
-
-      *)
-         exekutor mktemp ${type} -t "${name}.XXXXXX"
-      ;;
-   esac
-}
-
-
-make_tmp_file()
-{
-   _make_tmp "$1"
-}
-
-
-make_tmp_directory()
-{
-   _make_tmp "$1" "-d"
-}
-
-
-# ####################################################################
-#                        Symbolic Links
-# ####################################################################
-#
-
-#
-# stolen from:
-# http://stackoverflow.com/questions/1055671/how-can-i-get-the-behavior-of-gnus-readlink-f-on-a-mac
-# ----
-#
-_prepend_path_if_relative()
-{
-   case "$2" in
-      /*)
-         echo "$2"
-      ;;
-
-      *)
-         echo "$1/$2"
-      ;;
-   esac
-}
-
-
-resolve_symlinks()
-{
-   local dir_context
-   local path
-
-   path="`readlink "$1"`"
-   if [ $? -eq 0 ]
-   then
-      dir_context=`dirname -- "$1"`
-      resolve_symlinks "`_prepend_path_if_relative "$dir_context" "$path"`"
-   else
-      echo "$1"
-   fi
-}
-
-#
-# canonicalizes existing paths
-# fails for files / directories that do not exist
-#
-realpath()
-{
-   [ -e "$1" ] || fail "only use realpath on existing files ($1)"
-
-   canonicalize_path "`resolve_symlinks "$1"`"
-}
-
-#
-# the target of the symlink must exist
-#
-create_symlink()
-{
-   local url="$1"       # URL of the clone
-   local stashdir="$2"  # stashdir of this clone (absolute or relative to $PWD)
-   local absolute="$3"
-
-   local srcname
-   local directory
-
-   [ -e "${url}" ]        || fail "${C_RESET}${C_BOLD}${url}${C_ERROR} does not exist ($PWD)"
-   [ ! -z "${absolute}" ] || fail "absolute must be YES or NO"
-
-   url="`absolutepath "${url}"`"
-   url="`realpath "${url}"`"  # resolve symlinks
-
-   # need to do this otherwise the symlink fails
-
-   srcname="`basename -- ${url}`"
-   directory="`dirname -- "${stashdir}"`"
-
-   mkdir_if_missing "${directory}"
-   directory="`realpath "${directory}"`"  # resolve symlinks
-
-   #
-   # relative paths look nicer, but could fail in more complicated
-   # settings, when you symlink something, and that repo has symlinks
-   # itself
-   #
-   if [ "${absolute}" = "NO" ]
-   then
-      url="`symlink_relpath "${url}" "${directory}"`"
-   fi
-
-   log_info "Symlinking ${C_MAGENTA}${C_BOLD}${srcname}${C_INFO} as \"${url}\" in \"${directory}\" ..."
-   exekutor ln -s -f "${url}" "${stashdir}"  >&2 || fail "failed to setup symlink \"${stashdir}\" (to \"${url}\")"
-}
-
-
-# ####################################################################
-#                        File stat
-# ####################################################################
-#
-#
-modification_timestamp()
-{
-   case "${UNAME}" in
-      linux|mingw)
-         stat --printf "%Y\n" "$1"
-         ;;
-      * )
-         stat -f "%m" "$1"
-         ;;
-   esac
-}
-
-
-# http://askubuntu.com/questions/152001/how-can-i-get-octal-file-permissions-from-command-line
-lso()
-{
-   ls -aldG "$@" | \
-   awk '{k=0;for(i=0;i<=8;i++)k+=((substr($1,i+2,1)~/[rwx]/)*2^(8-i));if(k)printf(" %0o ",k);print }' | \
-   awk '{print $1}'
-}
-
-
-# ####################################################################
-#                        Directory stat
-# ####################################################################
-
-#
-# this does not check for hidden files, ignores directories
-# optionally give filetype f or d as second agument
-#
-dir_has_files()
-{
-   local dirpath="$1"; shift
-
-   local flags
-   case "$1" in
-      f)
-         flags="-type f"
-         shift
-      ;;
-
-      d)
-         flags="-type d"
-         shift
-      ;;
-   esac
-
-   local empty
-   local result
-
-   empty="`find "${dirpath}" -xdev -mindepth 1 -maxdepth 1 -name "[a-zA-Z0-9_-]*" ${flags} "$@" -print 2> /dev/null`"
-   [ ! -z "$empty" ]
-}
-
-
-write_protect_directory()
-{
-   if [ -d "$1" ]
-   then
-      log_verbose "Write-protecting ${C_RESET_BOLD}$1${C_VERBOSE} to avoid spurious header edits"
-      exekutor chmod -R a-w "$1"
-   fi
 }
 
 :

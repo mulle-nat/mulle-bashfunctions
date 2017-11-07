@@ -1,6 +1,5 @@
-#! /bin/sh -e
+#! /usr/bin/env bash
 
-. mulle-functions.sh
 
 run_test()
 {
@@ -67,8 +66,26 @@ test_relative_path_between()
 
 }
 
-test_compute_relative
-test_relative_path_between
 
-echo "test finished" >&2
+main()
+{
+   _options_mini_main "$@"
+
+   test_compute_relative
+   test_relative_path_between
+
+   log_info "----- ALL PASSED -----"
+}
+
+
+init()
+{
+   MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${MULLE_BASHFUNCTIONS_LIBEXEC_DIR:-../../src}"
+
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions.sh" || exit 1
+}
+
+
+init "$@"
+main "$@"
 

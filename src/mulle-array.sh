@@ -29,7 +29,10 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-[ ! -z "${MULLE_ARRAY_SH}" ] && echo "double inclusion of mulle-array.sh" >&2 && exit 1
+[ "${MULLE_WARN_DOUBLE_INCLUSION}" = "YES" -a ! -z "${MULLE_ARRAY_SH}" ] && \
+   echo "double inclusion of mulle-array.sh" >&2
+
+[ -z "${MULLE_LOGGING_SH}" ] && echo "mulle-logging.sh must be included before mulle-array.sh" 2>&1 && exit 1
 
 MULLE_ARRAY_SH="included"
 

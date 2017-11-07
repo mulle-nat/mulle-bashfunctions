@@ -29,14 +29,16 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-MULLE_BASHFUNCTIONS_VERSION="1.0.0"
+[ "${TRACE}" = "YES" ] && set -x
+
+MULLE_BASHFUNCTIONS_VERSION="1.1.0"
 
 
 usage()
 {
    cat <<EOF
 Usage:
-   ${MULLE_EXECUTABLE} [command]
+   ${MULLE_EXECUTABLE_NAME} [command]
 
 Commands:
    library-path [version]  : print best library path for desired version
@@ -104,7 +106,7 @@ get_libexec_path()
    prefix="`dirname "${exedirpath}"`"
    libexecpath="${prefix}/libexec/mulle-bashfunctions/${MULLE_BASHFUNCTIONS_VERSION}"
 
-   if [ ! -x "${libexecpath}/mulle-functions.sh" ]
+   if [ ! -x "${libexecpath}/mulle-bashfunctions.sh" ]
    then
       libexecpath="${exedirpath}/src"
    fi
@@ -118,7 +120,7 @@ get_libexec_path()
       ;;
    esac
 
-   if [ -x "${libexecpath}/mulle-functions.sh" ]
+   if [ -x "${libexecpath}/mulle-bashfunctions.sh" ]
    then
       echo "${libexecpath}"
    fi
@@ -199,8 +201,6 @@ find_library_path()
 
 main()
 {
-   MULLE_EXECUTABLE_FAIL_PREFIX="${MULLE_EXECUTABLE}"
-
    #
    # simple option handling
    #
@@ -240,7 +240,7 @@ main()
 
    cmd="${1:-library-path}"
 
-   MULLE_EXECUTABLE_FAIL_PREFIX="${MULLE_EXECUTABLE} ${cmd}"
+   MULLE_EXECUTABLE_FAIL_PREFIX="${MULLE_EXECUTABLE_NAME} ${cmd}"
    [ $# -eq 0 ] || shift
 
    case "${cmd}" in
@@ -280,7 +280,7 @@ main()
 #    other variables containing a filesystem path end with _FILE
 #    variables containing search paths end with _PATH
 #
-init()
+_init()
 {
    # nice for tests
    if [ -z "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}" ]
@@ -288,7 +288,7 @@ init()
       MULLE_BASHFUNCTIONS_LIBEXEC_DIR="`get_libexec_path "$0"`"
       if [ -z "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}" ]
       then
-         echo "Fatal Error: Could not find libexec for ${MULLE_EXECUTABLE} ($PWD)" >&2
+         echo "$0 fatal Error: Could not find libexec ($PWD)" >&2
          exit 1
       fi
    fi
@@ -319,9 +319,10 @@ init()
       echo "PATH=$PATH" >&2
    fi
 
-   . mulle-logging.sh || exit 1
-   . mulle-version.sh || exit 1
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-logging.sh" || exit 1
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-version.sh" || exit 1
 }
+
 
 #
 # leading backslash ? looks like we're getting called from
@@ -329,13 +330,11 @@ init()
 #
 case "$PATH" in
    '\\'*)
-      PATH="`tr '\\' '/' <<< "${PATH}"`"
+      PATH="${PATH//\\/\/}"
    ;;
 esac
 
-MULLE_EXECUTABLE="`basename -- "$0"`"
 
-init "$@"
+_init "$@"
 
 main "$@"
-

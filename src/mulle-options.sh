@@ -29,7 +29,10 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-[ ! -z "${MULLE_OPTIONS_SH}" ] && echo "double inclusion of mulle-options.sh" >&2 && exit 1
+[ ! -z "${MULLE_OPTIONS_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = "YES" ] && \
+   echo "double inclusion of mulle-options.sh" >&2
+
+[ -z "${MULLE_LOGGING_SH}" ] && echo "mulle-logging.sh must be included before mulle-options.sh" 2>&1 && exit 1
 
 MULLE_OPTIONS_SH="included"
 
@@ -92,21 +95,31 @@ options_setup_trace()
 
 _options_technical_flags_usage()
 {
+   local DELIMITER="${1:- : }"
+   local align=${2:-YES}
+
+   local S
+
+   if [ "${align}" = "YES" ]
+   then
+      S=" "
+   fi
+
    cat <<EOF
-   -n        : dry run
-   -s        : be silent
-   -v        : be verbose
+   -n${S}${S}${S}${DELIMITER}dry run
+   -s${S}${S}${S}${DELIMITER}be silent
+   -v${S}${S}${S}${DELIMITER}be verbose
 EOF
 
    if [ ! -z "${MULLE_TRACE}" ]
    then
       cat <<EOF
-   -ld       : additional debug output
-   -le       : external command execution log output
-   -t        : enable shell trace
-   -tpwd     : emit shortened PWD during trace
-   -vv       : be more verbose
-   -vvv      : be very verbose
+   -ld${S}${S}${DELIMITER}additional debug output
+   -le${S}${S}${DELIMITER}external command execution log output
+   -t${S}${S}${S}${DELIMITER}enable shell trace
+   -tpwd${DELIMITER}emit shortened PWD during trace
+   -vv${S}${S}${DELIMITER}be more verbose
+   -vvv${S}${DELIMITER}be very verbose
 EOF
    fi
 }
@@ -114,7 +127,7 @@ EOF
 
 options_technical_flags_usage()
 {
-   _options_technical_flags_usage | sort
+   _options_technical_flags_usage "$@" | sort
 }
 
 
@@ -135,12 +148,12 @@ options_technical_flags()
 
       -t|--trace)
          MULLE_TRACE="1848"
-         ps4string='${BASH_SOURCE[1]##*/}:${LINENO}'
+         ps4string='${BASH_SOURCE[0]##*/}:${LINENO}'
       ;;
 
       -tfpwd|--trace-full-pwd)
          [ "${MULLE_TRACE}" = "1848" ] || fail "option \"$1\" must be specified after -t"
-         ps4string='${BASH_SOURCE[1]##*/}:${LINENO} \"\w\"'
+         ps4string='${BASH_SOURCE[0]##*/}:${LINENO} \"\w\"'
       ;;
 
       -tp|--trace-profile)
@@ -151,10 +164,10 @@ options_technical_flags()
                internal_fail "UNAME must be set by now"
             ;;
             linux)
-               ps4string='$(date "+%s.%N (${BASH_SOURCE[1]##*/}:${LINENO})")'
+               ps4string='$(date "+%s.%N (${BASH_SOURCE[0]##*/}:${LINENO})")'
             ;;
             *)
-               ps4string='$(date "+%s (${BASH_SOURCE[1]##*/}:${LINENO})")'
+               ps4string='$(date "+%s (${BASH_SOURCE[0]##*/}:${LINENO})")'
             ;;
          esac
       ;;
@@ -166,7 +179,7 @@ options_technical_flags()
 
       -tpwd|--trace-pwd)
          [ "${MULLE_TRACE}" = "1848" ] || fail "option \"$1\" must be specified after -t"
-         ps4string='${BASH_SOURCE[1]##*/}:${LINENO} \".../\W\"'
+         ps4string='${BASH_SOURCE[0]##*/}:${LINENO} \".../\W\"'
       ;;
 
       -tx|--trace-options)
@@ -218,46 +231,11 @@ options_unpostpone_trace()
 }
 
 
-_options_minimal_init()
-{
-   #
-   # leading backslash ? looks like we're getting called from
-   # mingw via a .BAT or so
-   #
-   case "$PATH" in
-      '\\'*)
-         PATH="`tr '\\' '/' <<< "${PATH}"`"
-      ;;
-   esac
-
-
-   MULLE_EXECUTABLE="$1"
-   MULLE_EXECUTABLE_NAME="`basename -- "$1"`"
-
-   MULLE_EXECUTABLE_PATH="$1"
-   case "$MULLE_EXECUTABLE" in
-      /*|~*)
-         MULLE_EXECUTABLE_PATH="$MULLE_EXECUTABLE"
-      ;;
-
-      *)
-         MULLE_EXECUTABLE_PATH="$PWD/$MULLE_EXECUTABLE"
-      ;;
-   esac
-   MULLE_EXECUTABLE_FAIL_PREFIX="${MULLE_EXECUTABLE_NAME}"
-   MULLE_EXECUTABLE_PID="$$"
-   MULLE_EXECUTABLE_ENV_PATH="$PATH"
-   export MULLE_EXECUTABLE_PID
-}
-
-
 #
 # this has very limited use, i only use it in some tests
 #
 _options_mini_main()
 {
-   _options_minimal_init "$0"
-
    while [ $# -ne 0 ]
    do
       if options_technical_flags "$1"

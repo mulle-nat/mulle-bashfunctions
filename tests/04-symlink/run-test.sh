@@ -1,10 +1,5 @@
-#! /bin/sh
+#! /usr/bin/env bash
 
-
-. mulle-logging.sh
-. mulle-functions.sh
-
-set -x
 
 run_test_1()
 {
@@ -41,14 +36,27 @@ run_test_1()
    [ "${result}" = "y" ] || exit 1
 }
 
-MULLE_FLAG_LOG_FLUFF="YES"
-MULLE_FLAG_LOG_VERBOSE="YES"
+main()
+{
+   _options_mini_main "$@"
 
-rm -rf deep 2> /dev/null
+   rm -rf deep 2> /dev/null
 
-run_test_1
+   run_test_1
 
-rm -rf deep 2> /dev/null
+   rm -rf deep 2> /dev/null
 
-echo "test finished" >&2
+   log_info "----- ALL PASSED -----"
+}
 
+
+init()
+{
+   MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${MULLE_BASHFUNCTIONS_LIBEXEC_DIR:-../../src}"
+
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions.sh" || exit 1
+}
+
+
+init "$@"
+main "$@"

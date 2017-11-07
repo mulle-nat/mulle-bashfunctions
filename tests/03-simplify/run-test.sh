@@ -1,10 +1,10 @@
-#! /bin/sh -e
-
-. mulle-functions.sh
+#! /usr/bin/env bash
 
 
 run_test()
 {
+  log_entry "run_test" "$@"
+
   expect="$1"
   shift
 
@@ -18,6 +18,8 @@ run_test()
 
 test_simplified_path()
 {
+  log_entry "test_simplified_path"
+
 #  run_test "" simplified_path ""
 
   run_test "/" simplified_path "/"
@@ -53,12 +55,6 @@ test_simplified_path()
   run_test "."       simplified_path "foo/.."
 }
 
-fail()
-{
-   echo "failed:" "$@" >&2
-   exit 1
-}
-
 
 test2()
 {
@@ -76,6 +72,8 @@ test2()
 
 test_simplified_path2()
 {
+  log_entry "test_simplified_path2"
+
   test2 "."   "."
   test2 "./"  "."
   test2 "/."  "/"
@@ -135,12 +133,24 @@ test_simplified_path2()
 }
 
 
-# set -x
-# test2 "../a/.." ".."
-# exit 1
+main()
+{
+   _options_mini_main "$@"
 
-test_simplified_path
-test_simplified_path2
+  test_simplified_path
+  test_simplified_path2
 
-echo "test finished" >&2
+  log_info "----- ALL PASSED -----"
+}
 
+
+init()
+{
+   MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${MULLE_BASHFUNCTIONS_LIBEXEC_DIR:-../../src}"
+
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions.sh" || exit 1
+}
+
+
+init "$@"
+main "$@"

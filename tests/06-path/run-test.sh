@@ -1,0 +1,85 @@
+#! /usr/bin/env bash
+
+[ "${TRACE}" = "YES" ] && set -x
+
+
+_test_function()
+{
+   local tfunction="$1"; shift
+
+   local path="$1"
+   local expected="$2"
+
+   local absolute
+
+   absolute="`${tfunction} "${path}"`"
+   if [ "${absolute}" != "${expected}" ]
+   then
+      echo "${tfunction} \"${path}\" -> \"${absolute}\". Expected: \"${expected}\""
+   fi
+}
+
+
+_test_absolutepath()
+{
+   _test_function "absolutepath" "$@"
+}
+
+
+test_absolutepath()
+{
+   (
+      cd_physical "${PWD}" &&
+      _test_absolutepath "a" "${PWD}/a" &&
+      _test_absolutepath "/a" "/a" &&
+      _test_absolutepath "~a" "~a" &&
+      _test_absolutepath "~/a" "~/a" &&
+      _test_absolutepath "." "${PWD}/."  &&
+      _test_absolutepath ".." "${PWD}/.." &&
+      _test_absolutepath "./x" "${PWD}/./x" &&
+      _test_absolutepath "../x" "${PWD}/../x"
+   )
+}
+
+_test_simplified_absolutepath()
+{
+   _test_function "simplified_absolutepath" "$@"
+}
+
+
+test_simplified_absolutepath()
+{
+   (
+      cd_physical "${PWD}" &&
+      _test_simplified_absolutepath "a" "${PWD}/a" &&
+      _test_simplified_absolutepath "/a" "/a" &&
+      _test_simplified_absolutepath "~a" "~a" &&
+      _test_simplified_absolutepath "~/a" "~/a" &&
+      _test_simplified_absolutepath "." "${PWD}"  &&
+      _test_simplified_absolutepath ".." "`dirname -- "${PWD}"`" &&
+      _test_simplified_absolutepath "./x" "${PWD}/x" &&
+      _test_simplified_absolutepath "../x" "`dirname -- "${PWD}"`/x"
+   )
+}
+
+
+main()
+{
+   test_absolutepath || exit 1
+   test_simplified_absolutepath || exit 1
+   echo "All tests passed" >&2
+}
+
+
+init()
+{
+   MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${MULLE_BASHFUNCTIONS_LIBEXEC_DIR:-../../src}"
+
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-string.sh" || exit 1
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-path.sh" || exit 1
+}
+
+
+init "$@"
+main "$@"
+

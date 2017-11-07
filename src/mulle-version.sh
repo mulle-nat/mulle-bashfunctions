@@ -29,7 +29,8 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-[ ! -z "${MULLE_VERSION_SH}" ] && echo "double inclusion of mulle-version.sh" >&2 && exit 1
+[ ! -z "${MULLE_VERSION_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = "YES" ] && \
+   echo "double inclusion of mulle-version.sh" >&2
 
 MULLE_VERSION_SH="included"
 

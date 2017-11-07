@@ -2,10 +2,10 @@
 
 
 TEST_DIR="`dirname "$0"`"
-PROJECT_DIR="`( cd "${TEST_DIR}/.." ; pwd -P)`"
+PROJECT_DIR="$( cd "${TEST_DIR}/.." ; pwd -P)"
 
-PATH="${PROJECT_DIR}:$PATH"
-export PATH
+MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${MULLE_BASHFUNCTIONS_LIBEXEC_DIR:-../../src}"
+export MULLE_BASHFUNCTIONS_LIBEXEC_DIR
 
 main()
 {

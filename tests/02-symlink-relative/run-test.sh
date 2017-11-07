@@ -1,6 +1,4 @@
-#! /bin/sh
-
-. mulle-logging.sh
+#! /usr/bin/env bash
 
 
 test_symlink_relpath()
@@ -29,10 +27,10 @@ run_test_0()
    test_symlink_relpath "b" "a"          "../b"
    test_symlink_relpath "b" "b"          "."
 
-   test_symlink_relpath "a/c"   "a"      "c"
-   test_symlink_relpath "a/c"   "b"      "../a/c"
-   test_symlink_relpath "b/c"   "a"      "../b/c"
-   test_symlink_relpath "a/b/c" "c"      "../a/b/c"
+   test_symlink_relpath "a/c"    "a"     "c"
+   test_symlink_relpath "a/c"    "b"     "../a/c"
+   test_symlink_relpath "b/c"    "a"     "../b/c"
+   test_symlink_relpath "a/b/c"  "c"     "../a/b/c"
 }
 
 
@@ -66,8 +64,6 @@ run_test_2()
 
    test_symlink_relpath "${PWD}/z" "z"    "."
 }
-
-
 
 
 run_test_3()
@@ -156,9 +152,9 @@ run_test_7()
    echo "test #7" >&2
    echo "-------------" >&2
 
-   test_symlink_relpath "a/b"      "a/b"          "."
-   test_symlink_relpath "a/b"      "a/./b"        "."
-   test_symlink_relpath "a/b"      "a/../b"       "../a/b"
+   test_symlink_relpath "a/b"       "a/b"         "."
+   test_symlink_relpath "a/b"       "a/./b"       "."
+   test_symlink_relpath "a/b"       "a/../b"      "../a/b"
 
    test_symlink_relpath "a/./b"     "a/b"         "."
    test_symlink_relpath "a/./b"     "a/./b"       "."
@@ -170,27 +166,38 @@ run_test_7()
 }
 
 
-MULLE_FLAG_LOG_FLUFF="YES"
-MULLE_FLAG_LOG_VERBOSE="YES"
-MULLE_TRACE_PATHS_FLIP_X="NO"
+main()
+{
+   _options_mini_main "$@"
 
-rm -rf deep 2> /dev/null
+   rm -rf deep 2> /dev/null
 
-set -e
+   set -e
 
-#_relative_path_between "/Volumes/Source/srcM/mulle-bootstrap/a" "/Volumes/Source/srcM/mulle-bootstrap/src/a"
+   #_relative_path_between "/Volumes/Source/srcM/mulle-bootstrap/a" "/Volumes/Source/srcM/mulle-bootstrap/src/a"
+
+   run_test_0
+   run_test_1
+   run_test_2
+   run_test_3
+   run_test_4
+   run_test_5
+   run_test_6
+   run_test_7
+
+   rm -rf deep 2> /dev/null
+
+   log_info "----- ALL PASSED -----"
+}
 
 
-run_test_0
-run_test_1
-run_test_2
-run_test_3
-run_test_4
-run_test_5
-run_test_6
-run_test_7
+init()
+{
+   MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${MULLE_BASHFUNCTIONS_LIBEXEC_DIR:-../../src}"
 
-rm -rf deep 2> /dev/null
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions.sh" || exit 1
+}
 
-echo "test finished" >&2
 
+init "$@"
+main "$@"

@@ -29,7 +29,8 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-[ ! -z "${MULLE_LOGGING_SH}" ] && echo "double inclusion of mulle-logging.sh" >&2 && exit 1
+[ ! -z "${MULLE_LOGGING_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = "YES" ] && \
+   echo "double inclusion of mulle-logging.sh" >&2
 
 MULLE_LOGGING_SH="included"
 
@@ -203,7 +204,8 @@ _bail()
 #         kill -INT $$  # actually useful
 #      fi
 #   fi
-   sleep 1
+# case "${UNM"
+#   sleep 1
    exit 1
 }
 
@@ -258,6 +260,12 @@ logging_trap_remove()
 
 logging_initialize()
 {
+   MULLE_EXECUTABLE="$0"
+   MULLE_EXECUTABLE_NAME="`basename -- "${MULLE_EXECUTABLE}"`"
+   MULLE_EXECUTABLE_PWD="${PWD}"
+   MULLE_EXECUTABLE_FAIL_PREFIX="${MULLE_EXECUTABLE_NAME}"
+   MULLE_EXECUTABLE_PID="$$"
+
    DEFAULT_IFS="${IFS}" # as early as possible
 
    #
@@ -313,7 +321,7 @@ logging_initialize()
 
       exedir="`dirname "${BASH_SOURCE}"`"
       exedirpath="$( cd "${exedir}" ; pwd -P )" || fail "failed to get pwd"
-      echo "${MULLE_EXECUTABLE} libexec: ${exedirpath}" >&2
+      echo "${MULLE_EXECUTABLE_NAME} libexec: ${exedirpath}" >&2
    fi
 }
 

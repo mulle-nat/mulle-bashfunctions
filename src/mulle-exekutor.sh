@@ -29,7 +29,11 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-[ ! -z "${MULLE_EXEKUTOR_SH}" ] && echo "double inclusion of exekutor" >&2 && exit 1
+[ ! -z "${MULLE_EXEKUTOR_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = "YES" ] && \
+   echo "double inclusion of mulle-exekutor.sh" >&2
+
+[ -z "${MULLE_LOGGING_SH}" ] && \
+   echo "mulle-logging.sh must be included before mulle-executor.sh" 2>&1 && exit 1
 
 MULLE_EXEKUTOR_SH="included"
 

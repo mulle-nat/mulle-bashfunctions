@@ -2,9 +2,10 @@ SCRIPTS=install.sh \
 	src/mulle-array.sh \
 	src/mulle-bashfunctions.sh \
 	src/mulle-options.sh \
-	src/mulle-functions.sh \
+	src/mulle-file.sh \
 	src/mulle-exekutor.sh \
 	src/mulle-logging.sh \
+	src/mulle-path.sh \
 	src/mulle-snip.sh \
 	src/mulle-string.sh \
 
