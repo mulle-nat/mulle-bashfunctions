@@ -155,12 +155,14 @@ main()
    local bin
    local libexec
 
-   if [ -x mulle-bashfunctions-env ]
+   cd "`dirname -- "$0"`"
+
+   if [ ! -x mulle-bashfunctions-env ]
    then
-      chmod 755 mulle-bashfunctions-env
+      chmod 755 ./mulle-bashfunctions-env
    fi
 
-   PROJECT_VERSION="`mulle-bashfunctions-env version`"
+   PROJECT_VERSION="`./mulle-bashfunctions-env version`"
    [ -z "${PROJECT_VERSION}" ] && echo "tragisches versagen" >&2 && exit 1 
 
    bin="${prefix}/bin"
