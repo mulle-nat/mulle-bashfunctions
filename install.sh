@@ -161,6 +161,7 @@ main()
    fi
 
    PROJECT_VERSION="`mulle-bashfunctions-env version`"
+   [ -z "${PROJECT_VERSION}" ] && echo "tragisches versagen" >&2 && exit 1 
 
    bin="${prefix}/bin"
    libexec="${prefix}/libexec/mulle-bashfunctions/${PROJECT_VERSION}"
