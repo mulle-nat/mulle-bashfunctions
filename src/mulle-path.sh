@@ -71,12 +71,25 @@ path_depth()
 #
 # cuts off last extension only
 #
-extension_less_basename()
+extensionless_basename()
 {
    local  filename
 
    filename="`basename -- "$1"`"
    echo "${filename%.*}"
+}
+
+
+path_extension()
+{
+  local filename="$1"
+
+  filename="`basename -- "$1"`"
+  case "${filename}" in
+    *.*)
+      echo "${filename##*.}"
+    ;;
+  esac
 }
 
 

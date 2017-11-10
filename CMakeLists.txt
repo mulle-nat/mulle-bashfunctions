@@ -28,7 +28,6 @@ src/mulle-file.sh
 src/mulle-logging.sh
 src/mulle-options.sh
 src/mulle-path.sh
-src/mulle-snip.sh
 src/mulle-string.sh
 )
 

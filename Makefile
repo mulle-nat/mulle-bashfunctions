@@ -6,8 +6,7 @@ SCRIPTS=install.sh \
 	src/mulle-exekutor.sh \
 	src/mulle-logging.sh \
 	src/mulle-path.sh \
-	src/mulle-snip.sh \
-	src/mulle-string.sh \
+	src/mulle-string.sh
 
 
 CHECKSTAMPS=$(SCRIPTS:.sh=.chk)
@@ -37,4 +36,4 @@ shellcheck_check:
 	which shellcheck || brew install shellcheck
 
 jq_check:
-	which shellcheck || brew install shellcheck
+	which jq || brew install jq

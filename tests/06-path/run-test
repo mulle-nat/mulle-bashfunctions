@@ -15,7 +15,8 @@ _test_function()
    absolute="`${tfunction} "${path}"`"
    if [ "${absolute}" != "${expected}" ]
    then
-      echo "${tfunction} \"${path}\" -> \"${absolute}\". Expected: \"${expected}\""
+      echo "${tfunction} \"${path}\" -> \"${absolute}\". Expected: \"${expected}\"" >&2
+      exit 1
    fi
 }
 

@@ -47,7 +47,7 @@ concat()
    then
       echo "${2}"
    else
-      if [ -z "${2}" -o "${2}" = "${separator}" ]
+      if [ -z "${2}" ]
       then
          echo "${1}"
       else
@@ -56,33 +56,150 @@ concat()
    fi
 }
 
+
+_string_remove_leading_separators()
+{
+   local escaped="$1"
+
+   sed "s/^${escaped}\(.*\)$/\1/g"
+}
+
+
+
+_string_remove_trailing_separators()
+{
+   local escaped="$1"
+
+   sed -e "s/^\(.*\)${escaped}$/\1/g"
+}
+
+
+
+_string_remove_duplicate_separators()
+{
+   local escaped="$1"
+
+   local previous
+   local next
+
+   next="`cat`"
+
+   while [ ! -z "${next}" ]
+   do
+      previous="${next}"
+      next="$(sed -e "s/${escaped}${escaped}/${escaped}/g" <<< "${previous}")"
+
+      if [ "${next}" = "${previous}" ]
+      then
+         break
+      fi
+   done
+
+   if [ ! -z "${next}" ]
+   then
+      echo "${next}"
+   fi
+}
+
+
+_string_remove_only_separators()
+{
+   local escaped="$1"
+
+   sed -e "/^${escaped}*$/d"
+}
+
+
+_string_remove_ugly_separators()
+{
+   local escaped="$1"
+
+   # remove leading
+   # remove doubles
+   # remove duplicates
+   # remove lonelys
+
+   _string_remove_leading_separators "${escaped}"   | \
+   _string_remove_trailing_separators "${escaped}"  | \
+   _string_remove_duplicate_separators "${escaped}" | \
+   _string_remove_only_separators "${escaped}"
+}
+
+
+string_remove_leading_separators()
+{
+   local separator="${1:- }"
+
+   _string_remove_leading_separators "$(escaped_sed_pattern "${separator}")"
+}
+
+
+string_remove_trailing_separators()
+{
+   local separator="${1:- }"
+
+   _string_remove_trailing_separators "$(escaped_sed_pattern "${separator}")"
+}
+
+
+string_remove_only_separators()
+{
+   local separator="${1:- }"
+
+   _string_remove_only_separators "$(escaped_sed_pattern "${separator}")"
+}
+
+
+string_remove_duplicate_separators()
+{
+   local separator="${1:- }"
+
+   _string_remove_duplicate_separators "$(escaped_sed_pattern "${separator}")"
+}
+
+
+string_remove_ugly_separators()
+{
+   local separator="${1:- }"
+
+   _string_remove_ugly_separators "$(escaped_sed_pattern "${separator}")"
+}
+
+
 #
 # this is "cross-platform" because the paths on MINGW are converted to
 # '/' already
 #
+
+# use for PATHs
 colon_concat()
 {
-   concat "$1" "$2" ":"
+   concat "$1" "$2" ":" | string_remove_ugly_separators ':'
 }
 
+# use for lists w/o empty elements
 comma_concat()
 {
-   concat "$1" "$2" ","
+   concat "$1" "$2" "," | string_remove_ugly_separators ","
 }
 
+# use for CSV
 semicolon_concat()
 {
-   concat "$1" "$2" ";"
+   concat "$1" "$2" ";" | string_remove_trailing_separators ";"
 }
 
+# use for filepaths
 slash_concat()
 {
-   concat "$1" "$2" "/"
+   concat "$1" "$2" "/" | string_remove_duplicate_separators "/"
 }
 
+# use for building sentences, where space is a separator and
+# not indenting or styling
 space_concat()
 {
-   concat "$1" "$2" " "
+   concat_no_double_separator "$1" "$2" | string_remove_ugly_separators
 }
 
 

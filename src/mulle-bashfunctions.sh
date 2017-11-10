@@ -66,8 +66,6 @@ then
          . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-path.sh"      || return 1
       # shellcheck source=mulle-file.sh
          . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-file.sh"      || return 1
-      # shellcheck source=mulle-snip.sh
-         . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-snip.sh"      || return 1
    }
 
    __bashfunctions_loader "$@" || exit 1

@@ -1,0 +1,247 @@
+#! /usr/bin/env bash
+
+[ "${TRACE}" = "YES" ] && set -x
+
+
+stacktrace()
+{
+   local i=1
+   local line
+
+   while line="`caller $i`"
+   do
+      printf "${C_CYAN}%b${C_RESET}\n" "$i: #${line}"
+      ((i++))
+   done
+}
+
+
+expect_output()
+{
+   local output="$1"
+   local expected="$2"
+
+   if [ "${output}" != "${expected}" ]
+   then
+      echo "Got \"${output}\". Expected: \"${expected}\"" >&2
+      stacktrace >&2
+      exit 1
+   fi
+}
+
+
+fail()
+{
+   echo "Unexpected failure" >&2
+   stacktrace >&2
+   exit 1
+}
+
+
+test_concat()
+{
+   local output
+
+# EMPTY STRING
+   output="`concat "" "" ','`"
+   expect_output "${output}" ""
+
+   output="`concat "," "" ','`"
+   expect_output "${output}" ","
+
+# ,
+   output="`concat "" "," ','`"
+   expect_output "${output}" ","
+
+   output="`concat "," "," ','`"
+   expect_output "${output}" ",,,"
+
+# ,, not expected to work
+   output="`concat "" ",," ','`"
+   expect_output "${output}" ",,"
+
+   output="`concat ",," ",," ','`"
+   expect_output "${output}" ",,,,,"
+
+# a
+   output="`concat "a" "" ','`"
+   expect_output "${output}" "a"
+
+   output="`concat "" "a" ','`"
+   expect_output "${output}" "a"
+
+# a,
+   output="`concat "a," "" ','`"
+   expect_output "${output}" "a,"
+
+   output="`concat "" "a," ','`"
+   expect_output "${output}" "a,"
+
+# ,a
+   output="`concat ",a" "" ','`"
+   expect_output "${output}" ",a"
+
+   output="`concat "" ",a" ','`"
+   expect_output "${output}" ",a"
+
+# ,a,
+   output="`concat ",a," "" ','`"
+   expect_output "${output}" ",a,"
+
+   output="`concat "" ",a," ','`"
+   expect_output "${output}" ",a,"
+
+
+# a b
+   output="`concat "a" "b" ','`"
+   expect_output "${output}" "a,b"
+
+# a b,
+   output="`concat "a" "b," ','`"
+   expect_output "${output}" "a,b,"
+
+# a ,b
+   output="`concat "a" ",b" ','`"
+   expect_output "${output}" "a,,b"
+
+# a ,b,
+   output="`concat "a," ",b," ','`"
+   expect_output "${output}" "a,,,b,"
+
+
+# ,a b
+   output="`concat ",a" "b" ','`"
+   expect_output "${output}" ",a,b"
+
+# ,a b,
+   output="`concat ",a" "b," ','`"
+   expect_output "${output}" ",a,b,"
+
+# ,a ,b
+   output="`concat ",a" ",b" ','`"
+   expect_output "${output}" ",a,,b"
+
+# ,a ,b,
+   output="`concat ",a," ",b," ','`"
+   expect_output "${output}" ",a,,,b,"
+
+
+# a, b
+   output="`concat "a," "b" ','`"
+   expect_output "${output}" "a,,b"
+
+# a, b,
+   output="`concat "a," "b," ','`"
+   expect_output "${output}" "a,,b,"
+
+# a, ,b
+   output="`concat "a," ",b" ','`"
+   expect_output "${output}" "a,,,b"
+
+# a, ,b,
+   output="`concat "a," ",b," ','`"
+   expect_output "${output}" "a,,,b,"
+
+
+# ,a, b
+   output="`concat ",a," "b" ','`"
+   expect_output "${output}" ",a,,b"
+
+# ,a, b,
+   output="`concat ",a," "b," ','`"
+   expect_output "${output}" ",a,,b,"
+
+# ,a, ,b
+   output="`concat ",a," ",b" ','`"
+   expect_output "${output}" ",a,,,b"
+
+# ,a, ,b,
+   output="`concat ",a," ",b," ','`"
+   expect_output "${output}" ",a,,,b,"
+}
+
+
+test_comma_concat()
+{
+   local output
+
+# EMPTY STRING
+   output="`comma_concat "" ""`"
+   expect_output "${output}" ""
+
+   output="`comma_concat "," ""`"
+   expect_output "${output}" ""
+
+# ,
+   output="`comma_concat "" ","`"
+   expect_output "${output}" ""
+
+   output="`comma_concat "," ","`"
+   expect_output "${output}" ""
+
+# ,,
+   output="`comma_concat "" ",,"`"
+   expect_output "${output}" ""
+
+   output="`comma_concat ",," ",,"`"
+   expect_output "${output}" ""
+
+# a
+   output="`comma_concat "a" ""`"
+   expect_output "${output}" "a"
+
+   output="`comma_concat "" "a"`"
+   expect_output "${output}" "a"
+
+# a,
+   output="`comma_concat "a," ""`"
+   expect_output "${output}" "a"
+
+   output="`comma_concat "" "a,"`"
+   expect_output "${output}" "a"
+
+# ,a
+   output="`comma_concat ",a" ""`"
+   expect_output "${output}" "a"
+
+   output="`comma_concat "" ",a"`"
+   expect_output "${output}" "a"
+
+# ,a,
+   output="`comma_concat ",a," ""`"
+   expect_output "${output}" "a"
+
+   output="`comma_concat "" ",a,"`"
+   expect_output "${output}" "a"
+
+
+# a b
+   output="`comma_concat "a" "b"`"
+   expect_output "${output}" "a,b"
+
+# ,a, ,b,
+   output="`comma_concat ",a," ",b,"`"
+   expect_output "${output}" "a,b"
+}
+
+
+main()
+{
+   test_concat
+   test_comma_concat
+
+   echo "All tests passed" >&2
+}
+
+
+init()
+{
+   MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${MULLE_BASHFUNCTIONS_LIBEXEC_DIR:-../../src}"
+
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-string.sh" || exit 1
+}
+
+
+init "$@"
+main "$@"
+

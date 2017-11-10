@@ -80,7 +80,7 @@ log_info()
 
 log_verbose()
 {
-   if [ "${MULLE_FLAG_LOG_VERBOSE}" = "YES"  ]
+   if [ "${MULLE_FLAG_LOG_VERBOSE}" = "YES" ]
    then
       log_printf "${C_VERBOSE}%b${C_RESET}\n" "$*"
    fi
@@ -89,7 +89,7 @@ log_verbose()
 
 log_fluff()
 {
-   if [ "${MULLE_FLAG_LOG_FLUFF}" = "YES"  ]
+   if [ "${MULLE_FLAG_LOG_FLUFF}" = "YES" ]
    then
       log_printf "${C_FLUFF}%b${C_RESET}\n" "$*"
    fi
@@ -99,7 +99,7 @@ log_fluff()
 # setting is like fluff but different color scheme
 log_setting()
 {
-   if [ "${MULLE_FLAG_LOG_FLUFF}" = "YES"  ]
+   if [ "${MULLE_FLAG_LOG_FLUFF}" = "YES" ]
    then
       log_printf "${C_SETTING}%b${C_RESET}\n" "$*"
    fi
@@ -109,7 +109,7 @@ log_setting()
 # for debugging, not for user. same as fluff
 log_debug()
 {
-   if [ "${MULLE_FLAG_LOG_DEBUG}" = "YES"  ]
+   if [ "${MULLE_FLAG_LOG_DEBUG}" = "YES" ]
    then
       case "${UNAME}" in
          linux)
@@ -181,6 +181,13 @@ stacktrace()
 {
    local i=1
    local line
+
+   # don't stack trace when tracing
+   case "$-" in
+      *x*)
+         return
+      ;;
+   esac
 
    while line="`caller $i`"
    do
