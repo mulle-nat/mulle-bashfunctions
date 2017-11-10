@@ -5,3 +5,5 @@ dist: trusty
 script:
   - ./install.sh /tmp
   - cd tests && ./run-test
+  - /tmp/bin/mulle-bashfunctions-env version
+  - /tmp/bin/mulle-bashfunctions-env library-path
