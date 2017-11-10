@@ -2,8 +2,6 @@
 #
 # (c) 2015, coded by Nat!, Mulle KybernetiK
 #
-PROJECT_VERSION="1.0.0"
-
 if [ "${MULLE_NO_COLOR}" != "YES" ]
 then
    # Escape sequence and resets
@@ -156,6 +154,13 @@ main()
 
    local bin
    local libexec
+
+   if [ -x mulle-bashfunctions-env ]
+   then
+      chmod 755 mulle-bashfunctions-env
+   fi
+
+   PROJECT_VERSION="`mulle-bashfunctions-env version`"
 
    bin="${prefix}/bin"
    libexec="${prefix}/libexec/mulle-bashfunctions/${PROJECT_VERSION}"
