@@ -117,6 +117,17 @@ eval_exekutor()
 }
 
 
+_eval_exekutor()
+{
+   exekutor_trace "$@"
+
+   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" != "YES" ]
+   then
+      eval "$@"
+   fi
+}
+
+
 redirect_exekutor()
 {
    local output="$1"; shift

@@ -322,6 +322,13 @@ cd_physical()
    cd "`pwd -P`" # resolve symlinks and go there (changes PWD)
 }
 
+
+physicalpath()
+{
+  ( cd "$1" && pwd -P ) 2>/dev/null
+}
+
+
 is_absolutepath()
 {
    case "${1}" in

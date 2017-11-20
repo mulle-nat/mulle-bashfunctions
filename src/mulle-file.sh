@@ -207,6 +207,9 @@ remove_file_if_present()
 }
 
 
+#
+# mktemp is really slow sometimes, so we use uuidgen
+#
 _make_tmp()
 {
    local name="${1:-mulle_tmp}"
@@ -214,11 +217,11 @@ _make_tmp()
 
    case "${UNAME}" in
       darwin|freebsd)
-         exekutor mktemp ${type} "/tmp/${name}.XXXXXX"
+         exekutor mktemp ${type} "/tmp/${name}.`uuidgen`"
       ;;
 
       *)
-         exekutor mktemp ${type} -t "${name}.XXXXXX"
+         exekutor mktemp ${type} -t "${name}.`uuidgen`"
       ;;
    esac
 }

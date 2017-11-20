@@ -336,6 +336,11 @@ unescape_linefeeds()
 }
 
 
+escaped_grep_pattern()
+{
+   sed -e 's/[]\/$*.^|[]/\\&/g' <<< "${1}"
+}
+
 escaped_sed_pattern()
 {
    sed -e 's/[]\/$*.^|[]/\\&/g' <<< "${1}"

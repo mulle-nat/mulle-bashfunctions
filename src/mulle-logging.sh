@@ -267,6 +267,11 @@ logging_trap_remove()
 
 logging_initialize()
 {
+   if [ ! -z "${MULLE_EXECUTABLE}" ]
+   then
+      return
+   fi
+
    MULLE_EXECUTABLE="$0"
    MULLE_EXECUTABLE_NAME="`basename -- "${MULLE_EXECUTABLE}"`"
    MULLE_EXECUTABLE_PWD="${PWD}"

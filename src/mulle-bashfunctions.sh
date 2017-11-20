@@ -50,22 +50,46 @@ then
 
       [ -z "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}" ] && echo "MULLE_BASHFUNCTIONS_LIBEXEC_DIR not set" && exit 1
 
+      if [ -z "${MULLE_LOGGING_SH}" ]
+      then
       # shellcheck source=mulle-logging.sh
          . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-logging.sh"   || return 1
+      fi
+      if [ -z "${MULLE_EXEKUTOR_SH}" ]
+      then
       # shellcheck source=mulle-exekutor.sh
          . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-exekutor.sh"  || return 1
+      fi
+      if [ -z "${MULLE_ARRAY_SH}" ]
+      then
       # shellcheck source=mulle-array.sh
          . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-array.sh"     || return 1
+      fi
+      if [ -z "${MULLE_STRING_SH}" ]
+      then
       # shellcheck source=mulle-string.sh
-         . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-string.sh"   || return 1
+         . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-string.sh"    || return 1
+      fi
+      if [ -z "${MULLE_VERSION_SH}" ]
+      then
       # shellcheck source=mulle-version.sh
          . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-version.sh"   || return 1
+      fi
+      if [ -z "${MULLE_OPTIONS_SH}" ]
+      then
       # shellcheck source=mulle-options.sh
          . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-options.sh"   || return 1
+      fi
+      if [ -z "${MULLE_PATH_SH}" ]
+      then
       # shellcheck source=mulle-path.sh
          . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-path.sh"      || return 1
+      fi
+      if [ -z "${MULLE_FILE_SH}" ]
+      then
       # shellcheck source=mulle-file.sh
          . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-file.sh"      || return 1
+      fi
    }
 
    __bashfunctions_loader "$@" || exit 1
