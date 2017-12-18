@@ -45,7 +45,6 @@ MULLE_OPTIONS_SH="included"
 #
 options_dump_env()
 {
-   log_trace "FULL trace started"
    log_trace "ARGS:${C_TRACE2} ${MULLE_ARGUMENTS}"
    log_trace "PWD :${C_TRACE2} `pwd -P 2> /dev/null`"
    log_trace "ENV :${C_TRACE2} `env | sort`"
@@ -71,7 +70,6 @@ options_setup_trace()
          MULLE_FLAG_LOG_EXEKUTOR="YES"
          MULLE_FLAG_LOG_FLUFF="YES"
          MULLE_FLAG_LOG_VERBOSE="YES"
-         options_dump_env
       ;;
 
       1848)
@@ -80,7 +78,6 @@ options_setup_trace()
          MULLE_FLAG_LOG_VERBOSE="YES"
          MULLE_FLAG_VERBOSE_BUILD="YES"
 
-         options_dump_env
 
          if [ "${MULLE_TRACE_POSTPONE}" != "YES" ]
          then
@@ -90,6 +87,11 @@ options_setup_trace()
          fi
       ;;
    esac
+
+   if [ "${MULLE_FLAG_LOG_ENVIRONMENT}" = YES ]
+   then
+      options_dump_env
+   fi
 }
 
 
@@ -131,6 +133,29 @@ options_technical_flags_usage()
 }
 
 
+before_trace_fail()
+{
+   [ "${MULLE_TRACE}" = "1848" ] || \
+      fail "option \"$1\" must be specified after -t"
+}
+
+
+after_trace_warning()
+{
+   [ "${MULLE_TRACE}" = "1848" ] && \
+      log_warning "${MULLE_EXECUTABLE_FAIL_PREFIX}: $1 after -t \
+   invalidates -t"
+}
+
+
+#
+# local MULLE_FLAG_EXEKUTOR_DRY_RUN
+# local MULLE_FLAG_LOG_DEBUG
+# local MULLE_FLAG_LOG_EXEKUTOR
+# local MULLE_FLAG_LOG_TERSE
+# local MULLE_FLAG_LOG_ENVIRONMENT
+# local MULLE_TRACE
+#
 options_technical_flags()
 {
    case "$1" in
@@ -142,7 +167,11 @@ options_technical_flags()
          MULLE_FLAG_LOG_DEBUG="YES"
       ;;
 
-      -le|--log-execution)
+      -le|--log-environment)
+         MULLE_FLAG_LOG_ENVIRONMENT="YES"
+      ;;
+
+      -lx|--log-exekutor|--log-execution)
          MULLE_FLAG_LOG_EXEKUTOR="YES"
       ;;
 
@@ -152,12 +181,12 @@ options_technical_flags()
       ;;
 
       -tfpwd|--trace-full-pwd)
-         [ "${MULLE_TRACE}" = "1848" ] || fail "option \"$1\" must be specified after -t"
+         before_trace_fail "$1"
          ps4string='${BASH_SOURCE[0]##*/}:${LINENO} \"\w\"'
       ;;
 
       -tp|--trace-profile)
-         [ "${MULLE_TRACE}" = "1848" ] || fail "option \"$1\" must be specified after -t"
+         before_trace_fail "$1"
 
          case "${UNAME}" in
             "")
@@ -173,12 +202,12 @@ options_technical_flags()
       ;;
 
       -tpo|--trace-postpone)
-         [ "${MULLE_TRACE}" = "1848" ] || fail "option \"$1\" must be specified after -t"
+         before_trace_fail "$1"
          MULLE_TRACE_POSTPONE="YES"
       ;;
 
       -tpwd|--trace-pwd)
-         [ "${MULLE_TRACE}" = "1848" ] || fail "option \"$1\" must be specified after -t"
+         before_trace_fail "$1"
          ps4string='${BASH_SOURCE[0]##*/}:${LINENO} \".../\W\"'
       ;;
 
@@ -187,19 +216,19 @@ options_technical_flags()
       ;;
 
       -v|--verbose)
-        [ "${MULLE_TRACE}" = "1848" ] && log_warning "${MULLE_EXECUTABLE_FAIL_PREFIX}: -v after -t invalidates -t"
+         after_trace_warning "$1"
 
          MULLE_TRACE="VERBOSE"
       ;;
 
       -vv|--very-verbose)
-        [ "${MULLE_TRACE}" = "1848" ] && log_warning "${MULLE_EXECUTABLE_FAIL_PREFIX}: -vv after -t invalidates -t"
+         after_trace_warning "$1"
 
          MULLE_TRACE="FLUFF"
       ;;
 
       -vvv|--very-very-verbose)
-        [ "${MULLE_TRACE}" = "1848" ] && log_warning "${MULLE_EXECUTABLE_FAIL_PREFIX}: -vvv after -t invalidates -t"
+         after_trace_warning "$1"
 
          MULLE_TRACE="TRACE"
       ;;
@@ -213,6 +242,18 @@ options_technical_flags()
          return 1
       ;;
    esac
+
+   #
+   # collect technical options so interested parties can forward them to
+   # other mulle tools. In tools they are called flags, and this will be
+   # renamed to eventually.
+   #
+   if [ -z "${MULLE_TECHNICAL_FLAGS}" ]
+   then
+      MULLE_TECHNICAL_FLAGS="$1"
+   else
+      MULLE_TECHNICAL_FLAGS="${MULLE_TECHNICAL_FLAGS} $1"
+   fi
 
    return 0
 }

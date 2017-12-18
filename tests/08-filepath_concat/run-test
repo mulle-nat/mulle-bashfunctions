@@ -1,0 +1,203 @@
+#! /usr/bin/env bash
+
+[ "${TRACE}" = "YES" ] && set -x
+
+
+stacktrace()
+{
+   local i=1
+   local line
+
+   while line="`caller $i`"
+   do
+      printf "${C_CYAN}%b${C_RESET}\n" "$i: #${line}"
+      ((i++))
+   done
+}
+
+
+expect_output()
+{
+   local output="$1"
+   local expected="$2"
+
+   if [ "${output}" != "${expected}" ]
+   then
+      echo "Got \"${output}\". Expected: \"${expected}\"" >&2
+      stacktrace >&2
+      exit 1
+   fi
+}
+
+
+fail()
+{
+   echo "Unexpected failure" >&2
+   stacktrace >&2
+   exit 1
+}
+
+
+test_filepath_concat()
+{
+   local output
+
+# EMPTY STRING
+   output="`filepath_concat "" "" `"
+   expect_output "${output}" ""
+
+   output="`filepath_concat "/" "" `"
+   expect_output "${output}" "/"
+
+# /
+   output="`filepath_concat "" "/" `"
+   expect_output "${output}" "/"
+
+   output="`filepath_concat "/" "/" `"
+   expect_output "${output}" "/"
+
+# // not expected to work
+   output="`filepath_concat "" "//" `"
+   expect_output "${output}" "/"
+
+   output="`filepath_concat "//" "//" `"
+   expect_output "${output}" "/"
+
+# a
+   output="`filepath_concat "a" "" `"
+   expect_output "${output}" "a"
+
+   output="`filepath_concat "" "a" `"
+   expect_output "${output}" "a"
+
+# a/
+   output="`filepath_concat "a/" "" `"
+   expect_output "${output}" "a"
+
+   output="`filepath_concat "" "a/" `"
+   expect_output "${output}" "a"
+
+# /a
+   output="`filepath_concat "/a" "" `"
+   expect_output "${output}" "/a"
+
+   output="`filepath_concat "" "/a" `"
+   expect_output "${output}" "/a"
+
+# /a/
+   output="`filepath_concat "/a/" "" `"
+   expect_output "${output}" "/a"
+
+   output="`filepath_concat "" "/a/" `"
+   expect_output "${output}" "/a"
+
+# //a
+   output="`filepath_concat "//a" "" `"
+   expect_output "${output}" "/a"
+
+   output="`filepath_concat "" "//a" `"
+   expect_output "${output}" "/a"
+
+
+# a//
+   output="`filepath_concat "a//" "" `"
+   expect_output "${output}" "a"
+
+   output="`filepath_concat "" "a//" `"
+   expect_output "${output}" "a"
+
+# a//b
+   output="`filepath_concat "a//b" "" `"
+   expect_output "${output}" "a/b"
+
+   output="`filepath_concat "" "a//b" `"
+   expect_output "${output}" "a/b"
+
+# a b
+   output="`filepath_concat "a" "b" `"
+   expect_output "${output}" "a/b"
+
+# a b/
+   output="`filepath_concat "a" "b/" `"
+   expect_output "${output}" "a/b"
+
+# a /b
+   output="`filepath_concat "a" "/b" `"
+   expect_output "${output}" "a/b"
+
+# a /b/
+   output="`filepath_concat "a/" "/b/" `"
+   expect_output "${output}" "a/b"
+
+
+# /a b
+   output="`filepath_concat "/a" "b" `"
+   expect_output "${output}" "/a/b"
+
+# /a b/
+   output="`filepath_concat "/a" "b/" `"
+   expect_output "${output}" "/a/b"
+
+# /a /b
+   output="`filepath_concat "/a" "/b" `"
+   expect_output "${output}" "/a/b"
+
+# /a /b/
+   output="`filepath_concat "/a/" "/b/" `"
+   expect_output "${output}" "/a/b"
+
+
+# a/ b
+   output="`filepath_concat "a/" "b" `"
+   expect_output "${output}" "a/b"
+
+# a/ b/
+   output="`filepath_concat "a/" "b/" `"
+   expect_output "${output}" "a/b"
+
+# a/ /b
+   output="`filepath_concat "a/" "/b" `"
+   expect_output "${output}" "a/b"
+
+# a/ /b/
+   output="`filepath_concat "a/" "/b/" `"
+   expect_output "${output}" "a/b"
+
+
+# /a/ b
+   output="`filepath_concat "/a/" "b" `"
+   expect_output "${output}" "/a/b"
+
+# /a/ b/
+   output="`filepath_concat "/a/" "b/" `"
+   expect_output "${output}" "/a/b"
+
+# /a/ /b
+   output="`filepath_concat "/a/" "/b" `"
+   expect_output "${output}" "/a/b"
+
+# /a/ /b/
+   output="`filepath_concat "/a/" "/b/" `"
+   expect_output "${output}" "/a/b"
+}
+
+
+main()
+{
+   test_filepath_concat
+
+   echo "All tests passed" >&2
+}
+
+
+init()
+{
+   MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${MULLE_BASHFUNCTIONS_LIBEXEC_DIR:-../../src}"
+
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-string.sh" || exit 1
+}
+
+
+init "$@"
+main "$@"
+

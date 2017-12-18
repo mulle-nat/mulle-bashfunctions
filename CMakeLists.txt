@@ -5,7 +5,7 @@ project( mulle-bashfunctions C)
 
 
 
-execute_process( COMMAND ./mulle-bashfunctions-env
+execute_process( COMMAND ./mulle-bashfunctions-env version
                  WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
                  OUTPUT_VARIABLE MULLE_BASHFUNCTIONS_VERSION
                  OUTPUT_STRIP_TRAILING_WHITESPACE)

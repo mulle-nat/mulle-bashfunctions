@@ -31,7 +31,7 @@
 #
 [ "${TRACE}" = "YES" ] && set -x
 
-MULLE_BASHFUNCTIONS_VERSION="1.1.0"
+MULLE_BASHFUNCTIONS_VERSION="1.2.0"
 
 
 usage()
@@ -113,6 +113,10 @@ get_libexec_path()
 
    case "$libexecpath" in
       /*|~*)
+      ;;
+
+      .)
+         libexecpath="$PWD"
       ;;
 
       *)

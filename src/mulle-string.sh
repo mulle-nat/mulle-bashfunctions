@@ -246,32 +246,65 @@ ${line}"
 #
 # makes somewhat prettier filenames, removing superflous "."
 # and trailing '/'
+# DO NOT USE ON URLs
 #
+filepath_cleaned()
+{
+   local filename="$1"
+
+   # remove excess //, also inside components
+   case "${filename}" in
+      *"//"*)
+         filename="`sed 's|//|/|g' <<< "${filename}"`"
+      ;;
+   esac
+
+   # remove trailing /
+   case "${filename}" in
+      *"/")
+         filename="`sed 's|\(.\)/$|\1|g' <<< "${filename}"`"
+      ;;
+   esac
+
+   echo "${filename}"
+}
+
+
 filepath_concat()
 {
    local i
    local s
    local sep
+   local fallback
 
+   fallback=
    for i in "$@"
    do
       sep="/"
+
+      i="`filepath_cleaned "${i}" `"
+
       case "$i" in
-         ""|"."|"./")
-           continue
+         "")
+            continue
          ;;
 
-         "/.")
-           sep=""
-           i=""
+         "."|"./")
+            if [ -z "${fallback}" ]
+            then
+               fallback="."
+            fi
+            continue
          ;;
+      esac
 
-         "/*")
-            sep=""
-         ;;
-
-         "*/")
-            i="`sed 's|/$||/g' <<< "$i"`"
+      case "$i" in
+         "/"|"/.")
+            if [ -z "${fallback}" ]
+            then
+               fallback="/"
+            fi
+            continue
          ;;
       esac
 
@@ -279,11 +312,24 @@ filepath_concat()
       then
          s="$i"
       else
-         s="${s}/${i}"
+         case "${i}" in
+            /*)
+               s="${s}${i}"
+            ;;
+
+            *)
+               s="${s}/${i}"
+            ;;
+         esac
       fi
    done
 
-   echo "${s}"
+   if [ ! -z "${s}" ]
+   then
+      echo "${s}"
+   else
+      echo "${fallback}"
+   fi
 }
 
 # ####################################################################
@@ -353,11 +399,54 @@ escaped_spaces()
 }
 
 # ####################################################################
+#                          Prefix / Suffix
+# ####################################################################
+#
+string_has_prefix()
+{
+  local string="$1"
+  local prefix="$2"
+
+  prefix="`escaped_grep_pattern "${prefix}"`"
+  egrep -s -q "^${prefix}" <<< "${string}"
+}
+
+
+string_remove_prefix()
+{
+  local string="$1"
+  local prefix="$2"
+
+  prefix="`escaped_sed_pattern "${prefix}"`"
+  sed -e "s/^${prefix}//" <<< "${string}"
+}
+
+
+string_has_suffix()
+{
+  local string="$1"
+  local suffix="$2"
+
+  suffix="`escaped_grep_pattern "${suffix}"`"
+  egrep -s -q "${suffix}\$" <<< "${string}"
+}
+
+
+string_remove_suffix()
+{
+  local string="$1"
+  local suffix="$2"
+
+  suffix="`escaped_sed_pattern "${suffix}"`"
+  sed -e -"s/${suffix}\$//" <<< "${string}"
+}
+
+# ####################################################################
 #                            Expansion
 # ####################################################################
 #
 #
-# expands ${LOGNAME} and ${LOGNAME:-foo}
+# expands ${LOGNAME} and ${LOGNAME:-foo} but does not use eval
 #
 expand_environment_variables()
 {

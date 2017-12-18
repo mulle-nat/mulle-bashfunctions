@@ -109,23 +109,30 @@ log_setting()
 # for debugging, not for user. same as fluff
 log_debug()
 {
-   if [ "${MULLE_FLAG_LOG_DEBUG}" = "YES" ]
+   if [ "${MULLE_FLAG_LOG_DEBUG}" != "YES" ]
    then
-      case "${UNAME}" in
-         linux)
-            log_printf "${C_BR_RED}$(date "+%s.%N") %b${C_RESET}\n" "$*"
-         ;;
-         *)
-            log_printf "${C_BR_RED}$(date "+%s") %b${C_RESET}\n" "$*"
-         ;;
-      esac
+      return
    fi
+
+   case "${UNAME}" in
+      linux)
+         log_printf "${C_BR_RED}$(date "+%s.%N") %b${C_RESET}\n" "$*"
+      ;;
+      *)
+         log_printf "${C_BR_RED}$(date "+%s") %b${C_RESET}\n" "$*"
+      ;;
+   esac
 }
 
 
 log_entry()
 {
-   local function="$1" ; shift
+   if [ "${MULLE_FLAG_LOG_DEBUG}" != "YES" ]
+   then
+      return
+   fi
+
+   local functionname="$1" ; shift
 
    local args
 
@@ -141,7 +148,7 @@ log_entry()
       shift
    done
 
-   log_debug "${function}" "${args}"
+   log_debug "${functionname}" ${args}
 }
 
 

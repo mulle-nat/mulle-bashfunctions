@@ -44,7 +44,7 @@ MULLE_EXEKUTOR_SH="included"
 
 exekutor_trace()
 {
-   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = "YES" -o "${MULLE_FLAG_LOG_EXEKUTOR}" = "YES" ]
+   if [  "${MULLE_FLAG_LOG_EXEKUTOR}" = "YES" ]
    then
       local arrow
 
@@ -72,7 +72,7 @@ exekutor_trace_output()
    local redirect="$1"; shift
    local output="$1"; shift
 
-   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = "YES" -o "${MULLE_FLAG_LOG_EXEKUTOR}" = "YES" ]
+   if [ "${MULLE_FLAG_LOG_EXEKUTOR}" = "YES" ]
    then
       local arrow
 
@@ -112,7 +112,7 @@ eval_exekutor()
 
    if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" != "YES" ]
    then
-      ( eval "$@" )
+      ( eval "$@" ) # subshell w/o redirection ?
    fi
 }
 

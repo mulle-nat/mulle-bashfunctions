@@ -643,7 +643,7 @@ simplified_path()
          echo "."
       ;;
 
-      */|*\.\.*|*\./*|*/.)
+      */|*\.\.*|*\./*|*/\.)
          if [ "${MULLE_TRACE_PATHS_FLIP_X}" = "YES" ]
          then
             set +x
