@@ -41,7 +41,7 @@ Usage:
    ${MULLE_EXECUTABLE_NAME} [command]
 
 Commands:
-   library-path [version]  : print best library path for desired version
+   libexec-path [version]  : print best libexec path for desired version
    list                    : list installed versions
    version                 : print most recent version
 EOF
@@ -242,7 +242,7 @@ main()
 
    local cmd
 
-   cmd="${1:-library-path}"
+   cmd="${1:-libexec-path}"
 
    MULLE_EXECUTABLE_FAIL_PREFIX="${MULLE_EXECUTABLE_NAME} ${cmd}"
    [ $# -eq 0 ] || shift
@@ -252,7 +252,7 @@ main()
          usage
       ;;
 
-      library-path)
+      libexec-path|library-path)
          if [ $# -eq 0 ]
          then
             echo "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}"
@@ -303,7 +303,7 @@ _init()
    if [ $# -eq 1 ]
    then
       case "${1}" in
-         library-path)
+         libexec-path|library-path)
             echo "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}"
             exit 0
          ;;
