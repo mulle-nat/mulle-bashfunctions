@@ -1,14 +1,19 @@
-# mulle-bashfunctions, a collection of bash functions
+# 🥊 mulle-bashfunctions, a collection of bash functions
 
 ![Last version](https://img.shields.io/github/tag/{{PUBLISHER}}/mulle-bashfunctions.svg)
 
 
 Use `mulle-bashfunctions --version 1` to find the place of the scripts that
-provide version 1 compatability.
+provide version 1 compatibility.
 
 
-Install it with `brew install mulle-kybernetik/software/mulle-bashfunctions` or
-`apt-get install mulle-bashfunctions`.
+## Install
+
+OS          | Command
+------------|------------------------------------
+macos       | `brew install mulle-kybernetik/software/mulle-bashfunctions`
+ubuntu      | `apt-get install mulle-bashfunctions`.
+other       | ./install.sh
 
 
 ## Usage
