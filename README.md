@@ -12,7 +12,6 @@ provide version 1 compatibility.
 OS          | Command
 ------------|------------------------------------
 macos       | `brew install mulle-kybernetik/software/mulle-bashfunctions`
-ubuntu      | `apt-get install mulle-bashfunctions`.
 other       | ./install.sh
 
 
