@@ -62,7 +62,6 @@ options_setup_trace()
       FLUFF)
          MULLE_FLAG_LOG_FLUFF="YES"
          MULLE_FLAG_LOG_VERBOSE="YES"
-         MULLE_FLAG_LOG_EXEKUTOR="YES"
       ;;
 
       TRACE)
@@ -117,8 +116,8 @@ EOF
    then
       cat <<EOF
    -ld${S}${S}${DELIMITER}additional debug output
-   -le${S}${S}${DELIMITER}external command execution log output
-   -t${S}${S}${S}${DELIMITER}enable shell trace
+   -le${S}${S}${DELIMITER}additional environment debug output
+   -lx${S}${S}${DELIMITER}external command execution log output
    -tpwd${DELIMITER}emit shortened PWD during trace
    -vv${S}${S}${DELIMITER}be more verbose
    -vvv${S}${DELIMITER}be very verbose

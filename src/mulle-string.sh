@@ -310,7 +310,7 @@ filepath_concat()
 
       if [ -z "${s}" ]
       then
-         s="$i"
+         s="${fallback}$i"
       else
          case "${i}" in
             /*)

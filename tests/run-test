@@ -1,7 +1,8 @@
-#! /bin/sh
+#! /usr/bin/env bash
 
+[ "${TRACE}" = "YES" ] && set -x
 
-TEST_DIR="`dirname "$0"`"
+TEST_DIR="`dirname -- "$0"`"
 PROJECT_DIR="$( cd "${TEST_DIR}/.." ; pwd -P)"
 
 MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${MULLE_BASHFUNCTIONS_LIBEXEC_DIR:-../../src}"

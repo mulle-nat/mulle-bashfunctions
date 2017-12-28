@@ -63,12 +63,23 @@ test_filepath_concat()
    output="`filepath_concat "//" "//" `"
    expect_output "${output}" "/"
 
+# a /
+   output="`filepath_concat "a" "/" `"
+   expect_output "${output}" "a"
+
+   output="`filepath_concat "/" "a" `"
+   expect_output "${output}" "/a"
+
 # a
    output="`filepath_concat "a" "" `"
    expect_output "${output}" "a"
 
    output="`filepath_concat "" "a" `"
    expect_output "${output}" "a"
+
+# a b
+   output="`filepath_concat "a" "b" `"
+   expect_output "${output}" "a/b"
 
 # a/
    output="`filepath_concat "a/" "" `"
