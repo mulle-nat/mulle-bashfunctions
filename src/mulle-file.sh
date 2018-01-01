@@ -215,15 +215,47 @@ _make_tmp()
    local name="${1:-mulle_tmp}"
    local type="${2}"
 
+   local tmpdir
+
    case "${UNAME}" in
-      darwin|freebsd)
-         exekutor mktemp ${type} "/tmp/${name}.`uuidgen`"
+      darwin)
+         tmpdir="/tmp"
       ;;
 
       *)
-         exekutor mktemp ${type} -t "${name}.`uuidgen`"
+         tmpdir="${TMPDIR:-/tmp}"
       ;;
    esac
+
+   [ ! -d "${tmpdir}" ] && fail "${tmpdir} does not exist"
+
+   local filename
+   local prev 
+
+   while :
+   do
+      prev="${filename}"
+      filename="${TMPDIR:-/tmp}/${name}-`uuidgen`"
+
+      if [ "${prev}" = "${filename}" ]
+      then
+         internal_fail "uuidgen malfunction"
+      fi
+
+      case "${type}" in
+         *d*)
+            mkdir "${filename}" || exit 1
+            echo "${filename}"
+            return 0
+         ;;
+
+         *)
+            touch "${filename}" || exit 1
+            echo "${filename}"
+            return 0
+         ;;
+      esac
+   done
 }
 
 

@@ -1,3 +1,7 @@
+### 1.2.2
+
+* fix bad and superflous mktemp use
+
 ### 1.2.1
 
 * fix for filepath concat
