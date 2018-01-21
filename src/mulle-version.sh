@@ -43,13 +43,13 @@ get_version_major()
 
 get_version_minor()
 {
-   cut -d. -f2 <<< "$1"
+   cut -s -d. -f2 <<< "$1"
 }
 
 
 get_version_patch()
 {
-   cut -d. -f3 <<< "$1"
+   cut -s -d. -f3 <<< "$1"
 }
 
 
@@ -115,7 +115,7 @@ version_value_distance()
 
 version_distance()
 {
-   version_value_distance "`version_value $1`" "`version_value $2`"
+   version_value_distance "`version_value "$1"`" "`version_value "$2"`"
 }
 
 

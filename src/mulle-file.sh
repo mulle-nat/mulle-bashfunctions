@@ -213,36 +213,39 @@ remove_file_if_present()
 _make_tmp()
 {
    local name="${1:-mulle_tmp}"
-   local type="${2}"
+   local filetype="${2}"
 
    local tmpdir
 
+   tmpdir=
    case "${UNAME}" in
       darwin)
-         tmpdir="/tmp"
+         # don't like the standard tmpdir
       ;;
 
       *)
-         tmpdir="${TMPDIR:-/tmp}"
+         # remove trailing '/'
+         tmpdir="`filepath_cleaned "${TMPDIR}"`"
       ;;
    esac
+   tmpdir="${tmpdir:-/tmp}"
 
    [ ! -d "${tmpdir}" ] && fail "${tmpdir} does not exist"
 
    local filename
-   local prev 
+   local prev
 
    while :
    do
       prev="${filename}"
-      filename="${TMPDIR:-/tmp}/${name}-`uuidgen`"
+      filename="${tmpdir}/${name}-`uuidgen`"
 
       if [ "${prev}" = "${filename}" ]
       then
          internal_fail "uuidgen malfunction"
       fi
 
-      case "${type}" in
+      case "${filetype}" in
          *d*)
             mkdir "${filename}" || exit 1
             echo "${filename}"

@@ -31,7 +31,7 @@
 #
 [ "${TRACE}" = "YES" ] && set -x
 
-MULLE_BASHFUNCTIONS_VERSION="1.2.2"
+MULLE_BASHFUNCTIONS_VERSION="1.2.3"
 
 
 usage()
@@ -41,7 +41,7 @@ Usage:
    ${MULLE_EXECUTABLE_NAME} [command]
 
 Commands:
-   libexec-path [version]  : print best libexec path for desired version
+   libexec-dir [version]   : print best libexec filepath for desired version
    list                    : list installed versions
    version                 : print most recent version
 EOF
@@ -172,7 +172,7 @@ _find_library_path()
 
    prefix="`dirname -- "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}"`"
 
-   ls -1 "${prefix}"/${majorpattern}.${minorpattern}.${patchpattern} 2> /dev/null | sort -nr | head -1
+   ls -1d "${prefix}"/${majorpattern}.${minorpattern}.${patchpattern} 2> /dev/null | sort -nr | head -1
 }
 
 
@@ -242,7 +242,7 @@ main()
 
    local cmd
 
-   cmd="${1:-libexec-path}"
+   cmd="${1:-libexec-dir}"
 
    MULLE_EXECUTABLE_FAIL_PREFIX="${MULLE_EXECUTABLE_NAME} ${cmd}"
    [ $# -eq 0 ] || shift
@@ -252,7 +252,7 @@ main()
          usage
       ;;
 
-      libexec-path|library-path)
+      libexec-dir|library-path)
          if [ $# -eq 0 ]
          then
             echo "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}"
@@ -303,7 +303,7 @@ _init()
    if [ $# -eq 1 ]
    then
       case "${1}" in
-         libexec-path|library-path)
+         libexec-dir|library-path)
             echo "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}"
             exit 0
          ;;

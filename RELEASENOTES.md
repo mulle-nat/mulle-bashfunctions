@@ -1,3 +1,8 @@
+### 1.2.3
+
+* make minimal loading possible, useful for many scripts
+* fix bugs in versioning checks
+
 ### 1.2.2
 
 * fix bad and superflous mktemp use

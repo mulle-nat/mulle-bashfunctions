@@ -112,6 +112,11 @@ array_get()
 #   [ "$i" -ge "$n" ] && internal_fail "index ${i} out of bounds ${n}"
 
    ((i++))
+
+# ???
+# ERROR ??? See: https://github.com/mulle-nat/mulle-bashfunctions/issues/1
+# Use #! /usr/bin/env bash
+# ???
    sed -n "${i}p" <<< "${array}"
 }
 
@@ -219,8 +224,6 @@ array_contains()
 # declare "fail" outside
 # assoc array contents can contain any characters except newline
 # assoc array keys can contain any characters except newline
-# but be careful, that > chars are translated to |, so
-# get 'a|' and get 'a>' match
 #
 #
 # currently escaping is provided for code "outside" of array, but it really

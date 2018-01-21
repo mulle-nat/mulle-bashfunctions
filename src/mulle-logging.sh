@@ -280,7 +280,13 @@ logging_initialize()
    fi
 
    MULLE_EXECUTABLE="$0"
-   MULLE_EXECUTABLE_NAME="`basename -- "${MULLE_EXECUTABLE}"`"
+
+   # can be convenient to overload by caller sometimes
+   if [ -z "${MULLE_EXECUTABLE_NAME}" ]
+   then
+      MULLE_EXECUTABLE_NAME="`basename -- "${MULLE_EXECUTABLE}"`"
+   fi
+
    MULLE_EXECUTABLE_PWD="${PWD}"
    MULLE_EXECUTABLE_FAIL_PREFIX="${MULLE_EXECUTABLE_NAME}"
    MULLE_EXECUTABLE_PID="$$"
