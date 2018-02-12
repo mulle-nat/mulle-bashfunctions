@@ -106,6 +106,17 @@ exekutor()
 }
 
 
+#
+# the rexekutor promises only to read and is therefore harmless
+#
+rexekutor()
+{
+   exekutor_trace "$@"
+
+   "$@"
+}
+
+
 eval_exekutor()
 {
    exekutor_trace "$@"
@@ -114,6 +125,15 @@ eval_exekutor()
    then
       ( eval "$@" ) # subshell w/o redirection ?
    fi
+}
+
+
+# harmless
+reval_exekutor()
+{
+   exekutor_trace "$@"
+
+   ( eval "$@" ) # subshell w/o redirection ?
 }
 
 

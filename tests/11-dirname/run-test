@@ -1,0 +1,113 @@
+#! /usr/bin/env bash
+
+[ "${TRACE}" = "YES" ] && set -x
+
+
+stacktrace()
+{
+   local i=1
+   local line
+
+   while line="`caller $i`"
+   do
+      printf "${C_CYAN}%b${C_RESET}\n" "$i: #${line}"
+      ((i++))
+   done
+}
+
+
+fail()
+{
+   echo "Unexpected failure" >&2
+   stacktrace >&2
+   exit 1
+}
+
+
+test_dirname()
+{
+   local filename="$1"
+
+
+   local output="`fast_dirname "${filename}"`"
+   local expected="`dirname -- "${filename}"`"
+
+   if [ "${output}" != "${expected}" ]
+   then
+      echo "\"${filename}\": got \"${output}\". Expected: \"${expected}\"" >&2
+      stacktrace >&2
+      exit 1
+   fi
+}
+
+
+
+main()
+{
+   test_dirname ""
+
+   test_dirname "."
+   test_dirname "/"
+   test_dirname "a"
+
+#>>>
+   test_dirname "/."
+   test_dirname "//"
+   test_dirname "/a"
+
+   test_dirname "./"
+   test_dirname "a/"
+
+   test_dirname "./."
+   test_dirname ".//"
+   test_dirname "./a"
+
+   test_dirname "../"
+   test_dirname "/./"
+   test_dirname "a./"
+
+   test_dirname "/.."
+   test_dirname "/./"
+   test_dirname "/.a"
+
+   test_dirname "./."
+   test_dirname "//."
+   test_dirname "a/."
+
+#>>>
+
+   test_dirname "./b"
+   test_dirname "//b"
+   test_dirname "a/b"
+
+   test_dirname "./b/"
+   test_dirname "//b/"
+   test_dirname "a/b/"
+
+   test_dirname "./b//"
+   test_dirname "//b//"
+   test_dirname "a/b//"
+
+   test_dirname "/./b//"
+   test_dirname "///b//"
+   test_dirname "/a/b//"
+
+   test_dirname "//./b//"
+   test_dirname "////b//"
+   test_dirname "//a/b//"
+
+   echo "All tests passed" >&2
+}
+
+
+init()
+{
+   MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${MULLE_BASHFUNCTIONS_LIBEXEC_DIR:-../../src}"
+
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-string.sh" || exit 1
+}
+
+
+init "$@"
+main "$@"
+

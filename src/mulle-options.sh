@@ -245,7 +245,7 @@ options_technical_flags()
    #
    # collect technical options so interested parties can forward them to
    # other mulle tools. In tools they are called flags, and this will be
-   # renamed to eventually.
+   # renamed too, eventually.
    #
    if [ -z "${MULLE_TECHNICAL_FLAGS}" ]
    then

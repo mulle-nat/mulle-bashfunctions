@@ -29,9 +29,9 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-[ "${TRACE}" = "YES" ] && set -x
+[ "${TRACE}" = "YES" ] && set -x && : "$0" "$@"
 
-MULLE_BASHFUNCTIONS_VERSION="1.2.3"
+MULLE_BASHFUNCTIONS_VERSION="1.3.0"
 
 
 usage()
@@ -47,87 +47,6 @@ Commands:
 EOF
 
    exit 1
-}
-
-
-
-#
-# stolen from:
-# http://stackoverflow.com/questions/1055671/how-can-i-get-the-behavior-of-gnus-readlink-f-on-a-mac
-# ----
-#
-_prepend_path_if_relative()
-{
-   case "$2" in
-      /*)
-         echo "$2"
-      ;;
-      *)
-         echo "$1/$2"
-      ;;
-   esac
-}
-
-
-resolve_symlinks()
-{
-   local dir_context
-   local linkpath
-
-   if linkpath="`readlink "$1"`"
-   then
-      dir_context=`dirname -- "$1"`
-      resolve_symlinks "`_prepend_path_if_relative "${dir_context}" "${linkpath}"`"
-   else
-      echo "$1"
-   fi
-}
-
-
-get_libexec_path()
-{
-   local executablepath="$1"
-
-   local exedirpath
-   local prefix
-   local libexecpath
-
-   case "${executablepath}" in
-      \.*|/*|~*)
-      ;;
-
-      *)
-         executablepath="`command -v "${executablepath}"`"
-      ;;
-   esac
-
-   executablepath="`resolve_symlinks "${executablepath}"`"
-   exedirpath="`dirname "${executablepath}"`"
-   prefix="`dirname "${exedirpath}"`"
-   libexecpath="${prefix}/libexec/mulle-bashfunctions/${MULLE_BASHFUNCTIONS_VERSION}"
-
-   if [ ! -x "${libexecpath}/mulle-bashfunctions.sh" ]
-   then
-      libexecpath="${exedirpath}/src"
-   fi
-
-   case "$libexecpath" in
-      /*|~*)
-      ;;
-
-      .)
-         libexecpath="$PWD"
-      ;;
-
-      *)
-         libexecpath="$PWD/$libexecpath"
-      ;;
-   esac
-
-   if [ -x "${libexecpath}/mulle-bashfunctions.sh" ]
-   then
-      echo "${libexecpath}"
-   fi
 }
 
 
@@ -169,8 +88,10 @@ _find_library_path()
    patchpattern="${patch:-[0-9]*}"
 
    local prefix
+   local _directory
 
-   prefix="`dirname -- "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}"`"
+   _fast_dirname "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}"
+   prefix="${_directory}"
 
    ls -1d "${prefix}"/${majorpattern}.${minorpattern}.${patchpattern} 2> /dev/null | sort -nr | head -1
 }
@@ -284,17 +205,174 @@ main()
 #    other variables containing a filesystem path end with _FILE
 #    variables containing search paths end with _PATH
 #
+
+# export into _directory global
+_fast_dirname()
+{
+   local filename="$1"
+
+   local last
+
+   while :
+   do
+      case "${filename}" in
+         /)
+            _directory="${filename}"
+            return
+         ;;
+
+         */)
+            filename="${filename%?}"
+            continue
+         ;;
+      esac
+      break
+   done
+
+   last="${filename##*/}"
+   _directory="${filename%${last}}"
+
+   while :
+   do
+      case "${_directory}" in
+         /)
+           return
+         ;;
+
+         */)
+            _directory="${_directory%?}"
+         ;;
+
+         *)
+            _directory="${_directory:-.}"
+            return
+         ;;
+      esac
+   done
+}
+
+
+#
+# ####
+# #### this is a duplicate of mulle-init
+# #### Do not edit this, edit mulle-init and then copy back to here
+# ####
+#
+
+# result in _linkpath global
+_resolve_symlinks()
+{
+   if _linkpath="`readlink "$1"`"
+   then
+      case "${_linkpath}" in
+         /*)
+            _resolve_symlinks "${_linkpath}"
+         ;;
+         *)
+            local _directory
+
+            _fast_dirname "$1"
+            _resolve_symlinks "${_directory}/${_linkpath}"
+         ;;
+      esac
+   else
+      _linkpath="$1"
+   fi
+}
+
+
+#
+# ####
+# #### this is a duplicate of mulle-init
+# #### Do not edit this, edit mulle-init and then copy back to here
+# ####
+#
+
+
+# return _libexecdir
+#
+# executablepath: will be $0
+# subdir: will be mulle-bashfunctions/${VERSION}
+# matchfile: the file to match agains
+#
+# Written this way, so it can get reused
+#
+_get_libexec_dir()
+{
+   local executablepath="$1"
+   local subdir="$2"
+   local matchfile="$3"
+
+   local exedirpath
+   local prefix
+
+   case "${executablepath}" in
+      \.*|/*|~*)
+      ;;
+
+      *)
+         executablepath="`command -v "${executablepath}"`"
+      ;;
+   esac
+
+   local _linkpath
+
+   _resolve_symlinks "${executablepath}"
+   executablepath="${_linkpath}"
+
+   local _directory
+
+   _fast_dirname "${executablepath}"
+   exedirpath="${_directory}"
+
+   _fast_dirname "${exedirpath}"
+   prefix="${_directory}"
+
+
+   # now setup the global variable
+
+   _libexec_dir="${prefix}/libexec/${subdir}"
+
+   if [ ! -f "${_libexec_dir}/${matchfile}" ]
+   then
+      _libexec_dir="${exedirpath}/src"
+   fi
+
+   case "$_libexec_dir" in
+      /*|~*)
+      ;;
+
+      .)
+         _libexec_dir="$PWD"
+      ;;
+
+      *)
+         _libexec_dir="$PWD/${_libexec_dir}"
+      ;;
+   esac
+
+   if [ ! -f "${_libexec_dir}/${matchfile}" ]
+   then
+      unset _libexec_dir
+   fi
+}
+
+
 _init()
 {
    # nice for tests
    if [ -z "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}" ]
    then
-      MULLE_BASHFUNCTIONS_LIBEXEC_DIR="`get_libexec_path "$0"`"
-      if [ -z "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}" ]
+      _get_libexec_dir "$0" \
+                        "mulle-bashfunctions/${MULLE_BASHFUNCTIONS_VERSION}" \
+                        "mulle-bashfunctions.sh"
+
+      if [ -z "${_libexec_dir}" ]
       then
          echo "$0 fatal Error: Could not find libexec (PWD: $PWD)" >&2
          exit 1
       fi
+      MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${_libexec_dir}"
    fi
 
    #
@@ -313,14 +391,6 @@ _init()
             exit 0
          ;;
       esac
-   fi
-
-   PATH="${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}:$PATH"
-   export PATH
-
-   if [ ! -z "${MULLE_LIBEXEC_TRACE}" ]
-   then
-      echo "PATH=$PATH" >&2
    fi
 
    . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-logging.sh" || exit 1

@@ -1,3 +1,10 @@
+## 1.3.0
+
+* improve startup time greatly
+* avoid globbing problems in for loops
+* fast_dirname and fast_basename added
+
+
 ### 1.2.3
 
 * make minimal loading possible, useful for many scripts

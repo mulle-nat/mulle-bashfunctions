@@ -90,7 +90,7 @@ mkdir_parent_if_missing()
 
    local parent
 
-   parent="`dirname -- "${dstdir}"`"
+   parent="`fast_dirname "${dstdir}"`"
    case "${parent}" in
       ""|"\.")
       ;;
@@ -156,7 +156,7 @@ _create_file_if_missing()
 
    local directory
 
-   directory="`dirname "${path}"`"
+   directory="`fast_dirname "${path}"`"
    if [ ! -z "${directory}" ]
    then
       mkdir_if_missing "${directory}"
@@ -344,8 +344,8 @@ create_symlink()
 
    # need to do this otherwise the symlink fails
 
-   srcname="`basename -- ${url}`"
-   directory="`dirname -- "${stashdir}"`"
+   srcname="`fast_basename "${url}"`"
+   directory="`fast_dirname "${stashdir}"`"
 
    mkdir_if_missing "${directory}"
    directory="`realpath "${directory}"`"  # resolve symlinks

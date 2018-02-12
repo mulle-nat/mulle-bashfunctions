@@ -278,8 +278,11 @@ filepath_concat()
    local fallback
 
    fallback=
+
+   set -o noglob
    for i in "$@"
    do
+      set +o noglob
       sep="/"
 
       i="`filepath_cleaned "${i}" `"
@@ -323,6 +326,7 @@ filepath_concat()
          esac
       fi
    done
+   set +o noglob
 
    if [ ! -z "${s}" ]
    then
@@ -386,6 +390,7 @@ escaped_grep_pattern()
 {
    sed -e 's/[]\/$*.^|[]/\\&/g' <<< "${1}"
 }
+
 
 escaped_sed_pattern()
 {
@@ -485,5 +490,100 @@ expand_environment_variables()
     echo "${string}"
     return $rval
 }
+
+
+#
+# it's in string because it doesn't do FS calls
+# or use environment variables
+#
+
+# much faster than calling "basename"
+_fast_basename()
+{
+   local filename="$1"
+
+   while :
+   do
+      case "${filename}" in
+         /)
+           _component="/"
+           return
+         ;;
+
+         */)
+            filename="${filename%?}"
+         ;;
+
+         *)
+            _component="${filename##*/}"
+            return
+         ;;
+      esac
+   done
+}
+
+
+_fast_dirname()
+{
+   local filename="$1"
+
+   local last
+
+   while :
+   do
+      case "${filename}" in
+         /)
+            _directory="${filename}"
+            return
+         ;;
+
+         */)
+            filename="${filename%?}"
+            continue
+         ;;
+      esac
+      break
+   done
+
+   last="${filename##*/}"
+   _directory="${filename%${last}}"
+
+   while :
+   do
+      case "${_directory}" in
+         /)
+           return
+         ;;
+
+         */)
+            _directory="${_directory%?}"
+         ;;
+
+         *)
+            _directory="${_directory:-.}"
+            return
+         ;;
+      esac
+   done
+}
+
+
+fast_basename()
+{
+   local _component
+
+   _fast_basename "$@"
+   echo "${_component}"
+}
+
+
+fast_dirname()
+{
+   local _directory
+
+   _fast_dirname "$@"
+   echo "${_directory}"
+}
+
 
 :

@@ -51,6 +51,7 @@ path_depth()
    local name="$1"
 
    local depth
+   local _directory
 
    depth=0
 
@@ -60,7 +61,8 @@ path_depth()
 
       while [ "$name" != "." -a "${name}" != '/' ]
       do
-         name="`dirname -- "$name"`"
+         _fast_dirname "${name}"
+         name="${_directory}"
          depth="`expr "$depth" + 1`"
       done
    fi
@@ -73,23 +75,23 @@ path_depth()
 #
 extensionless_basename()
 {
-   local  filename
+   local  _component
 
-   filename="`basename -- "$1"`"
-   echo "${filename%.*}"
+   _fast_basename "$1"
+   echo "${_component%.*}"
 }
 
 
 path_extension()
 {
-  local filename="$1"
+   local  _component
 
-  filename="`basename -- "$1"`"
-  case "${filename}" in
-    *.*)
-      echo "${filename##*.}"
-    ;;
-  esac
+   _fast_basename "$1"
+   case "${_component}" in
+      *.*)
+        echo "${_component##*.}"
+      ;;
+   esac
 }
 
 
@@ -104,13 +106,15 @@ _canonicalize_dir_path()
 
 _canonicalize_file_path()
 {
-   local dir file
+   local _component
+   local _directory
 
-   dir="`dirname -- "$1"`"
-   file="`basename -- "$1"`"
+   _fast_basename "$1"
+   _fast_dirname "$1"
+
    (
-     cd "${dir}" 2>/dev/null &&
-     echo "`pwd -P`/${file}"
+     cd "${_directory}" 2>/dev/null &&
+     echo "`pwd -P`/${_component}"
    ) || return 1
 }
 
@@ -301,7 +305,7 @@ remove_absolute_path_prefix_up_to()
    local s="$1"
    local prefix="$2"
 
-   if [ "`basename -- "${s}"`" = "${prefix}" ]
+   if [ "`fast_basename "${s}"`" = "${prefix}" ]
    then
       return 0
    fi
@@ -412,8 +416,10 @@ combined_escaped_search_path_if_exists()
    local i
    local combinedpath
 
+   set -o noglob
    for i in "$@"
    do
+      set +o noglob
       if [ ! -z "${i}" ]
       then
          i="`escaped_spaces "${i}"`"
@@ -428,6 +434,7 @@ combined_escaped_search_path_if_exists()
         fi
       fi
    done
+   set -o noglob
 
    echo "${combinedpath}"
 }
@@ -438,8 +445,10 @@ combined_escaped_search_path()
    local i
    local combinedpath
 
+   set -o noglob
    for i in "$@"
    do
+      set +o noglob
       if [ ! -z "${i}" ]
       then
          i="`escaped_spaces "${i}"`"
@@ -451,6 +460,7 @@ combined_escaped_search_path()
          fi
       fi
    done
+   set +o noglob
 
    echo "${combinedpath}"
 }
@@ -466,10 +476,12 @@ _simplify_components()
    result= # voodoo linux fix ?
    IFS="
 "
+   set -o noglob
    for i in $*
    do
       IFS="${DEFAULT_IFS}"
 
+      set +o noglob
       case "${i}" in
          # ./foo -> foo
          ./)
@@ -503,6 +515,7 @@ _simplify_components()
          ;;
       esac
    done
+   set +o noglob
 
    IFS="${DEFAULT_IFS}"
 
@@ -521,12 +534,14 @@ _path_from_components()
 
    IFS="
 "
+   set -o noglob
    for i in $components
    do
       composedpath="${composedpath}${i}"
    done
 
    IFS="${DEFAULT_IFS}"
+   set +o noglob
 
    if [ -z "${composedpath}" ]
    then
@@ -558,9 +573,11 @@ _simplified_path()
    remove_empty="NO"  # remove trailing slashes
 
    IFS="/"
+   set -o noglob
    for i in ${filepath}
    do
 #      log_printf "${C_FLUFF}%b${C_RESET}\n" "$i"
+      set +o noglob
       case "$i" in
          \.)
            remove_empty="YES"
@@ -611,6 +628,7 @@ ${i}"
    done
 
    IFS="${DEFAULT_IFS}"
+   set +o noglob
 
    if [ -z "${result}" ]
    then
@@ -728,9 +746,11 @@ prepend_to_search_path_if_missing()
    oldifs="$IFS"
    IFS=":"
 
+   set -o noglob
    for i in $fullpath
    do
       IFS="${oldifs}"
+      set +o noglob
 
       # shims stay in front (homebrew)
       case "$i" in
@@ -739,6 +759,7 @@ prepend_to_search_path_if_missing()
          ;;
       esac
    done
+   set +o noglob
 
    #
    #
@@ -751,9 +772,12 @@ prepend_to_search_path_if_missing()
       binpath="`simplified_absolutepath "${binpath}"`"
 
       IFS=":"
+      set -o noglob
+
       for i in $fullpath
       do
          IFS="${oldifs}"
+         set +o noglob
 
          # don't duplicate if already in there
          case "$i" in
@@ -762,7 +786,9 @@ prepend_to_search_path_if_missing()
                break
          esac
       done
+
       IFS="${oldifs}"
+      set +o noglob
 
       if [ -z "${binpath}" ]
       then
@@ -773,9 +799,12 @@ prepend_to_search_path_if_missing()
    done
 
    IFS=":"
+   set -o noglob
+
    for i in $fullpath
    do
       IFS="${oldifs}"
+      set +o noglob
 
       # shims stay in front (homebrew)
       case "$i" in
@@ -788,7 +817,9 @@ prepend_to_search_path_if_missing()
          ;;
       esac
    done
+
    IFS="${oldifs}"
+   set +o noglob
 
    slash_concat "${new_path}" "${tail_path}"
 }
