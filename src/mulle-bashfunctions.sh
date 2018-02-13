@@ -103,7 +103,6 @@ then
             . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-file.sh"      || return 1
          fi
       fi
-
    }
 
    __bashfunctions_loader "$@" || exit 1

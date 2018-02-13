@@ -218,7 +218,7 @@ _make_tmp()
    local tmpdir
 
    tmpdir=
-   case "${UNAME}" in
+   case "${MULLE_UNAME}" in
       darwin)
          # don't like the standard tmpdir
       ;;
@@ -372,7 +372,7 @@ create_symlink()
 #
 modification_timestamp()
 {
-   case "${UNAME}" in
+   case "${MULLE_UNAME}" in
       linux|mingw)
          stat --printf "%Y\n" "$1"
          ;;

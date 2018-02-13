@@ -1,3 +1,7 @@
+### 1.3.1
+
+* use MULLE_UNAME instead of UNAME in the future
+
 ## 1.3.0
 
 * improve startup time greatly

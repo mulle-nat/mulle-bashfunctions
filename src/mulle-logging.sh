@@ -114,7 +114,7 @@ log_debug()
       return
    fi
 
-   case "${UNAME}" in
+   case "${MULLE_UNAME}" in
       linux)
          log_printf "${C_BR_RED}$(date "+%s.%N") %b${C_RESET}\n" "$*"
       ;;
@@ -154,7 +154,7 @@ log_entry()
 
 log_trace()
 {
-   case "${UNAME}" in
+   case "${MULLE_UNAME}" in
       linux)
          log_printf "${C_TRACE}$(date "+%s.%N") %b${C_RESET}\n" "$*"
          ;;
@@ -168,7 +168,7 @@ log_trace()
 
 log_trace2()
 {
-   case "${UNAME}" in
+   case "${MULLE_UNAME}" in
       linux)
          log_printf "${C_TRACE2}$(date "+%s.%N") %b${C_RESET}\n" "$*"
          ;;
@@ -296,14 +296,15 @@ logging_initialize()
    #
    # need this for scripts also
    #
-   if [ -z "${UNAME}" ]
+   if [ -z "${MULLE_UNAME}" ]
    then
-      UNAME="`uname | cut -d_ -f1 | sed 's/64$//' | tr 'A-Z' 'a-z'`"
+      MULLE_UNAME="`uname | cut -d_ -f1 | sed 's/64$//' | tr 'A-Z' 'a-z'`"
+      UNAME="${MULLE_UNAME}"  # backwards compatibility
    fi
 
    if [ "${MULLE_NO_COLOR}" != "YES" ]
    then
-      case "${UNAME}" in
+      case "${MULLE_UNAME}" in
          *)
             C_RESET="\033[0m"
 

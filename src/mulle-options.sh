@@ -187,9 +187,9 @@ options_technical_flags()
       -tp|--trace-profile)
          before_trace_fail "$1"
 
-         case "${UNAME}" in
+         case "${MULLE_UNAME}" in
             "")
-               internal_fail "UNAME must be set by now"
+               internal_fail "MULLE_UNAME must be set by now"
             ;;
             linux)
                ps4string='$(date "+%s.%N (${BASH_SOURCE[0]##*/}:${LINENO})")'
