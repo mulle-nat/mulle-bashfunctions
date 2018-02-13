@@ -434,7 +434,7 @@ combined_escaped_search_path_if_exists()
         fi
       fi
    done
-   set -o noglob
+   set +o noglob
 
    echo "${combinedpath}"
 }
