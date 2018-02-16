@@ -1,3 +1,8 @@
+### 1.3.2
+
+* less confusing pid logging in exekutors
+* don't use gratuitous subshell in eval exekutors if they can be avoided
+
 ### 1.3.1
 
 * use MULLE_UNAME instead of UNAME in the future
