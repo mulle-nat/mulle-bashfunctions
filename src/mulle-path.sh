@@ -199,7 +199,7 @@ _relative_path_between()
 
 
 #
-# $1 is the directory, that we want to access relative from root
+# $1 is the directory/file, that we want to access relative from root
 # $2 is the root
 #
 # ex.   /usr/include /usr,  -> include
@@ -216,6 +216,10 @@ relative_path_between()
    # the function can't do mixed paths
 
    case "${a}" in
+      "")
+         internal_fail "First path is empty"
+      ;;
+
       ../*|*/..|*/../*|..)
          internal_fail "Path \"${a}\" mustn't contain .."
       ;;
@@ -227,6 +231,10 @@ relative_path_between()
 
       /*)
          case "${b}" in
+            "")
+               internal_fail "Second path is empty"
+            ;;
+
             ../*|*/..|*/../*|..)
                internal_fail "Filename \"${b}\" mustn't contain \"..\""
             ;;
@@ -247,6 +255,10 @@ relative_path_between()
 
       *)
          case "${b}" in
+            "")
+               internal_fail "Second path is empty"
+            ;;
+
             ../*|*/..|*/../*|..)
                internal_fail "Filename \"${b}\" mustn't contain component \"..\"/"
             ;;

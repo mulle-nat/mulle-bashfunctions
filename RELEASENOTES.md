@@ -1,3 +1,9 @@
+## 1.4.0
+
+* add escaping function and `sed_inplace` replace
+* fix display bugs
+
+
 ### 1.3.2
 
 * less confusing pid logging in exekutors

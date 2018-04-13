@@ -38,7 +38,6 @@
 MULLE_FILE_SH="included"
 
 
-
 # ####################################################################
 #                        Files and Directories
 # ####################################################################
@@ -212,7 +211,7 @@ remove_file_if_present()
 #
 _make_tmp()
 {
-   local name="${1:-mulle_tmp}"
+   local name="${1:-${MULLE_EXECUTABLE_NAME:-mulle}}"
    local filetype="${2}"
 
    local tmpdir
@@ -303,6 +302,7 @@ resolve_symlinks()
    local dir_context
    local path
 
+   # readlink is not really POSIX, but stat is really incompatible
    path="`readlink "$1"`"
    if [ $? -eq 0 ]
    then

@@ -50,11 +50,11 @@ exekutor_trace()
 
       [ -z "${MULLE_EXECUTABLE_PID}" ] && internal_fail "MULLE_EXECUTABLE_PID not set"
 
-      if [ -z "${MULLE_EXEKUTOR_LOG_DEVICE}" -a \
-           "${MULLE_EXECUTABLE_PID}" -ne "${BASHPID}" \
-           -a ! -z "${BASHPID}" ]
+      if [ -z "${MULLE_EXEKUTOR_LOG_DEVICE}"  \
+           -a ! -z "${BASHPID}" \
+           -a "${MULLE_EXECUTABLE_PID}" != "${BASHPID}" ]
       then
-         arrow="=[${BASHPID}]=>"
+         arrow="=[${BASHPID:-0}]=>"
       else
          arrow="==>"
       fi
@@ -81,9 +81,9 @@ exekutor_trace_output()
       [ -z "${MULLE_EXECUTABLE_PID}" ] && internal_fail "MULLE_EXECUTABLE_PID not set"
 
       # redirect exekutors are run in a subshell, so BASHPID is wrong
-      if [ -z "${MULLE_EXEKUTOR_LOG_DEVICE}" -a \
-           "${MULLE_EXECUTABLE_PID}" -ne "${BASHPID}" \
-           -a ! -z "${BASHPID}" ]
+      if [ -z "${MULLE_EXEKUTOR_LOG_DEVICE}" \
+           -a ! -z "${BASHPID}" \
+           -a "${MULLE_EXECUTABLE_PID}" != "${BASHPID}" ]
       then
          arrow="=[${BASHPID}]=>"
       else

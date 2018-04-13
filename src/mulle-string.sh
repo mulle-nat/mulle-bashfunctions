@@ -243,6 +243,19 @@ ${line}"
 }
 
 
+inplace_sed()
+{
+   case "${MULLE_UNAME}" in
+      darwin)
+         exekutor sed -i '' "$@"
+      ;;
+
+      *)
+         exekutor sed -i'' "$@"
+      ;;
+   esac
+}
+
 #
 # makes somewhat prettier filenames, removing superflous "."
 # and trailing '/'
@@ -394,7 +407,8 @@ escaped_grep_pattern()
 
 escaped_sed_pattern()
 {
-   sed -e 's/[]\/$*.^|[]/\\&/g' <<< "${1}"
+   # escaping the pipe is bad with sed
+   sed -e 's/[]\/$*.^[]/\\&/g' <<< "${1}"
 }
 
 
@@ -402,6 +416,13 @@ escaped_spaces()
 {
    sed 's/ /\\ /g' <<< "${1}"
 }
+
+
+escaped_doublequotes()
+{
+   sed 's/"/\\"/g' <<< "${1}"
+}
+
 
 # ####################################################################
 #                          Prefix / Suffix

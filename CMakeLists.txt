@@ -30,6 +30,7 @@ src/mulle-logging.sh
 src/mulle-options.sh
 src/mulle-path.sh
 src/mulle-string.sh
+src/mulle-version.sh
 )
 
 INSTALL( FILES ${SCRIPTS}
