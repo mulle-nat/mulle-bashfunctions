@@ -423,6 +423,12 @@ escaped_doublequotes()
    sed 's/"/\\"/g' <<< "${1}"
 }
 
+# for shell
+escaped_singlequotes()
+{
+   sed "s/'/'\"'\"'/g" <<< "${1}"
+}
+
 
 # ####################################################################
 #                          Prefix / Suffix

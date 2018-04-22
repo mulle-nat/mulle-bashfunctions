@@ -303,6 +303,12 @@ logging_initialize()
       UNAME="${MULLE_UNAME}"  # backwards compatibility
    fi
 
+   if [ -z "${MULLE_HOSTNAME}" ]
+   then
+      MULLE_HOSTNAME="`hostname -s`"
+      # MULLE_HOSTNAME="`printf "%s" "${MULLE_HOSTNAME}" | tr -c 'a-zA-Z0-9._-' '_'`"
+   fi
+
    if [ "${MULLE_NO_COLOR}" != "YES" ]
    then
       case "${MULLE_UNAME}" in

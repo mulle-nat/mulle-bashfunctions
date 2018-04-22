@@ -416,8 +416,9 @@ symlink_relpath()
    local a
    local b
 
-   a="`simplified_absolutepath "$1"`"
-   b="`simplified_absolutepath "$2"`"
+   # _relative_path_between will simplify
+   a="`absolutepath "$1"`"
+   b="`absolutepath "$2"`"
 
    _relative_path_between "${a}" "${b}"
 }

@@ -1,3 +1,8 @@
+## 1.5.0
+
+* add `escaped_singlequotes,` add `MULLE_HOSTNAME`
+
+
 ## 1.4.0
 
 * add escaping function and `sed_inplace` replace
