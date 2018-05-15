@@ -10,11 +10,18 @@ for another mulle tool.
 
 ## Install
 
+Install into `/usr` with sudo:
+
+```
+curl -L 'https://github.com/mulle-nat/mulle-bashfunctions/archive/latest.tar.gz' \
+ | tar xfz - && cd 'mulle-bashfunctions-latest' && sudo ./install /usr
+```
+
+### Pre-build packages
+
 OS          | Command
 ------------|------------------------------------
 macos       | `brew install mulle-kybernetik/software/mulle-bashfunctions`
-other       | `curl -L https://github.com/mulle-nat/mulle-bashfunctions/archive/latest.tar.gz | tar xfz - && cd mulle-bashfunctions-latest && ./install`
-
 
 
 Executable                | Description

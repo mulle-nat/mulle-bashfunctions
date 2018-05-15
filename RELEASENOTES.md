@@ -1,3 +1,7 @@
+### 1.5.2
+
+* fix README.md
+
 ### 1.5.1
 
 * improve README, rename install.sh to install
