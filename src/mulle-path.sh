@@ -134,8 +134,9 @@ canonicalize_path()
 
 # ----
 # stolen from: https://stackoverflow.com/questions/2564634/convert-absolute-path-into-relative-path-given-a-current-directory-using-bash
-# because the python dependency irked me
-# there must be no ".." or "." in the path
+# because the python dependency irked me.
+#
+# There must be no ".." or "." in the paths.
 #
 __relative_path_between()
 {
@@ -153,6 +154,7 @@ __relative_path_between()
     current="/${current##/}"
     appendix="${target##/}"
     relative=''
+
     while appendix="${target#"$current"/}"
         [ "$current" != '/' ] && [ "$appendix" = "$target" ]; do
         if [ "$current" = "$appendix" ]; then
@@ -163,6 +165,7 @@ __relative_path_between()
         current="${current%/*}"
         relative="$relative${relative:+/}.."
     done
+
     relative="$relative${relative:+${appendix:+/}}${appendix#/}"
     echo "$relative"
 }

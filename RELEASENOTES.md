@@ -1,3 +1,7 @@
+### 1.5.1
+
+* improve README, rename install.sh to install
+
 ## 1.5.0
 
 * add `escaped_singlequotes,` add `MULLE_HOSTNAME`

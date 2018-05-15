@@ -3,9 +3,9 @@
 ![Last version](https://img.shields.io/github/tag/{{PUBLISHER}}/mulle-bashfunctions.svg)
 
 
-This is a bash function library used and shared by a lot of mulle 
-tools. It's not documented, so you probably are just here, because
-it's a prerequisite for another mulle tool.
+This is a bash function library used and shared by a lot of mulle tools.
+It's not documented, so you probably are just here, because it's a prerequisite
+for another mulle tool.
 
 
 ## Install
@@ -13,7 +13,7 @@ it's a prerequisite for another mulle tool.
 OS          | Command
 ------------|------------------------------------
 macos       | `brew install mulle-kybernetik/software/mulle-bashfunctions`
-other       | ./install.sh
+other       | `curl -L https://github.com/mulle-nat/mulle-bashfunctions/archive/latest.tar.gz | tar xfz - && cd mulle-bashfunctions-latest && ./install`
 
 
 

@@ -5,6 +5,7 @@
 *.old
 tmp.*
 *.xcworkspace
+*.sublime-workspace
 xcuserdata/
 build/
 
