@@ -7,6 +7,14 @@ This is a bash function library used and shared by a lot of mulle tools.
 It's not documented, so you probably are just here, because it's a prerequisite
 for another mulle tool.
 
+Executable                | Description
+--------------------------|--------------------------------
+`mulle-bashfunctions-env` | Find the location of the mulle-bashfunctions library
+
+
+Use `mulle-bashfunctions-env --version 1` to find the place of the scripts that
+provide version 1 compatibility.
+
 
 ## Install
 
@@ -17,19 +25,11 @@ curl -L 'https://github.com/mulle-nat/mulle-bashfunctions/archive/latest.tar.gz'
  | tar xfz - && cd 'mulle-bashfunctions-latest' && sudo ./install /usr
 ```
 
-### Pre-build packages
+### Packages
 
 OS          | Command
 ------------|------------------------------------
 macos       | `brew install mulle-kybernetik/software/mulle-bashfunctions`
-
-
-Executable                | Description
---------------------------|--------------------------------
-`mulle-bashfunctions-env` | Find the location of the mulle-bashfunctions library
-
-
-Use `mulle-bashfunctions-env --version 1` to find the place of the scripts that provide version 1 compatibility.
 
 
 ## Usage

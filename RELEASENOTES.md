@@ -1,3 +1,7 @@
+### 1.5.3
+
+* fix README.md some more
+
 ### 1.5.2
 
 * fix README.md
