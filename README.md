@@ -22,7 +22,7 @@ Install into `/usr` with sudo:
 
 ```
 curl -L 'https://github.com/mulle-nat/mulle-bashfunctions/archive/latest.tar.gz' \
- | tar xfz - && cd 'mulle-bashfunctions-latest' && sudo ./install /usr
+ | tar xfz - && cd 'mulle-bashfunctions-latest' && sudo ./installer /usr
 ```
 
 ### Packages

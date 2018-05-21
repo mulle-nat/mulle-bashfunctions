@@ -1,3 +1,7 @@
+### 1.5.5
+
+* fix README.md
+
 ### 1.5.4
 
 * rename install to installer, because of name conflict
