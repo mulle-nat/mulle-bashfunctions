@@ -1,12 +1,14 @@
-SCRIPTS=install.sh \
-	src/mulle-array.sh \
-	src/mulle-bashfunctions.sh \
-	src/mulle-options.sh \
-	src/mulle-file.sh \
-	src/mulle-exekutor.sh \
-	src/mulle-logging.sh \
-	src/mulle-path.sh \
-	src/mulle-string.sh
+SCRIPTS=installer \
+src/mulle-array.sh \
+src/mulle-bashfunctions.sh \
+src/mulle-exekutor.sh \
+src/mulle-file.sh \
+src/mulle-init.sh \
+src/mulle-logging.sh \
+src/mulle-options.sh \
+src/mulle-path.sh \
+src/mulle-string.sh \
+src/mulle-version.sh
 
 
 CHECKSTAMPS=$(SCRIPTS:.sh=.chk)
@@ -26,8 +28,8 @@ mulle-bashfunctions-env.chk:	mulle-bashfunctions-env
 	- shellcheck $(SHELLFLAGS) $<
 	(shellcheck -f json $(SHELLFLAGS) $< | jq '.[].level' | grep -w error > /dev/null ) && exit 1 || touch $@
 
-install:
-	@ ./install.sh
+installer:
+	@ ./installer
 
 clean:
 	@- rm *.chk

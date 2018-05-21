@@ -2,6 +2,8 @@
 #
 # (c) 2015, coded by Nat!, Mulle KybernetiK
 #
+[ "${TRACE}" = "YES" ] && set -x && : "$0" "$@"
+
 if [ "${MULLE_NO_COLOR}" != "YES" ]
 then
    # Escape sequence and resets
@@ -143,7 +145,7 @@ main()
 
    if [ -z "${prefix}" -o "${prefix}" = "--help" ] || [ -z "${mode}" ]
    then
-      fail "usage: install.sh [prefix] [mode]"
+      fail "usage: install [prefix] [mode]"
    fi
 
    prefix="`realpath "${prefix}" 2> /dev/null`"
@@ -163,7 +165,7 @@ main()
    fi
 
    PROJECT_VERSION="`./mulle-bashfunctions-env version`"
-   [ -z "${PROJECT_VERSION}" ] && echo "tragisches versagen" >&2 && exit 1 
+   [ -z "${PROJECT_VERSION}" ] && echo "tragisches versagen" >&2 && exit 1
 
    bin="${prefix}/bin"
    libexec="${prefix}/libexec/mulle-bashfunctions/${PROJECT_VERSION}"
