@@ -1,3 +1,7 @@
+### 1.5.6
+
+* add bash and uuidgen dependencies for debian
+
 ### 1.5.5
 
 * fix README.md

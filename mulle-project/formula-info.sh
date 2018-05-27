@@ -7,3 +7,4 @@ DESC="🥊 A versioned collection of bash functions"
 LANGUAGE="bash"                # c,cpp, objc, bash ...
 # NAME="${PROJECT}"        # formula filename without .rb extension
 
+DEBIAN_DEPENDENCIES="uuid-runtime, bash"

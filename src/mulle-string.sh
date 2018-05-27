@@ -414,21 +414,16 @@ escaped_sed_pattern()
 
 escaped_spaces()
 {
-   sed 's/ /\\ /g' <<< "${1}"
+   sed -e 's/ /\\ /g' <<< "${1}"
 }
 
 
 escaped_doublequotes()
 {
-   sed 's/"/\\"/g' <<< "${1}"
+   sed -e 's/"/\\"/g' <<< "${1}"
 }
 
-# for shell
-escaped_singlequotes()
-{
-   sed "s/'/'\"'\"'/g" <<< "${1}"
-}
-
+# MEMO: use printf "%q" dot shell escaping
 
 # ####################################################################
 #                          Prefix / Suffix
