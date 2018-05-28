@@ -1,3 +1,7 @@
+### 1.5.7
+
+* fix installer rename in brew formula
+
 ### 1.5.6
 
 * add bash and uuidgen dependencies for debian

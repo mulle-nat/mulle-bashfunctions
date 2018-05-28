@@ -19,7 +19,7 @@ generate_brew_formula_build()
 
    cat <<EOF
 def install
-  system "./install.sh", "#{prefix}"
+  system "./installer", "#{prefix}"
 end
 EOF
 }
