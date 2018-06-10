@@ -360,7 +360,7 @@ create_symlink()
       url="`symlink_relpath "${url}" "${directory}"`"
    fi
 
-   log_info "Symlinking ${C_MAGENTA}${C_BOLD}${srcname}${C_INFO} as \"${url}\" in \"${directory}\" ..."
+   log_fluff "Symlinking \"${srcname}\" as \"${url}\" in \"${directory}\" ..."
    exekutor ln -s -f "${url}" "${stashdir}"  >&2 || fail "failed to setup symlink \"${stashdir}\" (to \"${url}\")"
 }
 
@@ -375,10 +375,11 @@ modification_timestamp()
    case "${MULLE_UNAME}" in
       linux|mingw)
          stat --printf "%Y\n" "$1"
-         ;;
+      ;;
+
       * )
          stat -f "%m" "$1"
-         ;;
+      ;;
    esac
 }
 

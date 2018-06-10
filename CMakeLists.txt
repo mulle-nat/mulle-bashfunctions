@@ -20,18 +20,10 @@ mulle-bashfunctions-env
 )
 
 
-set( LIBRARY_SCRIPTS
-src/mulle-array.sh
-src/mulle-bashfunctions.sh
-src/mulle-exekutor.sh
-src/mulle-file.sh
-src/mulle-init.sh
-src/mulle-logging.sh
-src/mulle-options.sh
-src/mulle-path.sh
-src/mulle-string.sh
-src/mulle-version.sh
+file( GLOB LIBRARY_SCRIPTS
+   "src/*.sh"
 )
+
 
 INSTALL( FILES ${SCRIPTS}
 PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ

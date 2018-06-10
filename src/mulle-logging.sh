@@ -287,7 +287,18 @@ logging_initialize()
       MULLE_EXECUTABLE_NAME="`basename -- "${MULLE_EXECUTABLE}"`"
    fi
 
+   #
+   # this is useful for shortening filenames for output
+   # like echo "${filename}#${MULLE_USER_PWD}/"
+   #
+   if [ -z "${MULLE_USER_PWD}" ]
+   then
+      MULLE_USER_PWD="${PWD}"
+      export MULLE_USER_PWD
+   fi
+
    MULLE_USAGE_NAME="${MULLE_USAGE_NAME:-${MULLE_EXECUTABLE_NAME}}"
+
    MULLE_EXECUTABLE_PWD="${PWD}"
    MULLE_EXECUTABLE_FAIL_PREFIX="${MULLE_EXECUTABLE_NAME}"
    MULLE_EXECUTABLE_PID="$$"

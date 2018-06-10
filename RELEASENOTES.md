@@ -1,3 +1,8 @@
+## 1.6.0
+
+* add `MULLE_USER_PWD` and mulle-case.sh
+
+
 ### 1.5.7
 
 * fix installer rename in brew formula

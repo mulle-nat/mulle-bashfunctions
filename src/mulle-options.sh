@@ -170,6 +170,10 @@ options_technical_flags()
          MULLE_FLAG_LOG_ENVIRONMENT="YES"
       ;;
 
+      -ls|--log-settings)
+         MULLE_FLAG_LOG_SETTINGS="YES"
+      ;;
+
       -lx|--log-exekutor|--log-execution)
          MULLE_FLAG_LOG_EXEKUTOR="YES"
       ;;
@@ -210,8 +214,13 @@ options_technical_flags()
          ps4string='${BASH_SOURCE[0]##*/}:${LINENO} \".../\W\"'
       ;;
 
-      -tx|--trace-options)
+      -tx|--trace-immediately)
          set -x
+      ;;
+
+      -s|--silent)
+         MULLE_TRACE=
+         MULLE_FLAG_LOG_TERSE="YES"
       ;;
 
       -v|--verbose)
@@ -232,9 +241,25 @@ options_technical_flags()
          MULLE_TRACE="TRACE"
       ;;
 
-      -s|--silent)
-         MULLE_TRACE=
-         MULLE_FLAG_LOG_TERSE="YES"
+
+      --list-technical-flags)
+         echo "\
+--dry-run
+--log-debug
+--log-environment
+--log-settings
+--log-exekutor
+--trace
+--trace-full-pwd
+--trace-profile
+--trace-postpone
+--trace-pwd
+--trace-immediately
+--silent
+--verbose
+--very-verbose
+--very-very-verbose"
+         return 0
       ;;
 
       *)

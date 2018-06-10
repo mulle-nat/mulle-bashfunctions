@@ -102,6 +102,11 @@ then
             # shellcheck source=mulle-file.sh
             . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-file.sh"      || return 1
          fi
+         if [ -z "${MULLE_CASE_SH}" ]
+         then
+            # shellcheck source=mulle-case.sh
+            . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-case.sh"      || return 1
+         fi
       fi
    }
 
