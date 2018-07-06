@@ -284,7 +284,7 @@ logging_initialize()
    # can be convenient to overload by caller sometimes
    if [ -z "${MULLE_EXECUTABLE_NAME}" ]
    then
-      MULLE_EXECUTABLE_NAME="`basename -- "${MULLE_EXECUTABLE}"`"
+      MULLE_EXECUTABLE_NAME="${MULLE_EXECUTABLE##*/}"
    fi
 
    #
@@ -310,7 +310,12 @@ logging_initialize()
    #
    if [ -z "${MULLE_UNAME}" ]
    then
-      MULLE_UNAME="`uname | cut -d_ -f1 | sed 's/64$//' | tr 'A-Z' 'a-z'`"
+      MULLE_UNAME="`uname | tr 'A-Z' 'a-z'`"
+      case "${MULLE_UNAME}" in
+         *)
+            MULLE_UNAME="`cut -d_ -f1 <<< "${MULLE_UNAME}" | sed 's/64$//' `"
+         ;;
+      esac
       UNAME="${MULLE_UNAME}"  # backwards compatibility
    fi
 
@@ -320,31 +325,28 @@ logging_initialize()
       # MULLE_HOSTNAME="`printf "%s" "${MULLE_HOSTNAME}" | tr -c 'a-zA-Z0-9._-' '_'`"
    fi
 
-   if [ "${MULLE_NO_COLOR}" != "YES" ]
+   # https://www.systutorials.com/241795/how-to-judge-whether-its-stderr-is-redirected-to-a-file-in-a-bash-script-on-linux/
+   # do not colorize when /dev/stderr is redirected
+   if [ "${MULLE_NO_COLOR}" != "YES" ] && [ ! -f /dev/stderr ]
    then
-      case "${MULLE_UNAME}" in
-         *)
-            C_RESET="\033[0m"
+      C_RESET="\033[0m"
 
-            # Useable Foreground colours, for black/white white/black
-            C_RED="\033[0;31m"     C_GREEN="\033[0;32m"
-            C_BLUE="\033[0;34m"    C_MAGENTA="\033[0;35m"
-            C_CYAN="\033[0;36m"
+      # Useable Foreground colours, for black/white white/black
+      C_RED="\033[0;31m"     C_GREEN="\033[0;32m"
+      C_BLUE="\033[0;34m"    C_MAGENTA="\033[0;35m"
+      C_CYAN="\033[0;36m"
 
-            C_BR_RED="\033[0;91m"
-            C_BOLD="\033[1m"
-            C_FAINT="\033[2m"
+      C_BR_RED="\033[0;91m"
+      C_BOLD="\033[1m"
+      C_FAINT="\033[2m"
 
-            C_RESET_BOLD="${C_RESET}${C_BOLD}"
+      C_RESET_BOLD="${C_RESET}${C_BOLD}"
 
-            if [ "${MULLE_LOGGING_TRAP}" != "NO" ]
-            then
-               logging_trap_install
-            fi
-         ;;
-      esac
+      if [ "${MULLE_LOGGING_TRAP}" != "NO" ]
+      then
+         logging_trap_install
+      fi
    fi
-
 
    C_ERROR="${C_BR_RED}${C_BOLD}"
    C_WARNING="${C_RED}${C_BOLD}"
@@ -357,16 +359,6 @@ logging_initialize()
 
    C_WARNING_TEXT="${C_RESET}${C_RED}${C_BOLD}"
    C_ERROR_TEXT="${C_RESET}${C_BR_RED}${C_BOLD}"
-
-   if [ ! -z "${MULLE_LIBEXEC_TRACE}" ]
-   then
-      local exedir
-      local exedirpath
-
-      exedir="`dirname "${BASH_SOURCE}"`"
-      exedirpath="$( cd "${exedir}" ; pwd -P )" || fail "failed to get pwd"
-      echo "${MULLE_EXECUTABLE_NAME} libexec: ${exedirpath}" >&2
-   fi
 }
 
 logging_initialize "$@"

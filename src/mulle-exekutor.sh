@@ -104,10 +104,12 @@ exekutor()
 {
    exekutor_trace "$@"
 
-   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" != "YES" ]
+   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = "YES" ]
    then
-      "$@"
+      return
    fi
+
+   "$@"
 }
 
 
@@ -126,10 +128,12 @@ eval_exekutor()
 {
    exekutor_trace "$@"
 
-   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" != "YES" ]
+   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = "YES" ]
    then
-      eval "$@"
+      return
    fi
+
+   eval "$@"
 }
 
 
@@ -148,49 +152,60 @@ _eval_exekutor()
 {
    exekutor_trace "$@"
 
-   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" != "YES" ]
+   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = "YES" ]
    then
-      eval "$@"
+      return
    fi
+
+   eval "$@"
 }
 
 
 redirect_exekutor()
 {
+   # funny not found problem ? the base directory of output is missing!a
    local output="$1"; shift
 
    exekutor_trace_output '>' "${output}" "$@"
 
-   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" != "YES" ]
+   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = "YES" ]
    then
-      ( "$@" ) > "${output}"
+      return
    fi
+
+   ( "$@" ) > "${output}"
 }
 
 
 redirect_append_exekutor()
 {
+   # funny not found problem ? the base directory of output is missing!a
    local output="$1"; shift
 
    exekutor_trace_output '>>' "${output}" "$@"
 
-   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" != "YES" ]
+   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = "YES" ]
    then
-      ( "$@" ) >> "${output}"
+      return
    fi
+
+   ( "$@" ) >> "${output}"
 }
 
 
 _redirect_append_eval_exekutor()
 {
+   # funny not found problem ? the base directory of output is missing!a
    local output="$1"; shift
 
    exekutor_trace_output '>>' "${output}" "$@"
 
-   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" != "YES" ]
+   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = "YES" ]
    then
-      ( eval "$@" ) >> "${output}"
+      return
    fi
+
+   ( eval "$@" ) >> "${output}"
 }
 
 #

@@ -62,6 +62,7 @@ path_depth()
       while [ "$name" != "." -a "${name}" != '/' ]
       do
          _fast_dirname "${name}"
+
          name="${_directory}"
          depth="`expr "$depth" + 1`"
       done

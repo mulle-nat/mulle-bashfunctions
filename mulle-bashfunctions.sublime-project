@@ -10,7 +10,7 @@
 		".repos",
 		".bootstrap*",
 		".git*",
-	 ],
+	 ]
 
 		}
 	]

@@ -95,7 +95,7 @@ mkdir_parent_if_missing()
       ;;
 
       *)
-         mkdir_if_missing "${parent}" || exit 1
+         mkdir_if_missing "${parent}"
          echo "${parent}"
       ;;
    esac
@@ -114,7 +114,7 @@ dir_is_empty()
    local empty
 
    empty="`ls -A "$1" 2> /dev/null`"
-   [ "$empty" = "" ]
+   [ -z "$empty" ]
 }
 
 

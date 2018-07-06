@@ -1,3 +1,7 @@
+### 1.6.1
+
+* small cleanups
+
 ## 1.6.0
 
 * add `MULLE_USER_PWD` and mulle-case.sh
