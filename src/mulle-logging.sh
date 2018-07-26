@@ -321,7 +321,15 @@ logging_initialize()
 
    if [ -z "${MULLE_HOSTNAME}" ]
    then
-      MULLE_HOSTNAME="`hostname -s`"
+      case "${UNAME}" in
+         mingw*)
+            MULLE_HOSTNAME="`hostname`"
+         ;;
+
+         *)
+            MULLE_HOSTNAME="`hostname -s`"
+         ;;
+      esac
       # MULLE_HOSTNAME="`printf "%s" "${MULLE_HOSTNAME}" | tr -c 'a-zA-Z0-9._-' '_'`"
    fi
 

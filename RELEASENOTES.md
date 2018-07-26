@@ -1,3 +1,7 @@
+### 1.6.2
+
+* fix hostname for mingw
+
 ### 1.6.1
 
 * small cleanups
