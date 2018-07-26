@@ -234,14 +234,23 @@ _make_tmp()
    local filename
    local prev
 
+   local UUIDGEN 
+
+   UUIDGEN="`command -v uuidgen`"
+
    while :
    do
       prev="${filename}"
-      filename="${tmpdir}/${name}-`uuidgen`"
+      if [ ! -z "${UUIDGEN}" ]
+      then
+         filename="${tmpdir}/${name}-`${UUIDGEN}`"
+      else
+         filename="`mktemp`"
+      fi
 
       if [ "${prev}" = "${filename}" ]
       then
-         internal_fail "uuidgen malfunction"
+         internal_fail "uuidgen (or mktemp) malfunction"
       fi
 
       case "${filetype}" in
