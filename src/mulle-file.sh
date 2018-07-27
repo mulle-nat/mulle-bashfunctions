@@ -207,50 +207,48 @@ remove_file_if_present()
 
 
 #
-# mktemp is really slow sometimes, so we use uuidgen
+# mktemp is really slow sometimes, so we prefer uuidgen
 #
-_make_tmp()
+_make_tmp_in_dir()
 {
-   local name="${1:-${MULLE_EXECUTABLE_NAME:-mulle}}"
-   local filetype="${2}"
-
-   local tmpdir
-
-   tmpdir=
-   case "${MULLE_UNAME}" in
-      darwin)
-         # don't like the standard tmpdir
-      ;;
-
-      *)
-         # remove trailing '/'
-         tmpdir="`filepath_cleaned "${TMPDIR}"`"
-      ;;
-   esac
-   tmpdir="${tmpdir:-/tmp}"
+   local tmpdir="$1"
+   local name="$2"
+   local filetype="$3"
 
    [ ! -d "${tmpdir}" ] && fail "${tmpdir} does not exist"
+
+   name="${name:-${MULLE_EXECUTABLE_NAME}}"
+   name="${name:-mulle}"
+
+   local UUIDGEN 
+
+   UUIDGEN="`command -v "uuidgen"`"
+   if [ -z "${UUIDGEN}" ]
+   then
+      case "${filetype}" in
+         *d*)
+            TMPDIR="${tmpdir}" mktemp -d "${name}-XXXXXXXX"
+            return $?
+         ;;
+
+         *)
+            TMPDIR="${tmpdir}" mktemp "${name}-XXXXXXXX"
+            return $?
+         ;;
+      esac
+   fi
 
    local filename
    local prev
 
-   local UUIDGEN 
-
-   UUIDGEN="`command -v uuidgen`"
-
    while :
    do
       prev="${filename}"
-      if [ ! -z "${UUIDGEN}" ]
-      then
-         filename="${tmpdir}/${name}-`${UUIDGEN}`"
-      else
-         filename="`mktemp`"
-      fi
+      filename="${tmpdir}/${name}-`"${UUIDGEN}"`"
 
       if [ "${prev}" = "${filename}" ]
       then
-         internal_fail "uuidgen (or mktemp) malfunction"
+         internal_fail "uuidgen malfunction"
       fi
 
       case "${filetype}" in
@@ -268,6 +266,31 @@ _make_tmp()
       esac
    done
 }
+
+
+_make_tmp()
+{
+   local name="$1"
+   local filetype="$2"
+
+   local tmpdir
+
+   tmpdir=
+   case "${MULLE_UNAME}" in
+      darwin)
+         # don't like the standard tmpdir, use /tmp
+      ;;
+
+      *)
+         # remove trailing '/'
+         tmpdir="`filepath_cleaned "${TMPDIR}"`"
+      ;;
+   esac
+   tmpdir="${tmpdir:-/tmp}"
+
+   _make_tmp_in_dir "${tmpdir}" "${name}" "${filetype}"
+}
+
 
 
 make_tmp_file()

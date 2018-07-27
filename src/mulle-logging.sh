@@ -148,7 +148,7 @@ log_entry()
       shift
    done
 
-   log_debug "${functionname}" ${args}
+   log_debug "${functionname}" "${args}"
 }
 
 
@@ -321,8 +321,8 @@ logging_initialize()
 
    if [ -z "${MULLE_HOSTNAME}" ]
    then
-      case "${UNAME}" in
-         mingw*)
+      case "${MULLE_UNAME}" in
+         'mingw'*)
             MULLE_HOSTNAME="`hostname`"
          ;;
 
