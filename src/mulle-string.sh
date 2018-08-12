@@ -242,20 +242,6 @@ ${line}"
    fi
 }
 
-
-inplace_sed()
-{
-   case "${MULLE_UNAME}" in
-      darwin)
-         exekutor sed -i '' "$@"
-      ;;
-
-      *)
-         exekutor sed -i'' "$@"
-      ;;
-   esac
-}
-
 #
 # makes somewhat prettier filenames, removing superflous "."
 # and trailing '/'

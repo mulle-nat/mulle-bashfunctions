@@ -1,0 +1,123 @@
+#! /usr/bin/env bash
+
+
+run_test()
+{
+  log_entry "run_test" "$@"
+
+  expect="$1"
+  shift
+
+  result="`eval "$@"`"
+
+  [ "${result}" != "${expect}" ] && fail "test:" "$@" "failed with \"${result}\", expected \"${expect}\""
+
+  :
+}
+
+
+test_simplified_path()
+{
+  log_entry "test_simplified_path"
+
+#  run_test "" simplified_path ""
+
+  run_test "/" simplified_path "/"
+  run_test "/" simplified_path "/."
+  run_test "/" simplified_path "/./"
+  run_test "/" simplified_path "/.."     # return /
+  run_test "/" simplified_path "/../"
+  run_test "/" simplified_path "/foo/.."
+  run_test "/" simplified_path "/foo/../"
+  run_test "/" simplified_path "/foo/./.."
+  run_test "/" simplified_path "/foo/../."
+  run_test "/" simplified_path "/foo/../.."
+  run_test "/"  simplified_path "/foo/../."
+  run_test "/"  simplified_path "/foo/.././"
+  run_test "/"  simplified_path "/foo/../.."
+  run_test "/"  simplified_path "/foo/../../"
+
+  run_test "/foo" simplified_path "/foo"
+  run_test "/foo" simplified_path "/foo/"
+  run_test "/foo" simplified_path "/foo/."
+  run_test "/foo" simplified_path "/foo/./"
+
+  run_test "/foo/bar" simplified_path "/foo/bar"
+  run_test "/foo/bar" simplified_path "/foo/bar/"
+  run_test "/foo/bar" simplified_path "/foo/./bar"
+  run_test "/bar"     simplified_path "/foo/../bar"
+  run_test "/bar"     simplified_path "/foo/../../bar"
+
+  run_test "foo/bar" simplified_path "foo/bar"
+  run_test "foo/bar" simplified_path "foo/bar/"
+  run_test "foo/bar" simplified_path "foo/./bar"
+  run_test "bar"     simplified_path "foo/../bar"
+  run_test "."       simplified_path "foo/.."
+}
+
+
+test2()
+{
+   result="`simplified_path "$1"`"
+
+   [ "${result}" = "${2}" ] || fail "$1: ${result} != ${2}"
+   echo "$1 passed"
+}
+
+
+#set -x
+
+#test2 "../.."   "../.."
+#exit 0
+
+test_inplace_sed()
+{
+   log_entry "test_inplace_sed"
+
+   local tmpfile
+
+   tmpfile="`make_tmp_file`" || exit 1
+
+   cat <<EOF > "${tmpfile}"
+1
+2
+3
+4
+EOF
+
+   local expect
+   local result
+
+   expect="`sed -e '/2/d;q' "${tmpfile}" `"
+   inplace_sed -e '/2/d;q' "${tmpfile}"
+
+   result="`cat "${tmpfile}"`"
+
+   if [ "${expect}" != "${result}" ]
+   then
+      fail "Inplace sed failed"
+   fi
+  log_verbose "----- 1 PASSED -----"
+}
+
+
+main()
+{
+   _options_mini_main "$@"
+
+  test_inplace_sed
+
+  log_info "----- ALL PASSED -----"
+}
+
+
+init()
+{
+   MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${MULLE_BASHFUNCTIONS_LIBEXEC_DIR:-../../src}"
+
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions.sh" || exit 1
+}
+
+
+init "$@"
+main "$@"

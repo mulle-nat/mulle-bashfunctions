@@ -207,29 +207,36 @@ remove_file_if_present()
 
 
 #
-# mktemp is really slow sometimes, so we use uuidgen
+# mktemp is really slow sometimes, so we prefer uuidgen
 #
-_make_tmp()
+_make_tmp_in_dir()
 {
-   local name="${1:-${MULLE_EXECUTABLE_NAME:-mulle}}"
-   local filetype="${2}"
-
-   local tmpdir
-
-   tmpdir=
-   case "${MULLE_UNAME}" in
-      darwin)
-         # don't like the standard tmpdir
-      ;;
-
-      *)
-         # remove trailing '/'
-         tmpdir="`filepath_cleaned "${TMPDIR}"`"
-      ;;
-   esac
-   tmpdir="${tmpdir:-/tmp}"
+   local tmpdir="$1"
+   local name="$2"
+   local filetype="$3"
 
    [ ! -d "${tmpdir}" ] && fail "${tmpdir} does not exist"
+
+   name="${name:-${MULLE_EXECUTABLE_NAME}}"
+   name="${name:-mulle}"
+
+   local UUIDGEN
+
+   UUIDGEN="`command -v "uuidgen"`"
+   if [ -z "${UUIDGEN}" ]
+   then
+      case "${filetype}" in
+         *d*)
+            TMPDIR="${tmpdir}" mktemp -d "${name}-XXXXXXXX"
+            return $?
+         ;;
+
+         *)
+            TMPDIR="${tmpdir}" mktemp "${name}-XXXXXXXX"
+            return $?
+         ;;
+      esac
+   fi
 
    local filename
    local prev
@@ -237,7 +244,7 @@ _make_tmp()
    while :
    do
       prev="${filename}"
-      filename="${tmpdir}/${name}-`uuidgen`"
+      filename="${tmpdir}/${name}-`"${UUIDGEN}"`"
 
       if [ "${prev}" = "${filename}" ]
       then
@@ -259,6 +266,31 @@ _make_tmp()
       esac
    done
 }
+
+
+_make_tmp()
+{
+   local name="$1"
+   local filetype="$2"
+
+   local tmpdir
+
+   tmpdir=
+   case "${MULLE_UNAME}" in
+      darwin)
+         # don't like the standard tmpdir, use /tmp
+      ;;
+
+      *)
+         # remove trailing '/'
+         tmpdir="`filepath_cleaned "${TMPDIR}"`"
+      ;;
+   esac
+   tmpdir="${tmpdir:-/tmp}"
+
+   _make_tmp_in_dir "${tmpdir}" "${name}" "${filetype}"
+}
+
 
 
 make_tmp_file()
@@ -435,5 +467,61 @@ write_protect_directory()
       exekutor chmod -R a-w "$1"
    fi
 }
+
+
+# ####################################################################
+#                         Inplace sed (that works)
+# ####################################################################
+
+#
+# inplace sed for darwin/freebsd is broken, if there is a 'q' command.
+#
+# e.g. echo "1" > a ; sed -i.bak -e '/1/d;q' a
+#
+# So we have to do a lot here
+#
+inplace_sed()
+{
+   local tmpfile
+   local args
+   local filename
+#   local permissions
+
+   case "${MULLE_UNAME}" in
+      darwin|freebsd)
+         # exekutor sed -i '' "$@"
+
+         while [ $# -ne 1 ]
+         do
+            args="${args} '$1'"
+            shift
+         done
+         filename="$1"
+
+         if [ ! -w "${filename}" ]
+         then
+            if [ ! -e "${filename}" ]
+            then
+               fail "\"${filename}\" does not exist"
+            fi
+            fail "\"${filename}\" is not writable"
+         fi
+
+#         permissions="`lso "${filename}"`"
+
+         tmpfile="`make_tmp_file`" || exit 1
+         redirect_eval_exekutor "${tmpfile}" 'sed' ${args} "'${filename}'"
+#         exekutor chmod "${permissions}" "${tmpfile}"
+         # move gives permission errors, this keeps everything OK
+         exekutor cp "${tmpfile}" "${filename}"
+         remove_file_if_present "${tmpfile}"
+      ;;
+
+      *)
+         exekutor sed -i'' "$@"
+      ;;
+   esac
+}
+
 
 :

@@ -177,6 +177,22 @@ redirect_exekutor()
 }
 
 
+redirect_eval_exekutor()
+{
+   # funny not found problem ? the base directory of output is missing!a
+   local output="$1"; shift
+
+   exekutor_trace_output '>' "${output}" "$@"
+
+   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = "YES" ]
+   then
+      return
+   fi
+
+   ( eval "$@" ) > "${output}"
+}
+
+
 redirect_append_exekutor()
 {
    # funny not found problem ? the base directory of output is missing!a

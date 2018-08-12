@@ -223,6 +223,11 @@ options_technical_flags()
          MULLE_FLAG_LOG_TERSE="YES"
       ;;
 
+      --no-verbose)
+         MULLE_TRACE=
+         MULLE_FLAG_LOG_TERSE=
+      ;;
+
       -v|--verbose)
          after_trace_warning "$1"
 

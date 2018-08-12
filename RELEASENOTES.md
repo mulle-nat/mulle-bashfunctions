@@ -1,3 +1,9 @@
+## 1.7.0
+
+* add `redirect_eval_exekutor`
+* `inplace_sed` moved to mulle-file.sh to fix problems on freebsd
+
+
 ### 1.6.2
 
 * fix hostname for mingw
