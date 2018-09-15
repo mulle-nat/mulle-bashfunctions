@@ -1,3 +1,8 @@
+## 1.8.0
+
+* Various small improvements
+
+
 ## 1.7.0
 
 * add `redirect_eval_exekutor`
