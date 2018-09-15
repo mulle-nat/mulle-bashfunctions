@@ -214,7 +214,6 @@ test_comma_concat()
    output="`comma_concat "" ",a,"`"
    expect_output "${output}" "a"
 
-
 # a b
    output="`comma_concat "a" "b"`"
    expect_output "${output}" "a,b"

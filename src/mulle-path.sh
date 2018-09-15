@@ -74,25 +74,41 @@ path_depth()
 #
 # cuts off last extension only
 #
+r_extensionless_basename()
+{
+   r_fast_basename "$@"
+
+   RVAL="${RVAL%.*}"
+}
+
+
 extensionless_basename()
 {
-   local  _component
+   local RVAL
 
-   _fast_basename "$1"
-   echo "${_component%.*}"
+   r_extensionless_basename "$@"
+   [ ! -z "${RVAL}" ] && echo "${RVAL}"
+}
+
+
+r_path_extension()
+{
+   r_fast_basename "$@"
+
+   case "${RVAL}" in
+      *.*)
+        RVAL="${RVAL##*.}"
+      ;;
+   esac
 }
 
 
 path_extension()
 {
-   local  _component
+   local RVAL
 
-   _fast_basename "$1"
-   case "${_component}" in
-      *.*)
-        echo "${_component##*.}"
-      ;;
-   esac
+   r_path_extension "$@"
+   echo "${RVAL}"
 }
 
 
@@ -139,8 +155,9 @@ canonicalize_path()
 #
 # There must be no ".." or "." in the paths.
 #
-__relative_path_between()
+__r_relative_path_between()
 {
+    RVAL=""
     [ $# -ge 1 ] && [ $# -le 2 ] || return 1
 
     current="${2:+"$1"}"
@@ -160,19 +177,18 @@ __relative_path_between()
         [ "$current" != '/' ] && [ "$appendix" = "$target" ]; do
         if [ "$current" = "$appendix" ]; then
             relative="${relative:-.}"
-            echo "${relative#/}"
+            RVAL="${relative#/}"
             return 0
         fi
         current="${current%/*}"
         relative="$relative${relative:+/}.."
     done
 
-    relative="$relative${relative:+${appendix:+/}}${appendix#/}"
-    echo "$relative"
+    RVAL="$relative${relative:+${appendix:+/}}${appendix#/}"
 }
 
 
-_relative_path_between()
+_r_relative_path_between()
 {
    local a
    local b
@@ -184,8 +200,10 @@ _relative_path_between()
 
    # remove relative components and './' it upsets the code
 
-   a="`simplified_path "$1"`"
-   b="`simplified_path "$2"`"
+   r_simplified_path "$1"
+   a="${RVAL}"
+   r_simplified_path "$2"
+   b="${RVAL}"
 
 #   a="`echo "$1" | sed -e 's|/$||g'`"
 #   b="`echo "$2" | sed -e 's|/$||g'`"
@@ -193,12 +211,22 @@ _relative_path_between()
    [ -z "${a}" ] && internal_fail "Empty path (\$1)"
    [ -z "${b}" ] && internal_fail "Empty path (\$2)"
 
-   __relative_path_between "${b}" "${a}"   # flip args (historic)
+   __r_relative_path_between "${b}" "${a}"   # flip args (historic)
 
    if [ "${MULLE_TRACE_PATHS_FLIP_X}" = "YES" ]
    then
       set -x
    fi
+}
+
+
+_relative_path_between()
+{
+   local RVAL
+
+   _r_relative_path_between "$@"
+
+   [ ! -z "${RVAL}" ] && echo "${RVAL}"
 }
 
 
@@ -212,10 +240,10 @@ _relative_path_between()
 # the routine can not deal with ../ and ./
 # but is a bit faster than symlink_relpath
 #
-relative_path_between()
+r_relative_path_between()
 {
-   local  a="$1"
-   local  b="$2"
+   local a="$1"
+   local b="$2"
 
    # the function can't do mixed paths
 
@@ -281,7 +309,17 @@ relative_path_between()
       ;;
    esac
 
-   _relative_path_between "${a}" "${b}"
+   _r_relative_path_between "${a}" "${b}"
+}
+
+
+relative_path_between()
+{
+   local RVAL
+
+   r_relative_path_between "$@"
+
+   [ ! -z "${RVAL}" ] && echo "${RVAL}"
 }
 
 
@@ -377,18 +415,47 @@ is_relativepath()
 }
 
 
-absolutepath()
+r_absolutepath()
 {
    case "${1}" in
       "")
+        RVAL=""
       ;;
 
       /*|~*)
-        echo "$1"
+        RVAL="$1"
       ;;
 
       *)
-        echo "${PWD}/${1}"
+        RVAL="${PWD}/${1}"
+      ;;
+   esac
+}
+
+
+absolutepath()
+{
+   local RVAL
+
+   r_absolutepath "$@"
+
+   [ ! -z "${RVAL}" ] && echo "${RVAL}"
+}
+
+
+r_simplified_absolutepath()
+{
+   case "${1}" in
+      "")
+        RVAL=""
+      ;;
+
+      /*|~*)
+        r_simplified_path "$1"
+      ;;
+
+      *)
+        r_simplified_path "${PWD}/${1}"
       ;;
    esac
 }
@@ -396,19 +463,13 @@ absolutepath()
 
 simplified_absolutepath()
 {
-   case "${1}" in
-      "")
-      ;;
+   local RVAL
 
-      /*|~*)
-        simplified_path "$1"
-      ;;
+   r_simplified_absolutepath "$@"
 
-      *)
-        simplified_path "${PWD}/${1}"
-      ;;
-   esac
+   [ ! -z "${RVAL}" ] && echo "${RVAL}"
 }
+
 
 #
 # Imagine you are in a working directory `dirname b`
@@ -420,9 +481,13 @@ symlink_relpath()
    local a
    local b
 
+   local RVAL
    # _relative_path_between will simplify
-   a="`absolutepath "$1"`"
-   b="`absolutepath "$2"`"
+   r_absolutepath "$1"
+   a="$RVAL"
+
+   r_absolutepath "$2"
+   b="$RVAL"
 
    _relative_path_between "${a}" "${b}"
 }
@@ -666,6 +731,41 @@ ${i}"
 
 #
 # works also on filepaths that do not exist
+# r_simplified_path is faster, if there are no relative components
+#
+r_simplified_path()
+{
+   #
+   # quick check if there is something to simplify
+   # because this isn't fast at all
+   #
+   case "${1}" in
+      ""|".")
+         RVAL="."
+      ;;
+
+      */|*\.\.*|*\./*|*/\.)
+         if [ "${MULLE_TRACE_PATHS_FLIP_X}" = "YES" ]
+         then
+            set +x
+         fi
+
+         RVAL="`_simplified_path "$@"`"
+
+         if [ "${MULLE_TRACE_PATHS_FLIP_X}" = "YES" ]
+         then
+            set -x
+         fi
+      ;;
+
+      *)
+         RVAL="$1"
+      ;;
+   esac
+}
+
+#
+# works also on filepaths that do not exist
 #
 simplified_path()
 {
@@ -706,18 +806,18 @@ simplified_path()
 #
 assert_sane_subdir_path()
 {
-   local file
+   local RVAL
 
-   file="`simplified_path "$1"`"
+   r_simplified_path "$1"
 
-   case "$file"  in
+   case "${RVAL}"  in
       "")
-         fail "refuse empty subdirectory \"${file}\""
+         fail "refuse empty subdirectory \"$1\""
          exit 1
       ;;
 
       \$*|~|..|.|/*)
-         faile "refuse unsafe subdirectory path \"$1\""
+         fail "refuse unsafe subdirectory path \"$1\""
       ;;
    esac
 }
@@ -725,18 +825,18 @@ assert_sane_subdir_path()
 
 assert_sane_path()
 {
-   local file
+   local RVAL
 
-   file="`simplified_path "$1"`"
+   r_simplified_path "$1"
 
-   case "$file" in
+   case "${RVAL}" in
       \$*|~|${HOME}|..|.)
          log_error "refuse unsafe path \"$1\""
          exit 1
       ;;
 
       ""|/*)
-         if [ `path_depth "${file}"` -le 2 ]
+         if [ `path_depth "${RVAL}"` -le 2 ]
          then
             log_error "refuse suspicious path \"$1\""
             exit 1

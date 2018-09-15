@@ -42,7 +42,7 @@ MULLE_CASE_SH="included"
 #     FBTroll -> FBTroll      # lucky, but pretty good IMO
 #     FBTrollFB -> FBTrollF_B # unlucky, but i don't care
 #
-_tweaked_de_camel_case()
+_r_tweaked_de_camel_case()
 {
    local s="$1"
 
@@ -90,13 +90,22 @@ _tweaked_de_camel_case()
 
    done
 
-   echo "${output}"
+   RVAL="${output}"
 }
 
 
-tweaked_de_camel_case()
+r_tweaked_de_camel_case()
 {
    # need this for [A-B] to be case sensitive, dont'ask
    # https://stackoverflow.com/questions/10695029/why-isnt-the-case-statement-case-sensitive-when-nocasematch-is-off
-   LC_ALL=C _tweaked_de_camel_case "$@"
+   LC_ALL=C _r_tweaked_de_camel_case "$@"
+}
+
+tweaked_de_camel_case()
+{
+   local RVAL
+
+   r_tweaked_de_camel_case "$@"
+
+   [ ! -z "${RVAL}" ] && echo "${RVAL}"
 }

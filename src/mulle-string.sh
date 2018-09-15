@@ -39,130 +39,93 @@ MULLE_STRING_SH="included"
 #                            Concatenation
 # ####################################################################
 #
-concat()
+r_concat()
 {
    local separator="${3:- }"
 
    if [ -z "${1}" ]
    then
-      echo "${2}"
+      RVAL="${2}"
    else
       if [ -z "${2}" ]
       then
-         echo "${1}"
+         RVAL="${1}"
       else
-         echo "${1}${separator}${2}"
+         RVAL="${1}${separator}${2}"
       fi
    fi
 }
 
 
-_string_remove_leading_separators()
+concat()
 {
-   local escaped="$1"
+   local RVAL
 
-   sed "s/^${escaped}\(.*\)$/\1/g"
+   r_concat "$@"
+   echo "$RVAL"
 }
 
 
-
-_string_remove_trailing_separators()
+r_remove_prefix()
 {
-   local escaped="$1"
+   local old
 
-   sed -e "s/^\(.*\)${escaped}$/\1/g"
-}
+   RVAL="$1"
+   old=""
 
-
-
-_string_remove_duplicate_separators()
-{
-   local escaped="$1"
-
-   local previous
-   local next
-
-   next="`cat`"
-
-   while [ ! -z "${next}" ]
+   while [ "${RVAL}" != "${old}" ]
    do
-      previous="${next}"
-      next="$(sed -e "s/${escaped}${escaped}/${escaped}/g" <<< "${previous}")"
-
-      if [ "${next}" = "${previous}" ]
-      then
-         break
-      fi
+      old="$RVAL"
+      RVAL="${RVAL#$2}"
    done
-
-   if [ ! -z "${next}" ]
-   then
-      echo "${next}"
-   fi
 }
 
 
-_string_remove_only_separators()
+r_remove_suffix()
 {
-   local escaped="$1"
+   local old
 
-   sed -e "/^${escaped}*$/d"
+   RVAL="$1"
+   old=""
+
+   while [ "${RVAL}" != "${old}" ]
+   do
+      old="$RVAL"
+      RVAL="${RVAL%$2}"
+   done
 }
 
 
-_string_remove_ugly_separators()
+r_remove_duplicate()
 {
-   local escaped="$1"
+   local old
+   local s
 
-   # remove leading
-   # remove doubles
-   # remove duplicates
-   # remove lonelys
+   RVAL="$1"
+   old=""
 
-   _string_remove_leading_separators "${escaped}"   | \
-   _string_remove_trailing_separators "${escaped}"  | \
-   _string_remove_duplicate_separators "${escaped}" | \
-   _string_remove_only_separators "${escaped}"
+   s="$2"
+   case "$s" in
+      */*)
+        s="${s//\//\/\/}"
+      ;;
+   esac
+
+   while [ "${RVAL}" != "${old}" ]
+   do
+      old="${RVAL}"
+      RVAL="${RVAL//$s$s/$s}"
+   done
 }
 
 
-string_remove_leading_separators()
+r_remove_ugly()
 {
-   local separator="${1:- }"
+   local separator="${2:- }"
 
-   _string_remove_leading_separators "$(escaped_sed_pattern "${separator}")"
-}
-
-
-string_remove_trailing_separators()
-{
-   local separator="${1:- }"
-
-   _string_remove_trailing_separators "$(escaped_sed_pattern "${separator}")"
-}
-
-
-string_remove_only_separators()
-{
-   local separator="${1:- }"
-
-   _string_remove_only_separators "$(escaped_sed_pattern "${separator}")"
-}
-
-
-string_remove_duplicate_separators()
-{
-   local separator="${1:- }"
-
-   _string_remove_duplicate_separators "$(escaped_sed_pattern "${separator}")"
-}
-
-
-string_remove_ugly_separators()
-{
-   local separator="${1:- }"
-
-   _string_remove_ugly_separators "$(escaped_sed_pattern "${separator}")"
+   r_remove_prefix "$1" "${separator}"
+   r_remove_suffix "${RVAL}" "${separator}"
+   r_remove_duplicate "${RVAL}" "${separator}"
 }
 
 
@@ -172,34 +135,82 @@ string_remove_ugly_separators()
 #
 
 # use for PATHs
+r_colon_concat()
+{
+   r_concat "$1" "$2" ":"
+   r_remove_ugly "${RVAL}" ":"
+}
+
+# use for lists w/o empty elements
+r_comma_concat()
+{
+   r_concat "$1" "$2" ","
+   r_remove_ugly "${RVAL}" ","
+}
+
+# use for CSV
+r_semicolon_concat()
+{
+   r_concat "$1" "$2" ";"
+   r_remove_suffix "${RVAL}" ";"
+}
+
+# use for filepaths
+r_slash_concat()
+{
+   r_concat "$1" "$2" "/"
+   r_remove_duplicate "${RVAL}" "/"
+}
+
+
+# use for building sentences, where space is a separator and
+# not indenting or styling
+r_space_concat()
+{
+   concat_no_double_separator "$1" "$2" | string_remove_ugly_separators
+}
+
+
 colon_concat()
 {
-   concat "$1" "$2" ":" | string_remove_ugly_separators ':'
+   local RVAL
+
+   r_colon_concat "$@"
+
+   [ ! -z "${RVAL}" ] && echo "${RVAL}"
 }
+
 
 # use for lists w/o empty elements
 comma_concat()
 {
-   concat "$1" "$2" "," | string_remove_ugly_separators ","
+   local RVAL
+
+   r_comma_concat "$@"
+
+   [ ! -z "${RVAL}" ] && echo "${RVAL}"
 }
+
 
 # use for CSV
 semicolon_concat()
 {
-   concat "$1" "$2" ";" | string_remove_trailing_separators ";"
+   local RVAL
+
+   r_semicolon_concat "$@"
+
+   [ ! -z "${RVAL}" ] && echo "${RVAL}"
 }
+
 
 # use for filepaths
 slash_concat()
 {
-   concat "$1" "$2" "/" | string_remove_duplicate_separators "/"
-}
+   local RVAL
 
-# use for building sentences, where space is a separator and
-# not indenting or styling
-space_concat()
-{
-   concat_no_double_separator "$1" "$2" | string_remove_ugly_separators
+   r_slash_concat "$@"
+
+   [ ! -z "${RVAL}" ] && echo "${RVAL}"
 }
 
 
@@ -223,53 +234,72 @@ add_cmake_path()
 }
 
 
-add_line()
+r_add_line()
 {
    local lines="$1"
    local line="$2"
 
    if [ -z "${lines}" ]
    then
-      echo "${line}"
+      RVAL="${line}"
    else
       if [ -z "${line}" ]
       then
-         echo "${lines}"
+         RVAL="${lines}"
       else
-         echo "${lines}
+         RVAL="${lines}
 ${line}"
       fi
    fi
 }
+
+
+add_line()
+{
+   local RVAL
+
+   r_add_line "$@"
+
+   [ ! -z "${RVAL}" ] && echo "${RVAL}"
+}
+
 
 #
 # makes somewhat prettier filenames, removing superflous "."
 # and trailing '/'
 # DO NOT USE ON URLs
 #
-filepath_cleaned()
+r_filepath_cleaned()
 {
-   local filename="$1"
+   local old
+
+   RVAL="$1"
+   [ -z "${RVAL}" ] && return
+   old=""
 
    # remove excess //, also inside components
-   case "${filename}" in
-      *"//"*)
-         filename="`sed 's|//|/|g' <<< "${filename}"`"
-      ;;
-   esac
+   while [ "${RVAL}" != "${old}" ]
+   do
+      old="${RVAL}"
+      RVAL="${RVAL%/}"
+      RVAL="${RVAL//\/\//\/}"
+   done
 
-   # remove trailing /
-   case "${filename}" in
-      *"/")
-         filename="`sed 's|\(.\)/$|\1|g' <<< "${filename}"`"
-      ;;
-   esac
-
-   echo "${filename}"
+   [ -z "${RVAL}" ] && RVAL="/"
 }
 
 
-filepath_concat()
+filepath_cleaned()
+{
+   local RVAL
+
+   r_filepath_cleaned "$@"
+
+   [ ! -z "${RVAL}" ] && echo "${RVAL}"
+}
+
+
+r_filepath_concat()
 {
    local i
    local s
@@ -284,7 +314,8 @@ filepath_concat()
       set +o noglob
       sep="/"
 
-      i="`filepath_cleaned "${i}" `"
+      r_filepath_cleaned "${i}"
+      i="${RVAL}"
 
       case "$i" in
          "")
@@ -329,11 +360,22 @@ filepath_concat()
 
    if [ ! -z "${s}" ]
    then
-      echo "${s}"
+      RVAL="${s}"
    else
-      echo "${fallback}"
+      RVAL="${fallback}"
    fi
 }
+
+
+filepath_concat()
+{
+   local RVAL
+
+   r_filepath_concat "$@"
+
+   [ ! -z "${RVAL}" ] && echo "${RVAL}"
+}
+
 
 # ####################################################################
 #                            Strings
@@ -343,12 +385,11 @@ is_yes()
 {
    local s
 
-   s=`echo "$1" | tr '[:lower:]' '[:upper:]'`
-   case "${s}" in
-      YES|Y|1)
+   case "$1" in
+      [yY][eE][sS]|Y|1)
          return 0
       ;;
-      NO|N|0|"")
+      [nN][oO]|[nN]|0|"")
          return 1
       ;;
 
@@ -368,7 +409,7 @@ escape_linefeeds()
 {
    local text
 
-   text="`echo "$@" | sed -e 's/|/\\|/g'`"
+   text="${text//\|/\\\|}"
    /bin/echo -n "${text}" | tr '\012' '|'
 }
 
@@ -385,28 +426,91 @@ unescape_linefeeds()
 }
 
 
+# this is heaps faster than the sed code
+r_escaped_grep_pattern()
+{
+   local s="$1"
+
+   s="${s//\\/\\\\}"
+   s="${s//\[/\\[}"
+   s="${s//\]/\\]}"
+   s="${s//\//\\/}"
+   s="${s//\$/\\$}"
+   s="${s//\*/\\*}"
+   s="${s//\./\\.}"
+   s="${s//\^/\\^}"
+   s="${s//\|/\\|}"
+
+   RVAL="$s"
+}
+
+
 escaped_grep_pattern()
 {
-   sed -e 's/[]\/$*.^|[]/\\&/g' <<< "${1}"
+   local RVAL
+
+   r_escaped_grep_pattern "$@"
+
+   [ ! -z "${RVAL}" ] && echo "${RVAL}"
+}
+
+
+r_escaped_sed_pattern()
+{
+   local s="$1"
+
+   s="${s//\\/\\\\}"
+   s="${s//\[/\\[}"
+   s="${s//\]/\\]}"
+   s="${s//\//\\/}"
+   s="${s//\$/\\$}"
+   s="${s//\*/\\*}"
+   s="${s//\./\\.}"
+   s="${s//\^/\\^}"
+
+   RVAL="$s"
 }
 
 
 escaped_sed_pattern()
 {
-   # escaping the pipe is bad with sed
-   sed -e 's/[]\/$*.^[]/\\&/g' <<< "${1}"
+   local RVAL
+
+   r_escaped_sed_pattern "$@"
+
+   [ ! -z "${RVAL}" ] && echo "${RVAL}"
+}
+
+
+r_escaped_spaces()
+{
+   RVAL="${1// /\\ }"
 }
 
 
 escaped_spaces()
 {
-   sed -e 's/ /\\ /g' <<< "${1}"
+   local RVAL
+
+   r_escaped_spaces "$@"
+
+   [ ! -z "${RVAL}" ] && echo "${RVAL}"
+}
+
+
+r_escaped_doublequotes()
+{
+   RVAL="${1//\\/\\\\}"
 }
 
 
 escaped_doublequotes()
 {
-   sed -e 's/"/\\"/g' <<< "${1}"
+   local RVAL
+
+   r_escaped_doublequotes "$@"
+
+   [ ! -z "${RVAL}" ] && echo "${RVAL}"
 }
 
 # MEMO: use printf "%q" dot shell escaping
@@ -417,42 +521,27 @@ escaped_doublequotes()
 #
 string_has_prefix()
 {
-  local string="$1"
-  local prefix="$2"
-
-  prefix="`escaped_grep_pattern "${prefix}"`"
-  egrep -s -q "^${prefix}" <<< "${string}"
+  [ "${1#$2}" != "$1" ]
 }
 
 
 string_remove_prefix()
 {
-  local string="$1"
-  local prefix="$2"
-
-  prefix="`escaped_sed_pattern "${prefix}"`"
-  sed -e "s/^${prefix}//" <<< "${string}"
+   echo "${1#$2}"
 }
 
 
 string_has_suffix()
 {
-  local string="$1"
-  local suffix="$2"
-
-  suffix="`escaped_grep_pattern "${suffix}"`"
-  egrep -s -q "${suffix}\$" <<< "${string}"
+  [ "${1%$2}" != "$1" ]
 }
 
 
 string_remove_suffix()
 {
-  local string="$1"
-  local suffix="$2"
-
-  suffix="`escaped_sed_pattern "${suffix}"`"
-  sed -e -"s/${suffix}\$//" <<< "${string}"
+   echo "${1%$2}"
 }
+
 
 # ####################################################################
 #                            Expansion
@@ -506,7 +595,7 @@ expand_environment_variables()
 #
 
 # much faster than calling "basename"
-_fast_basename()
+r_fast_basename()
 {
    local filename="$1"
 
@@ -514,7 +603,7 @@ _fast_basename()
    do
       case "${filename}" in
          /)
-           _component="/"
+           RVAL="/"
            return
          ;;
 
@@ -523,7 +612,7 @@ _fast_basename()
          ;;
 
          *)
-            _component="${filename##*/}"
+            RVAL="${filename##*/}"
             return
          ;;
       esac
@@ -531,7 +620,7 @@ _fast_basename()
 }
 
 
-_fast_dirname()
+r_fast_dirname()
 {
    local filename="$1"
 
@@ -541,7 +630,7 @@ _fast_dirname()
    do
       case "${filename}" in
          /)
-            _directory="${filename}"
+            RVAL="${filename}"
             return
          ;;
 
@@ -554,21 +643,21 @@ _fast_dirname()
    done
 
    last="${filename##*/}"
-   _directory="${filename%${last}}"
+   RVAL="${filename%${last}}"
 
    while :
    do
-      case "${_directory}" in
+      case "${RVAL}" in
          /)
            return
          ;;
 
          */)
-            _directory="${_directory%?}"
+            RVAL="${RVAL%?}"
          ;;
 
          *)
-            _directory="${_directory:-.}"
+            RVAL="${RVAL:-.}"
             return
          ;;
       esac
@@ -578,19 +667,41 @@ _fast_dirname()
 
 fast_basename()
 {
-   local _component
+   local RVAL
 
-   _fast_basename "$@"
-   echo "${_component}"
+   r_fast_basename "$@"
+
+   [ ! -z "${RVAL}" ] && echo "${RVAL}"
 }
 
 
 fast_dirname()
 {
-   local _directory
+   local RVAL
 
-   _fast_dirname "$@"
-   echo "${_directory}"
+   r_fast_dirname "$@"
+
+   [ ! -z "${RVAL}" ] && echo "${RVAL}"
+}
+
+
+# old function
+_fast_basename()
+{
+   local RVAL
+
+   r_fast_basename "$@"
+   _component="${RVAL}"
+}
+
+
+# old function
+_fast_dirname()
+{
+   local RVAL
+
+   r_fast_dirname "$@"
+   _directory="${RVAL}"
 }
 
 

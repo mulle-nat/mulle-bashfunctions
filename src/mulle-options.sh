@@ -109,7 +109,7 @@ _options_technical_flags_usage()
    cat <<EOF
    -n${S}${S}${S}${DELIMITER}dry run
    -s${S}${S}${S}${DELIMITER}be silent
-   -v${S}${S}${S}${DELIMITER}be verbose
+   -v${S}${S}${S}${DELIMITER}be verbose (increase with -vv, -vvv)
 EOF
 
    if [ ! -z "${MULLE_TRACE}" ]
@@ -118,9 +118,6 @@ EOF
    -ld${S}${S}${DELIMITER}additional debug output
    -le${S}${S}${DELIMITER}additional environment debug output
    -lx${S}${S}${DELIMITER}external command execution log output
-   -tpwd${DELIMITER}emit shortened PWD during trace
-   -vv${S}${S}${DELIMITER}be more verbose
-   -vvv${S}${DELIMITER}be very verbose
 EOF
    fi
 }
