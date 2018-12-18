@@ -1,3 +1,7 @@
+### 1.9.1
+
+* fix installer
+
 ## 1.9.0
 
 * support for parallel execution of commands
