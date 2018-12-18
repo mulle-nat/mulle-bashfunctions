@@ -29,7 +29,7 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-[ ! -z "${MULLE_PATH_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = "YES" ] && \
+[ ! -z "${MULLE_PATH_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
    echo "double inclusion of mulle-path.sh" >&2
 
 [ -z "${MULLE_STRING_SH}" ] && echo "mulle-string.sh must be included before mulle-path.sh" 2>&1 && exit 1
@@ -46,12 +46,11 @@ MULLE_PATH_SH="included"
 # 2 = /tmp
 # ...
 #
-path_depth()
+r_path_depth()
 {
    local name="$1"
 
    local depth
-   local _directory
 
    depth=0
 
@@ -61,13 +60,22 @@ path_depth()
 
       while [ "$name" != "." -a "${name}" != '/' ]
       do
-         _fast_dirname "${name}"
+         r_fast_dirname "${name}"
+         name="${RVAL}"
 
-         name="${_directory}"
-         depth="`expr "$depth" + 1`"
+         depth=$(($depth + 1))
       done
    fi
-   echo "$depth"
+   RVAL="$depth"
+}
+
+
+path_depth()
+{
+   local RVAL
+
+   r_path_depth "$@"
+   [ ! -z "${RVAL}" ] && echo "${RVAL}"
 }
 
 
@@ -157,7 +165,7 @@ canonicalize_path()
 #
 __r_relative_path_between()
 {
-    RVAL=""
+    RVAL=''
     [ $# -ge 1 ] && [ $# -le 2 ] || return 1
 
     current="${2:+"$1"}"
@@ -193,7 +201,7 @@ _r_relative_path_between()
    local a
    local b
 
-   if [ "${MULLE_TRACE_PATHS_FLIP_X}" = "YES" ]
+   if [ "${MULLE_TRACE_PATHS_FLIP_X}" = 'YES' ]
    then
       set +x
    fi
@@ -213,7 +221,7 @@ _r_relative_path_between()
 
    __r_relative_path_between "${b}" "${a}"   # flip args (historic)
 
-   if [ "${MULLE_TRACE_PATHS_FLIP_X}" = "YES" ]
+   if [ "${MULLE_TRACE_PATHS_FLIP_X}" = 'YES' ]
    then
       set -x
    fi
@@ -327,21 +335,23 @@ relative_path_between()
 # compute number of .. needed to return from path
 # e.g.  cd "a/b/c" -> cd ../../..
 #
-compute_relative()
+r_compute_relative()
 {
    local name="$1"
 
    local depth
    local relative
 
-   depth="`path_depth "${name}"`"
+   r_path_depth "${name}"
+   depth="${RVAL}"
+
    if [ "${depth}" -gt 1 ]
    then
       relative=".."
       while [ "$depth" -gt 2 ]
       do
          relative="${relative}/.."
-         depth="`expr "${depth}" - 1`"
+         depth=$(($depth - 1))
       done
    fi
 
@@ -350,21 +360,17 @@ compute_relative()
 #      relative="."
 #   fi
 
-   echo "${relative}"
+   RVAL="${relative}"
 }
 
 
-remove_absolute_path_prefix_up_to()
+compute_relative()
 {
-   local s="$1"
-   local prefix="$2"
+   local RVAL
 
-   if [ "`fast_basename "${s}"`" = "${prefix}" ]
-   then
-      return 0
-   fi
+   r_compute_relative "$@"
 
-   echo "${s}" | sed "s|^.*/${prefix}/\(.*\)*|\1|g"
+   [ ! -z "${RVAL}" ] && echo "${RVAL}"
 }
 
 
@@ -417,17 +423,20 @@ is_relativepath()
 
 r_absolutepath()
 {
-   case "${1}" in
+  local directory="$1"
+  local working="${2:-${PWD}}"
+
+   case "${directory}" in
       "")
-        RVAL=""
+        RVAL=''
       ;;
 
       /*|~*)
-        RVAL="$1"
+        RVAL="${directory}"
       ;;
 
       *)
-        RVAL="${PWD}/${1}"
+        RVAL="${working}/${directory}"
       ;;
    esac
 }
@@ -445,17 +454,20 @@ absolutepath()
 
 r_simplified_absolutepath()
 {
+  local directory="$1"
+  local working="${2:-${PWD}}"
+
    case "${1}" in
       "")
-        RVAL=""
+        RVAL=''
       ;;
 
       /*|~*)
-        r_simplified_path "$1"
+        r_simplified_path "${directory}"
       ;;
 
       *)
-        r_simplified_path "${PWD}/${1}"
+        r_simplified_path "${working}/${directory}"
       ;;
    esac
 }
@@ -476,12 +488,11 @@ simplified_absolutepath()
 # This function gives the relpath you need
 # if you were to create symlink 'b' pointing to 'a'
 #
-symlink_relpath()
+r_symlink_relpath()
 {
    local a
    local b
 
-   local RVAL
    # _relative_path_between will simplify
    r_absolutepath "$1"
    a="$RVAL"
@@ -489,62 +500,17 @@ symlink_relpath()
    r_absolutepath "$2"
    b="$RVAL"
 
-   _relative_path_between "${a}" "${b}"
+   _r_relative_path_between "${a}" "${b}"
 }
 
 
-combined_escaped_search_path_if_exists()
+symlink_relpath()
 {
-   local i
-   local combinedpath
+   local RVAL
 
-   set -o noglob
-   for i in "$@"
-   do
-      set +o noglob
-      if [ ! -z "${i}" ]
-      then
-         i="`escaped_spaces "${i}"`"
-         if [ -e "${i}" ]
-         then
-           if [ -z "$combinedpath" ]
-           then
-              combinedpath="${i}"
-           else
-              combinedpath="${combinedpath} ${i}"
-           fi
-        fi
-      fi
-   done
-   set +o noglob
+   r_symlink_relpath "$@"
 
-   echo "${combinedpath}"
-}
-
-
-combined_escaped_search_path()
-{
-   local i
-   local combinedpath
-
-   set -o noglob
-   for i in "$@"
-   do
-      set +o noglob
-      if [ ! -z "${i}" ]
-      then
-         i="`escaped_spaces "${i}"`"
-         if [ -z "$combinedpath" ]
-         then
-            combinedpath="${i}"
-         else
-            combinedpath="${combinedpath} ${i}"
-         fi
-      fi
-   done
-   set +o noglob
-
-   echo "${combinedpath}"
+   [ ! -z "${RVAL}" ] && echo "${RVAL}"
 }
 
 
@@ -652,7 +618,7 @@ _simplified_path()
 
 #   log_printf "${C_INFO}%b${C_RESET}\n" "$filepath"
 
-   remove_empty="NO"  # remove trailing slashes
+   remove_empty='NO'  # remove trailing slashes
 
    IFS="/"
    set -o noglob
@@ -662,13 +628,13 @@ _simplified_path()
       set +o noglob
       case "$i" in
          \.)
-           remove_empty="YES"
+           remove_empty='YES'
            continue
          ;;
 
          \.\.)
            # remove /..
-           remove_empty="YES"
+           remove_empty='YES'
 
            if [ "${last}" = "|" ]
            then
@@ -688,7 +654,7 @@ _simplified_path()
          ;;
 
          "")
-            if [ "${remove_empty}" = "NO" ]
+            if [ "${remove_empty}" = 'NO' ]
             then
                last='|'
                result='|'
@@ -697,7 +663,7 @@ _simplified_path()
          ;;
       esac
 
-      remove_empty="YES"
+      remove_empty='YES'
 
       last="${i}"
       if [ -z "${result}" ]
@@ -745,14 +711,14 @@ r_simplified_path()
       ;;
 
       */|*\.\.*|*\./*|*/\.)
-         if [ "${MULLE_TRACE_PATHS_FLIP_X}" = "YES" ]
+         if [ "${MULLE_TRACE_PATHS_FLIP_X}" = 'YES' ]
          then
             set +x
          fi
 
          RVAL="`_simplified_path "$@"`"
 
-         if [ "${MULLE_TRACE_PATHS_FLIP_X}" = "YES" ]
+         if [ "${MULLE_TRACE_PATHS_FLIP_X}" = 'YES' ]
          then
             set -x
          fi
@@ -779,14 +745,14 @@ simplified_path()
       ;;
 
       */|*\.\.*|*\./*|*/\.)
-         if [ "${MULLE_TRACE_PATHS_FLIP_X}" = "YES" ]
+         if [ "${MULLE_TRACE_PATHS_FLIP_X}" = 'YES' ]
          then
             set +x
          fi
 
          _simplified_path "$@"
 
-         if [ "${MULLE_TRACE_PATHS_FLIP_X}" = "YES" ]
+         if [ "${MULLE_TRACE_PATHS_FLIP_X}" = 'YES' ]
          then
             set -x
          fi
@@ -835,110 +801,22 @@ assert_sane_path()
          exit 1
       ;;
 
+      /tmp/*)
+      ;;
+
       ""|/*)
-         if [ `path_depth "${RVAL}"` -le 2 ]
+         local filepath
+
+         filepath="${RVAL}"
+         r_path_depth "${filepath}"
+         if [ "${RVAL}" -le 2 ]
          then
             log_error "refuse suspicious path \"$1\""
             exit 1
          fi
+         RVAL="${filepath}"
       ;;
    esac
-}
-
-
-prepend_to_search_path_if_missing()
-{
-   local fullpath="$1"; shift
-
-   local new_path
-   local tail_path
-   local binpath
-
-   tail_path=""
-   new_path=""
-
-   local oldifs
-   local i
-
-   oldifs="$IFS"
-   IFS=":"
-
-   set -o noglob
-   for i in $fullpath
-   do
-      IFS="${oldifs}"
-      set +o noglob
-
-      # shims stay in front (homebrew)
-      case "$i" in
-         */shims/*)
-            new_path="`slash_concat "${new_path}" "$i"`"
-         ;;
-      esac
-   done
-   set +o noglob
-
-   #
-   #
-   #
-   while [ $# -gt 0 ]
-   do
-      binpath="$1"
-      shift
-
-      binpath="`simplified_absolutepath "${binpath}"`"
-
-      IFS=":"
-      set -o noglob
-
-      for i in $fullpath
-      do
-         IFS="${oldifs}"
-         set +o noglob
-
-         # don't duplicate if already in there
-         case "$i" in
-           "${binpath}/"|"${binpath}")
-               binpath=""
-               break
-         esac
-      done
-
-      IFS="${oldifs}"
-      set +o noglob
-
-      if [ -z "${binpath}" ]
-      then
-         continue
-      fi
-
-      tail_path="`slash_concat "${tail_path}" "${binpath}"`"
-   done
-
-   IFS=":"
-   set -o noglob
-
-   for i in $fullpath
-   do
-      IFS="${oldifs}"
-      set +o noglob
-
-      # shims stay in front (homebrew)
-      case "$i" in
-         */shims/*)
-            continue;
-         ;;
-
-         *)
-            tail_path="`slash_concat "${tail_path}" "${i}"`"
-         ;;
-      esac
-   done
-
-   IFS="${oldifs}"
-   set +o noglob
-
-   slash_concat "${new_path}" "${tail_path}"
 }
 
 :

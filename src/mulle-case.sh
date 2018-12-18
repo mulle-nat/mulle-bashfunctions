@@ -29,66 +29,105 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-[ ! -z "${MULLE_CASE_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = "YES" ] && \
+[ ! -z "${MULLE_CASE_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
    echo "double inclusion of mulle-case.sh" >&2
 
 MULLE_CASE_SH="included"
 
 #
-# This is a camel case to underscore converter that keeps single capitalized
-# letters together with the previous word.
+# This is a camel case to underscore converter that keeps capitalized
+# letters together. It contains a stupid hack for ObjC because it was just
+# too hard to figure that one out.
 #
 # Ex. MulleObjCBaseFoundation -> Mulle_ObjC_Base_Foundation
-#     FBTroll -> FBTroll      # lucky, but pretty good IMO
-#     FBTrollFB -> FBTrollF_B # unlucky, but i don't care
+#     FBTroll -> FBTroll
+#     FBTrollFB -> FBTroll_FB
+#
+#     MulleEOFoundation -> Mulle_EO_Foundation
+#     MulleEOClassDescription Mulle_EO_Class_Description
 #
 _r_tweaked_de_camel_case()
 {
    local s="$1"
 
+   local collectUpper
+   local collectLower
    local output
+   local state
 
    local c
    local d
-   local e
 
+   s="${s//ObjC/Objc}"
+
+   state='start'
    while [ ! -z "${s}" ]
    do
+      d="${c}"
       c="${s:0:1}"
       s="${s:1}"
-      d="${s:0:1}"
-      e="${s:1:1}"
 
-      case "${d}" in
-         [A-Z])
+      case "${state}" in
+         'start')
             case "${c}" in
-               [a-z])
-                  case "${e}" in
-                     [^A-Z])
-                        output="${output}${c}_"
-                        continue
-                     ;;
+               [A-Z])
+                  state="upper";
+                  collect="${collect}${c}"
+                  continue
+               ;;
 
-                     "")
-                        output="${output}${c}${d}"
-                        s="${s:1}"
-                        continue
-                     ;;
+               *)
+                  state="lower"
+               ;;
+            esac
+         ;;
 
-                     *)
-                        output="${output}${c}${d}_"
-                        s="${s:1}"
-                        continue
-                     ;;
-                  esac
+         'upper')
+            case "${c}" in
+               [A-Z])
+                  collect="${collect}${c}"
+                  continue
+               ;;
+
+               *)
+                  if [ ! -z "${output}" -a ! -z "${collect}" ]
+                  then
+                     if [ ! -z "${collect:1}" ]
+                     then
+                        output="${output}_${collect%?}_${collect#${collect%?}}"
+                     else
+                        output="${output}_${collect}"
+                     fi
+                  else
+                     output="${output}${collect}"
+                  fi
+                  collect=""
+                  state="lower"
+               ;;
+            esac
+         ;;
+
+         'lower')
+            case "${c}" in
+               [A-Z])
+                  output="${output}${collect}"
+                  collect="${c}"
+                  state="upper"
+                  continue
                ;;
             esac
          ;;
       esac
 
       output="${output}${c}"
-
    done
+
+   if [ ! -z "${output}" -a ! -z "${collect}" ]
+   then
+      output="${output}_${collect}"
+   else
+      output="${output}${collect}"
+   fi
 
    RVAL="${output}"
 }
@@ -100,6 +139,7 @@ r_tweaked_de_camel_case()
    # https://stackoverflow.com/questions/10695029/why-isnt-the-case-statement-case-sensitive-when-nocasematch-is-off
    LC_ALL=C _r_tweaked_de_camel_case "$@"
 }
+
 
 tweaked_de_camel_case()
 {

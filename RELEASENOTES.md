@@ -1,3 +1,11 @@
+## 1.9.0
+
+* support for parallel execution of commands
+* moved some unused code to mulle-legacy.sh
+* tmpfile support with RVAL interface
+* version support with RVAL interface
+
+
 ## 1.8.0
 
 * Various small improvements

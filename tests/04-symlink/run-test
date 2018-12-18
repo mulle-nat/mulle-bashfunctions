@@ -8,14 +8,14 @@ run_test_1()
    SED="`command -v sed`"
 
    log_fluff "${SED} relative"
-   create_symlink "${SED}" "deep/bin/sed1" "NO"
+   create_symlink "${SED}" "deep/bin/sed1" 'NO'
    log_fluff "`readlink deep/bin/sed1`"
 
    result="`echo "x" | ./deep/bin/sed1 's/x/y/g'`" || exit 1
    [ "${result}" = "y" ] || exit 1
 
    log_fluff "${SED} absolute"
-   create_symlink "${SED}" "deep/bin/sed2" "YES"
+   create_symlink "${SED}" "deep/bin/sed2" 'YES'
    log_fluff "`readlink deep/bin/sed2`"
 
    result="`echo "x" | ./deep/bin/sed2 's/x/y/g'`" || exit 1
@@ -24,14 +24,14 @@ run_test_1()
    linkpath="`symlink_relpath "${SED}" "$PWD"`"
 
    log_fluff "${linkpath} absolute"
-   create_symlink "${linkpath}" "deep/bin/sed3" "NO"
+   create_symlink "${linkpath}" "deep/bin/sed3" 'NO'
    log_fluff "`readlink deep/bin/sed3`"
 
    result="`echo "x" | ./deep/bin/sed3 's/x/y/g'`" || exit 1
    [ "${result}" = "y" ] || exit 1
 
    log_fluff "${linkpath} relative"
-   create_symlink "${linkpath}" "deep/bin/sed4" "YES"
+   create_symlink "${linkpath}" "deep/bin/sed4" 'YES'
    log_fluff "`readlink deep/bin/sed4`"
 
    result="`echo "x" | ./deep/bin/sed4 's/x/y/g'`" || exit 1

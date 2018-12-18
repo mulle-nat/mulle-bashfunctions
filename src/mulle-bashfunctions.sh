@@ -37,11 +37,12 @@ then
 
    __bashfunctions_loader()
    {
-      local tmp
 
       if [ -z "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}" -a ! -z "$0" ]
       then
-         tmp="`dirname -- "$0"`"
+         local tmp
+
+         tmp="${0%/*}"
          if [  -f "${tmp}/mulle-bashfunctions.sh" ]
          then
             MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${tmp}"

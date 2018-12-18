@@ -29,7 +29,7 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-[ ! -z "${MULLE_STRING_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = "YES" ] && \
+[ ! -z "${MULLE_STRING_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
    echo "double inclusion of mulle-string.sh" >&2
 
 MULLE_STRING_SH="included"
@@ -71,7 +71,7 @@ r_remove_prefix()
    local old
 
    RVAL="$1"
-   old=""
+   old=''
 
    while [ "${RVAL}" != "${old}" ]
    do
@@ -86,7 +86,7 @@ r_remove_suffix()
    local old
 
    RVAL="$1"
-   old=""
+   old=''
 
    while [ "${RVAL}" != "${old}" ]
    do
@@ -102,7 +102,7 @@ r_remove_duplicate()
    local s
 
    RVAL="$1"
-   old=""
+   old=''
 
    s="$2"
    case "$s" in
@@ -264,6 +264,53 @@ add_line()
 }
 
 
+r_add_unique_line()
+{
+   local lines="$1"
+   local line="$2"
+
+   if [ -z "${line}" ]
+   then
+      RVAL="${lines}"
+      return
+   fi
+
+   if [ -z "${lines}" ]
+   then
+      RVAL="${line}"
+      return
+   fi
+
+   if fgrep -x -q -e "${line}" <<< "${lines}"
+   then
+      RVAL="${lines}"
+      return
+   fi
+
+   RVAL="${lines}
+${line}"
+}
+
+
+r_add_unique_lines()
+{
+   local lines="$1"
+   local addlines="$2"
+
+   RVAL="${lines}"
+
+   IFS="
+"; set -f
+   for line in ${addlines}
+   do
+      IFS="${DEFAULT_IFS}"; set +f
+
+      r_add_unique_line "${RVAL}" "${line}"
+   done
+   IFS="${DEFAULT_IFS}"; set +f
+}
+
+
 #
 # makes somewhat prettier filenames, removing superflous "."
 # and trailing '/'
@@ -275,7 +322,7 @@ r_filepath_cleaned()
 
    RVAL="$1"
    [ -z "${RVAL}" ] && return
-   old=""
+   old=''
 
    # remove excess //, also inside components
    while [ "${RVAL}" != "${old}" ]
@@ -514,6 +561,21 @@ escaped_doublequotes()
 }
 
 # MEMO: use printf "%q" dot shell escaping
+r_escaped_shellstring()
+{
+   printf -v RVAL '%q' "$1"
+}
+
+
+escaped_shellstring()
+{
+   local RVAL
+
+   r_escaped_shellstring "$@"
+
+   [ ! -z "${RVAL}" ] && echo "${RVAL}"
+}
+
 
 # ####################################################################
 #                          Prefix / Suffix
@@ -564,8 +626,8 @@ expand_environment_variables()
     key="`echo "${string}" | sed -n 's/^\(.*\)\${\([A-Za-z_][A-Za-z0-9_:-]*\)}\(.*\)$/\2/p'`"
     if [ ! -z "${key}" ]
     then
-       prefix="`echo "${string}" | sed 's/^\(.*\)\${\([A-Za-z_][A-Za-z0-9_:-]*\)}\(.*\)$/\1/'`"
-       suffix="`echo "${string}" | sed 's/^\(.*\)\${\([A-Za-z_][A-Za-z0-9_:-]*\)}\(.*\)$/\3/'`"
+       prefix="`sed 's/^\(.*\)\${\([A-Za-z_][A-Za-z0-9_:-]*\)}\(.*\)$/\1/' <<< "${string}" `"
+       suffix="`sed 's/^\(.*\)\${\([A-Za-z_][A-Za-z0-9_:-]*\)}\(.*\)$/\3/' <<< "${string}" `"
        value="`eval echo \$\{${key}\}`"
        if [ -z "${value}" ]
        then

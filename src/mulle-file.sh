@@ -29,7 +29,7 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-[ ! -z "${MULLE_FILE_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = "YES" ] && \
+[ ! -z "${MULLE_FILE_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
    echo "double inclusion of mulle-file.sh" >&2
 
 [ -z "${MULLE_PATH_SH}" ] && echo "mulle-path.sh must be included before mulle-file.sh" 2>&1 && exit 1
@@ -66,8 +66,10 @@ mkdir_if_missing()
    if [ -L "$1" ]
    then
       local resolve
+      local RVAL
 
-      resolve="`resolve_symlinks "$1"`"
+      r_resolve_symlinks "$1"
+      resolve="${RVAL}"
       if [ ! -d "${resolve}" ]
       then
          fail "failed to create directory \"$1\" as a symlink is there"
@@ -83,22 +85,33 @@ mkdir_if_missing()
 }
 
 
-mkdir_parent_if_missing()
+r_mkdir_parent_if_missing()
 {
    local dstdir="$1"
 
-   local parent
-
-   parent="`fast_dirname "${dstdir}"`"
-   case "${parent}" in
+   r_fast_dirname "${dstdir}"
+   case "${RVAL}" in
       ""|"\.")
       ;;
 
       *)
-         mkdir_if_missing "${parent}"
-         echo "${parent}"
+         mkdir_if_missing "${RVAL}"
+         return 0
       ;;
    esac
+
+   return 1
+}
+
+
+mkdir_parent_if_missing()
+{
+   local RVAL
+
+   if r_mkdir_parent_if_missing "$@"
+   then
+      echo "${RVAL}"
+   fi
 }
 
 
@@ -154,8 +167,10 @@ _create_file_if_missing()
    fi
 
    local directory
+   local RVAL
 
-   directory="`fast_dirname "${path}"`"
+   r_fast_dirname "${path}"
+   directory="${RVAL}"
    if [ ! -z "${directory}" ]
    then
       mkdir_if_missing "${directory}"
@@ -209,13 +224,62 @@ remove_file_if_present()
 #
 # mktemp is really slow sometimes, so we prefer uuidgen
 #
-_make_tmp_in_dir()
+_make_tmp_in_dir_mktemp()
 {
    local tmpdir="$1"
    local name="$2"
    local filetype="$3"
 
-   [ ! -d "${tmpdir}" ] && fail "${tmpdir} does not exist"
+   case "${filetype}" in
+      *d*)
+         TMPDIR="${tmpdir}" exekutor mktemp -d "${name}-XXXXXXXX"
+      ;;
+
+      *)
+         TMPDIR="${tmpdir}" exekutor mktemp "${name}-XXXXXXXX"
+      ;;
+   esac
+}
+
+
+_r_make_tmp_in_dir_uuidgen()
+{
+   local UUIDGEN="$1"; shift
+
+   local tmpdir="$1"
+   local name="$2"
+   local filetype="$3"
+
+   local prev
+   local uuid
+
+   RVAL=''
+
+   while :
+   do
+      uuid="`${UUIDGEN}`"
+      RVAL="${tmpdir}/${name}-${uuid:0:8}"
+
+      case "${filetype}" in
+         *d*)
+            exekutor mkdir "${RVAL}" 2> /dev/null && return 0
+         ;;
+
+         *)
+            exekutor touch "${RVAL}" 2> /dev/null && return 0
+         ;;
+      esac
+   done
+}
+
+
+_r_make_tmp_in_dir()
+{
+   local tmpdir="$1"
+   local name="$2"
+   local filetype="$3"
+
+   [ ! -w "${tmpdir}" ] && fail "${tmpdir} does not exist or is not writable"
 
    name="${name:-${MULLE_EXECUTABLE_NAME}}"
    name="${name:-mulle}"
@@ -223,52 +287,18 @@ _make_tmp_in_dir()
    local UUIDGEN
 
    UUIDGEN="`command -v "uuidgen"`"
-   if [ -z "${UUIDGEN}" ]
+   if [ ! -z "${UUIDGEN}" ]
    then
-      case "${filetype}" in
-         *d*)
-            TMPDIR="${tmpdir}" mktemp -d "${name}-XXXXXXXX"
-            return $?
-         ;;
-
-         *)
-            TMPDIR="${tmpdir}" mktemp "${name}-XXXXXXXX"
-            return $?
-         ;;
-      esac
+      _r_make_tmp_in_dir_uuidgen "${UUIDGEN}" "${tmpdir}" "${name}" "${filetype}"
+      return $?
    fi
 
-   local filename
-   local prev
-
-   while :
-   do
-      prev="${filename}"
-      filename="${tmpdir}/${name}-`"${UUIDGEN}"`"
-
-      if [ "${prev}" = "${filename}" ]
-      then
-         internal_fail "uuidgen malfunction"
-      fi
-
-      case "${filetype}" in
-         *d*)
-            mkdir "${filename}" || exit 1
-            echo "${filename}"
-            return 0
-         ;;
-
-         *)
-            touch "${filename}" || exit 1
-            echo "${filename}"
-            return 0
-         ;;
-      esac
-   done
+   RVAL="`_make_tmp_in_dir_mktemp "${tmpdir}" "${name}" "${filetype}"`"
+   return $?
 }
 
 
-_make_tmp()
+r_make_tmp()
 {
    local name="$1"
    local filetype="$2"
@@ -283,25 +313,34 @@ _make_tmp()
 
       *)
          # remove trailing '/'
-         tmpdir="`filepath_cleaned "${TMPDIR}"`"
+         r_filepath_cleaned "${TMPDIR}"
+         tmpdir="${RVAL}"
       ;;
    esac
    tmpdir="${tmpdir:-/tmp}"
 
-   _make_tmp_in_dir "${tmpdir}" "${name}" "${filetype}"
+   _r_make_tmp_in_dir "${tmpdir}" "${name}" "${filetype}"
 }
 
 
 
 make_tmp_file()
 {
-   _make_tmp "$1"
+   local RVAL
+
+   r_make_tmp "$1"
+
+   [ ! -z "${RVAL}" ] && echo "${RVAL}"
 }
 
 
 make_tmp_directory()
 {
-   _make_tmp "$1" "-d"
+   local RVAL
+
+   r_make_tmp "$1" "-d"
+
+   [ ! -z "${RVAL}" ] && echo "${RVAL}"
 }
 
 
@@ -315,35 +354,44 @@ make_tmp_directory()
 # http://stackoverflow.com/questions/1055671/how-can-i-get-the-behavior-of-gnus-readlink-f-on-a-mac
 # ----
 #
-_prepend_path_if_relative()
+r_prepend_path_if_relative()
 {
    case "$2" in
       /*)
-         echo "$2"
+         RVAL="$2"
       ;;
 
       *)
-         echo "$1/$2"
+         RVAL="$1/$2"
       ;;
    esac
 }
 
 
-resolve_symlinks()
+r_resolve_symlinks()
 {
-   local dir_context
    local path
 
-   # readlink is not really POSIX, but stat is really incompatible
-   path="`readlink "$1"`"
+   RVAL="$1"
+
+   path="`readlink "${RVAL}"`"
    if [ $? -eq 0 ]
    then
-      dir_context=`dirname -- "$1"`
-      resolve_symlinks "`_prepend_path_if_relative "$dir_context" "$path"`"
-   else
-      echo "$1"
+      r_fast_dirname "${RVAL}"
+      r_prepend_path_if_relative "${RVAL}" "${path}"
+      r_resolve_symlinks "${RVAL}"
    fi
 }
+
+
+resolve_symlinks()
+{
+   local RVAL
+
+   r_resolve_symlinks "$@"
+   [ ! -z "${RVAL}" ] && echo "${RVAL}"
+}
+
 
 #
 # canonicalizes existing paths
@@ -353,7 +401,10 @@ realpath()
 {
    [ -e "$1" ] || fail "only use realpath on existing files ($1)"
 
-   canonicalize_path "`resolve_symlinks "$1"`"
+   local RVAL
+
+   r_resolve_symlinks "$1"
+   canonicalize_path "${RVAL}"
 }
 
 #
@@ -371,13 +422,17 @@ create_symlink()
    [ -e "${url}" ]        || fail "${C_RESET}${C_BOLD}${url}${C_ERROR} does not exist ($PWD)"
    [ ! -z "${absolute}" ] || fail "absolute must be YES or NO"
 
-   url="`absolutepath "${url}"`"
-   url="`realpath "${url}"`"  # resolve symlinks
+   local RVAL
+
+   r_absolutepath "${url}"
+   url="`realpath "${RVAL}"`"  # resolve symlinks
 
    # need to do this otherwise the symlink fails
 
-   srcname="`fast_basename "${url}"`"
-   directory="`fast_dirname "${stashdir}"`"
+   r_fast_basename "${url}"
+   srcname="${RVAL}"
+   r_fast_dirname "${stashdir}"
+   directory="${RVAL}"
 
    mkdir_if_missing "${directory}"
    directory="`realpath "${directory}"`"  # resolve symlinks
@@ -387,13 +442,23 @@ create_symlink()
    # settings, when you symlink something, and that repo has symlinks
    # itself
    #
-   if [ "${absolute}" = "NO" ]
+   if [ "${absolute}" = 'NO' ]
    then
-      url="`symlink_relpath "${url}" "${directory}"`"
+      r_symlink_relpath "${url}" "${directory}"
+      url="${RVAL}"
    fi
 
-   log_fluff "Symlinking \"${srcname}\" as \"${url}\" in \"${directory}\" ..."
-   exekutor ln -s -f "${url}" "${stashdir}"  >&2 || fail "failed to setup symlink \"${stashdir}\" (to \"${url}\")"
+   local oldlink
+
+   if [ -L "${oldlink}" ]
+   then
+      oldlink="`readlink "${stashdir}"`"
+   fi
+
+   if [ -z "${oldlink}" -o "${oldlink}" != "${url}" ]
+   then
+      exekutor ln -s -f "${url}" "${stashdir}" >&2 || fail "failed to setup symlink \"${stashdir}\" (to \"${url}\")"
+   fi
 }
 
 
@@ -509,7 +574,8 @@ inplace_sed()
 
 #         permissions="`lso "${filename}"`"
 
-         tmpfile="`make_tmp_file`" || exit 1
+         r_make_tmp
+         tmpfile="${RVAL}"
          redirect_eval_exekutor "${tmpfile}" 'sed' ${args} "'${filename}'"
 #         exekutor chmod "${permissions}" "${tmpfile}"
          # move gives permission errors, this keeps everything OK

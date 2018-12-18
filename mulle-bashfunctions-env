@@ -29,9 +29,9 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-[ "${TRACE}" = "YES" ] && set -x && : "$0" "$@"
+[ "${TRACE}" = 'YES' ] && set -x && : "$0" "$@"
 
-MULLE_BASHFUNCTIONS_VERSION="1.8.0"
+MULLE_BASHFUNCTIONS_VERSION="1.9.0"
 
 
 usage()
@@ -39,6 +39,8 @@ usage()
    cat <<EOF
 Usage:
    ${MULLE_EXECUTABLE_NAME} [command]
+
+   Locate bashfunctions install path for desired version.
 
 Commands:
    libexec-dir [version]   : print best libexec filepath for desired version
@@ -74,10 +76,14 @@ _find_library_path()
    local major
    local minor
    local patch
+   local RVAL
 
-   major="`get_version_major "${version}"`"
-   minor="`get_version_minor "${version}"`"
-   patch="`get_version_patch "${version}"`"
+   r_get_version_major "${version}"
+   major="${RVAL}"
+   r_get_version_minor "${version}"
+   minor="${RVAL}"
+   r_get_version_patch "${version}"
+   patch="${RVAL}"
 
    local majorpattern
    local minorpattern
@@ -142,6 +148,9 @@ main()
          ;;
 
          -v|-vv|-vvv)
+         ;;
+
+         -ld|-ls|-lx)
          ;;
 
          -t)
@@ -268,6 +277,7 @@ _resolve_symlinks()
          /*)
             _resolve_symlinks "${_linkpath}"
          ;;
+
          *)
             local _directory
 

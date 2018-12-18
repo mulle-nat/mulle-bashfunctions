@@ -1,4 +1,4 @@
-SCRIPTS=installer \
+SCRIPTS=./bin/installer \
 src/mulle-array.sh \
 src/mulle-bashfunctions.sh \
 src/mulle-exekutor.sh \
@@ -29,7 +29,7 @@ mulle-bashfunctions-env.chk:	mulle-bashfunctions-env
 	(shellcheck -f json $(SHELLFLAGS) $< | jq '.[].level' | grep -w error > /dev/null ) && exit 1 || touch $@
 
 installer:
-	@ ./installer
+	@ ./bin/installer
 
 clean:
 	@- rm *.chk

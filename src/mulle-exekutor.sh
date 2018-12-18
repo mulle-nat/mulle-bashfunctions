@@ -29,7 +29,7 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-[ ! -z "${MULLE_EXEKUTOR_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = "YES" ] && \
+[ ! -z "${MULLE_EXEKUTOR_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
    echo "double inclusion of mulle-exekutor.sh" >&2
 
 [ -z "${MULLE_LOGGING_SH}" ] && \
@@ -44,7 +44,7 @@ MULLE_EXEKUTOR_SH="included"
 
 exekutor_trace()
 {
-   if [  "${MULLE_FLAG_LOG_EXEKUTOR}" = "YES" ]
+   if [  "${MULLE_FLAG_LOG_EXEKUTOR}" = 'YES' ]
    then
       local arrow
 
@@ -74,7 +74,7 @@ exekutor_trace_output()
    local redirect="$1"; shift
    local output="$1"; shift
 
-   if [ "${MULLE_FLAG_LOG_EXEKUTOR}" = "YES" ]
+   if [ "${MULLE_FLAG_LOG_EXEKUTOR}" = 'YES' ]
    then
       local arrow
 
@@ -104,7 +104,7 @@ exekutor()
 {
    exekutor_trace "$@"
 
-   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = "YES" ]
+   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = 'YES' ]
    then
       return
    fi
@@ -128,7 +128,7 @@ eval_exekutor()
 {
    exekutor_trace "$@"
 
-   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = "YES" ]
+   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = 'YES' ]
    then
       return
    fi
@@ -152,7 +152,7 @@ _eval_exekutor()
 {
    exekutor_trace "$@"
 
-   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = "YES" ]
+   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = 'YES' ]
    then
       return
    fi
@@ -168,7 +168,7 @@ redirect_exekutor()
 
    exekutor_trace_output '>' "${output}" "$@"
 
-   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = "YES" ]
+   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = 'YES' ]
    then
       return
    fi
@@ -184,7 +184,7 @@ redirect_eval_exekutor()
 
    exekutor_trace_output '>' "${output}" "$@"
 
-   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = "YES" ]
+   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = 'YES' ]
    then
       return
    fi
@@ -200,7 +200,7 @@ redirect_append_exekutor()
 
    exekutor_trace_output '>>' "${output}" "$@"
 
-   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = "YES" ]
+   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = 'YES' ]
    then
       return
    fi
@@ -211,12 +211,12 @@ redirect_append_exekutor()
 
 _redirect_append_eval_exekutor()
 {
-   # funny not found problem ? the base directory of output is missing!a
+   # You have a funny "not found" problem ? the base directory of output is missing!
    local output="$1"; shift
 
    exekutor_trace_output '>>' "${output}" "$@"
 
-   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = "YES" ]
+   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = 'YES' ]
    then
       return
    fi
@@ -241,7 +241,6 @@ logging_redirekt_exekutor()
    fi
 
    echo "${arrow}" "$@" > "${output}"
-
    redirect_append_exekutor "${output}" "$@"
 }
 
@@ -260,10 +259,45 @@ logging_redirect_eval_exekutor()
       arrow="==>"
    fi
 
-   echo "${arrow}" "$*" > "${output}" # to stdout
-
-   # append
+   echo "${arrow}" "$*" > "${output}"
    _redirect_append_eval_exekutor "${output}" "$@"
+}
+
+
+_redirect_append_tee_eval_exekutor()
+{
+   # You have a funny "not found" problem ? the base directory of output is missing!
+   local output="$1"; shift
+   local teeoutput="$1"; shift
+
+   exekutor_trace_output '>>' "${output}" "$@"
+
+   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = 'YES' ]
+   then
+      return
+   fi
+
+   ( eval "$@" ) | tee -a "${teeoutput}" >> "${output}"
+}
+
+
+logging_redirect_tee_eval_exekutor()
+{
+   local output="$1"; shift
+   local teeoutput="$1"; shift
+
+   # overwrite
+   local arrow
+
+   if [ "${PPID}" -ne "${MULLE_EXECUTABLE_PID}" ]
+   then
+      arrow="=[${PPID}]=>"
+   else
+      arrow="==>"
+   fi
+
+   echo "${arrow}" "$*" tee "${teeoutput}" > "${output}"
+   _redirect_append_tee_eval_exekutor "${output}" "${teeoutput}" "$@"
 }
 
 :

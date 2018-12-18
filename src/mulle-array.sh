@@ -29,7 +29,7 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-[ "${MULLE_WARN_DOUBLE_INCLUSION}" = "YES" -a ! -z "${MULLE_ARRAY_SH}" ] && \
+[ "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' -a ! -z "${MULLE_ARRAY_SH}" ] && \
    echo "double inclusion of mulle-array.sh" >&2
 
 [ -z "${MULLE_LOGGING_SH}" ] && echo "mulle-logging.sh must be included before mulle-array.sh" 2>&1 && exit 1
@@ -44,12 +44,10 @@ array_value_check()
 
    local n
 
-   n=`echo "${value}" | wc -l  | awk '{ print $1}'`
+   n=`wc -l <<< "${value}" | awk '{ print $1}'`
 
    [ "$n" -eq 0 ] && internal_fail "empty value"
    [ "$n" -ne 1 ] && internal_fail "value \"${value}\" has linebreaks"
-
-   echo "${value}"
 }
 
 
@@ -135,7 +133,7 @@ array_insert()
    local i="$2"
    local value="$3"
 
-   value="`array_value_check "${value}"`"
+   array_value_check "${value}"
 
    local head_count
    local tail_count
@@ -211,7 +209,8 @@ array_contains()
    local value
 
    array="$1"
-   value="`array_value_check "$2"`"
+   value="$2"
+   array_value_check "${value}"
 
    local found
 

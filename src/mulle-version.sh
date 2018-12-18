@@ -29,27 +29,42 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-[ ! -z "${MULLE_VERSION_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = "YES" ] && \
+[ ! -z "${MULLE_VERSION_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
    echo "double inclusion of mulle-version.sh" >&2
 
 MULLE_VERSION_SH="included"
 
 
-get_version_major()
+r_get_version_major()
 {
-   cut -d. -f1 <<< "$1"
+   RVAL="${1%%\.*}"
 }
 
 
-get_version_minor()
+r_get_version_minor()
 {
-   cut -s -d. -f2 <<< "$1"
+   RVAL="${1#*\.}"
+   if [ "${RVAL}" = "$1" ]
+   then
+      RVAL=0
+   else
+      RVAL="${RVAL%%\.*}"
+   fi
 }
 
-
-get_version_patch()
+# make sure 1.8 returns 0
+r_get_version_patch()
 {
-   cut -s -d. -f3 <<< "$1"
+   local prev
+
+   prev="${1#*\.}"
+   RVAL="${prev#*\.}"
+   if [ "${RVAL}" = "${prev}" ]
+   then
+      RVAL=0
+   else
+      RVAL="${RVAL%%\.*}"
+   fi
 }
 
 
@@ -62,17 +77,18 @@ check_version()
    local min_major="$2"
    local min_minor="$3"
 
-   local major
-   local minor
-
-   # some cleaning for mulle-bootstrap
-   version="`head -1 <<< "${version}"`"
    if [ -z "${version}" ]
    then
-      return 0
+      return 1
    fi
 
-   major="`get_version_major "${version}"`"
+   local major
+   local minor
+   local RVAL
+
+   r_get_version_major "${version}"
+   major="${RVAL}"
+
    if [ "${major}" -lt "${min_major}" ]
    then
       return 0
@@ -83,7 +99,9 @@ check_version()
       return 1
    fi
 
-   minor="`get_version_minor "${version}"`"
+   r_get_version_minor "${version}"
+   minor="${RVAL}"
+
    [ "${minor}" -le "${min_minor}" ]
 }
 
@@ -92,30 +110,49 @@ check_version()
 # Gimme major, minor, patch
 # version is like ((major << 20) | (minor << 8) | (patch))
 #
-_version_value()
+_r_version_value()
 {
-   echo $((${1:-0} * 1048576 + ${2:-0} * 256 + ${3:-0}))
+   RVAL="$((${1:-0} * 1048576 + ${2:-0} * 256 + ${3:-0}))"
 }
 
 
 #
 # Gimme "${major}.${minor}.${patch}"
 #
-version_value()
+r_version_value()
 {
-   _version_value "`get_version_major "$1"`"  "`get_version_minor "$1"`" "`get_version_patch "$1"`"
+   local major
+   local minor
+   local patch
+
+   r_get_version_major "$1"
+   major="${RVAL}"
+   r_get_version_minor "$1"
+   minor="${RVAL}"
+   r_get_version_patch "$1"
+   patch="${RVAL}"
+
+   _r_version_value "${major}" "${minor}" "${patch}"
 }
 
 
-version_value_distance()
+r_version_value_distance()
 {
-   echo $(($2 - $1))
+   RVAL="$(($2 - $1))"
 }
 
 
-version_distance()
+r_version_distance()
 {
-   version_value_distance "`version_value "$1"`" "`version_value "$2"`"
+   local value1
+   local value2
+
+   r_version_value "$1"
+   value1="${RVAL}"
+   r_version_value "$2"
+   value2="${RVAL}"
+
+   r_version_value_distance "${value1}" "${value2}"
 }
 
 
@@ -144,7 +181,8 @@ is_compatible_version_value_distance()
 
 is_compatible_version()
 {
-   is_compatible_version_value_distance "`version_distance "$1" "$2"`"
+   r_version_distance "$1" "$2"
+   is_compatible_version_value_distance "${RVAL}"
 }
 
 :

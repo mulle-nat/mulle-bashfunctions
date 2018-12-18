@@ -29,7 +29,7 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-[ ! -z "${MULLE_LOGGING_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = "YES" ] && \
+[ ! -z "${MULLE_LOGGING_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
    echo "double inclusion of mulle-logging.sh" >&2
 
 MULLE_LOGGING_SH="included"
@@ -62,7 +62,7 @@ log_fail()
 
 log_warning()
 {
-   if [ "${MULLE_FLAG_LOG_TERSE}" != "YES" ]
+   if [ "${MULLE_FLAG_LOG_TERSE}" != 'YES' ]
    then
       log_printf "${C_WARNING}${MULLE_EXECUTABLE_FAIL_PREFIX} warning:${C_WARNING_TEXT} %b${C_RESET}\n" "$*"
    fi
@@ -71,7 +71,7 @@ log_warning()
 
 log_info()
 {
-   if [ "${MULLE_FLAG_LOG_TERSE}" != "YES" ]
+   if [ "${MULLE_FLAG_LOG_TERSE}" != 'YES' ]
    then
       log_printf "${C_INFO}%b${C_RESET}\n" "$*"
    fi
@@ -80,7 +80,7 @@ log_info()
 
 log_verbose()
 {
-   if [ "${MULLE_FLAG_LOG_VERBOSE}" = "YES" ]
+   if [ "${MULLE_FLAG_LOG_VERBOSE}" = 'YES' ]
    then
       log_printf "${C_VERBOSE}%b${C_RESET}\n" "$*"
    fi
@@ -89,7 +89,7 @@ log_verbose()
 
 log_fluff()
 {
-   if [ "${MULLE_FLAG_LOG_FLUFF}" = "YES" ]
+   if [ "${MULLE_FLAG_LOG_FLUFF}" = 'YES' ]
    then
       log_printf "${C_FLUFF}%b${C_RESET}\n" "$*"
    fi
@@ -99,7 +99,7 @@ log_fluff()
 # setting is like fluff but different color scheme
 log_setting()
 {
-   if [ "${MULLE_FLAG_LOG_FLUFF}" = "YES" ]
+   if [ "${MULLE_FLAG_LOG_FLUFF}" = 'YES' ]
    then
       log_printf "${C_SETTING}%b${C_RESET}\n" "$*"
    fi
@@ -109,7 +109,7 @@ log_setting()
 # for debugging, not for user. same as fluff
 log_debug()
 {
-   if [ "${MULLE_FLAG_LOG_DEBUG}" != "YES" ]
+   if [ "${MULLE_FLAG_LOG_DEBUG}" != 'YES' ]
    then
       return
    fi
@@ -127,7 +127,7 @@ log_debug()
 
 log_entry()
 {
-   if [ "${MULLE_FLAG_LOG_DEBUG}" != "YES" ]
+   if [ "${MULLE_FLAG_LOG_DEBUG}" != 'YES' ]
    then
       return
    fi
@@ -232,7 +232,7 @@ fail()
       log_fail "$*"
    fi
 
-   if [ "${MULLE_FLAG_LOG_DEBUG}" = "YES" ]
+   if [ "${MULLE_FLAG_LOG_DEBUG}" = 'YES' ]
    then
       stacktrace
    fi
@@ -335,7 +335,7 @@ logging_initialize()
 
    # https://www.systutorials.com/241795/how-to-judge-whether-its-stderr-is-redirected-to-a-file-in-a-bash-script-on-linux/
    # do not colorize when /dev/stderr is redirected
-   if [ "${MULLE_NO_COLOR}" != "YES" ] && [ ! -f /dev/stderr ]
+   if [ "${MULLE_NO_COLOR}" != 'YES' ] && [ ! -f /dev/stderr ]
    then
       C_RESET="\033[0m"
 
@@ -350,7 +350,7 @@ logging_initialize()
 
       C_RESET_BOLD="${C_RESET}${C_BOLD}"
 
-      if [ "${MULLE_LOGGING_TRAP}" != "NO" ]
+      if [ "${MULLE_LOGGING_TRAP}" != 'NO' ]
       then
          logging_trap_install
       fi

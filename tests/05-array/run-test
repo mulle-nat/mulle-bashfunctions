@@ -15,13 +15,13 @@ test_array()
     local array
 
     array="`array_insert "${array}" 0 "VfL"`"
-    array="`array_insert "${array}" 1 "1848"`"
+    array="`array_insert "${array}" 1 '1848'`"
     array="`array_insert "${array}" 1 "Bochum"`"
 
     expect="VfL
 Bochum
 1848"
-    [ "${array}" != "${expect}" ] && fail "test_array #1"
+    [ "${array}" != "${expect}" ] && fail "test_array #1: >${array}< != >${expect}<"
 
     array="`array_remove "${array}" "Bochum"`"
 
@@ -58,7 +58,7 @@ test_assoc_array()
 
    array="`assoc_array_set "${array}" "10"`"
    result="`assoc_array_get "${array}" "10"`"
-   expect=""
+   expect=''
    [  "${result}" != "${expect}" ] && fail "test_assoc_array #2"
 
    result="`assoc_array_get "${array}" "39"`"

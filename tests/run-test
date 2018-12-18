@@ -1,6 +1,6 @@
 #! /usr/bin/env bash
 
-[ "${TRACE}" = "YES" ] && set -x
+[ "${TRACE}" = 'YES' ] && set -x
 
 TEST_DIR="`dirname -- "$0"`"
 PROJECT_DIR="$( cd "${TEST_DIR}/.." ; pwd -P)"

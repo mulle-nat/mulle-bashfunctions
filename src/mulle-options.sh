@@ -29,7 +29,7 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-[ ! -z "${MULLE_OPTIONS_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = "YES" ] && \
+[ ! -z "${MULLE_OPTIONS_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
    echo "double inclusion of mulle-options.sh" >&2
 
 [ -z "${MULLE_LOGGING_SH}" ] && echo "mulle-logging.sh must be included before mulle-options.sh" 2>&1 && exit 1
@@ -56,29 +56,28 @@ options_setup_trace()
 {
    case "${1}" in
       VERBOSE)
-         MULLE_FLAG_LOG_VERBOSE="YES"
+         MULLE_FLAG_LOG_VERBOSE='YES'
       ;;
 
       FLUFF)
-         MULLE_FLAG_LOG_FLUFF="YES"
-         MULLE_FLAG_LOG_VERBOSE="YES"
+         MULLE_FLAG_LOG_FLUFF='YES'
+         MULLE_FLAG_LOG_VERBOSE='YES'
       ;;
 
       TRACE)
-         MULLE_FLAG_LOG_SETTINGS="YES"
-         MULLE_FLAG_LOG_EXEKUTOR="YES"
-         MULLE_FLAG_LOG_FLUFF="YES"
-         MULLE_FLAG_LOG_VERBOSE="YES"
+         MULLE_FLAG_LOG_EXEKUTOR='YES'
+         MULLE_FLAG_LOG_FLUFF='YES'
+         MULLE_FLAG_LOG_VERBOSE='YES'
       ;;
 
       1848)
-         MULLE_FLAG_LOG_SETTINGS="YES"
-         MULLE_FLAG_LOG_FLUFF="YES"
-         MULLE_FLAG_LOG_VERBOSE="YES"
-         MULLE_FLAG_VERBOSE_BUILD="YES"
+         MULLE_FLAG_LOG_SETTINGS='YES'
+         MULLE_FLAG_LOG_FLUFF='YES'
+         MULLE_FLAG_LOG_VERBOSE='YES'
+         MULLE_FLAG_VERBOSE_BUILD='YES'
 
 
-         if [ "${MULLE_TRACE_POSTPONE}" != "YES" ]
+         if [ "${MULLE_TRACE_POSTPONE}" != 'YES' ]
          then
             log_trace "1848 trace (set -x) started"
             set -x
@@ -97,11 +96,11 @@ options_setup_trace()
 _options_technical_flags_usage()
 {
    local DELIMITER="${1:- : }"
-   local align=${2:-YES}
+   local align="${2:-YES}"
 
    local S
 
-   if [ "${align}" = "YES" ]
+   if [ "${align}" = 'YES' ]
    then
       S=" "
    fi
@@ -131,14 +130,14 @@ options_technical_flags_usage()
 
 before_trace_fail()
 {
-   [ "${MULLE_TRACE}" = "1848" ] || \
+   [ "${MULLE_TRACE}" = '1848' ] || \
       fail "option \"$1\" must be specified after -t"
 }
 
 
 after_trace_warning()
 {
-   [ "${MULLE_TRACE}" = "1848" ] && \
+   [ "${MULLE_TRACE}" = '1848' ] && \
       log_warning "${MULLE_EXECUTABLE_FAIL_PREFIX}: $1 after -t \
    invalidates -t"
 }
@@ -156,27 +155,27 @@ options_technical_flags()
 {
    case "$1" in
       -n|--dry-run)
-         MULLE_FLAG_EXEKUTOR_DRY_RUN="YES"
+         MULLE_FLAG_EXEKUTOR_DRY_RUN='YES'
       ;;
 
       -ld|--log-debug)
-         MULLE_FLAG_LOG_DEBUG="YES"
+         MULLE_FLAG_LOG_DEBUG='YES'
       ;;
 
       -le|--log-environment)
-         MULLE_FLAG_LOG_ENVIRONMENT="YES"
+         MULLE_FLAG_LOG_ENVIRONMENT='YES'
       ;;
 
       -ls|--log-settings)
-         MULLE_FLAG_LOG_SETTINGS="YES"
+         MULLE_FLAG_LOG_SETTINGS='YES'
       ;;
 
       -lx|--log-exekutor|--log-execution)
-         MULLE_FLAG_LOG_EXEKUTOR="YES"
+         MULLE_FLAG_LOG_EXEKUTOR='YES'
       ;;
 
       -t|--trace)
-         MULLE_TRACE="1848"
+         MULLE_TRACE='1848'
          ps4string='${BASH_SOURCE[0]##*/}:${LINENO}'
       ;;
 
@@ -189,8 +188,8 @@ options_technical_flags()
          before_trace_fail "$1"
 
          case "${MULLE_UNAME}" in
-            "")
-               internal_fail "MULLE_UNAME must be set by now"
+            '')
+               internal_fail 'MULLE_UNAME must be set by now'
             ;;
             linux)
                ps4string='$(date "+%s.%N (${BASH_SOURCE[0]##*/}:${LINENO})")'
@@ -203,7 +202,7 @@ options_technical_flags()
 
       -tpo|--trace-postpone)
          before_trace_fail "$1"
-         MULLE_TRACE_POSTPONE="YES"
+         MULLE_TRACE_POSTPONE='YES'
       ;;
 
       -tpwd|--trace-pwd)
@@ -217,7 +216,7 @@ options_technical_flags()
 
       -s|--silent)
          MULLE_TRACE=
-         MULLE_FLAG_LOG_TERSE="YES"
+         MULLE_FLAG_LOG_TERSE='YES'
       ;;
 
       --no-verbose)
@@ -228,24 +227,29 @@ options_technical_flags()
       -v|--verbose)
          after_trace_warning "$1"
 
-         MULLE_TRACE="VERBOSE"
+         MULLE_TRACE='VERBOSE'
       ;;
 
       -vv|--very-verbose)
          after_trace_warning "$1"
 
-         MULLE_TRACE="FLUFF"
+         MULLE_TRACE='FLUFF'
       ;;
 
       -vvv|--very-very-verbose)
          after_trace_warning "$1"
 
-         MULLE_TRACE="TRACE"
+         MULLE_TRACE='TRACE'
       ;;
 
+      --clear-flags)
+         MULLE_TECHNICAL_FLAGS=''
+         return 0
+      ;;
 
       --list-technical-flags)
          echo "\
+--clear-flags
 --dry-run
 --log-debug
 --log-environment
@@ -272,7 +276,9 @@ options_technical_flags()
    #
    # collect technical options so interested parties can forward them to
    # other mulle tools. In tools they are called flags, and this will be
-   # renamed too, eventually.
+   # renamed too, eventually. If you don't want to forward the technical
+   # flags to other mulle-bashfunction programs - sometimes- use
+   # --clear-flags after all the other flags.
    #
    if [ -z "${MULLE_TECHNICAL_FLAGS}" ]
    then
@@ -290,7 +296,7 @@ options_technical_flags()
 
 options_unpostpone_trace()
 {
-   if [ ! -z "${MULLE_TRACE_POSTPONE}" -a "${MULLE_TRACE}" = "1848" ]
+   if [ ! -z "${MULLE_TRACE_POSTPONE}" -a "${MULLE_TRACE}" = '1848' ]
    then
       set -x
       PS4="+ ${ps4string} + "
