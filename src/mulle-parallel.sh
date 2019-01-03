@@ -115,8 +115,6 @@ _parallel_begin()
 
    _parallel_maxjobs="$1"
 
-   local RVAL
-
    _parallel_jobs=0
    _parallel_fails=0
 
@@ -137,16 +135,17 @@ _parallel_end()
 
    wait
 
-   _parallel_fails="`rexekutor egrep -v '^0;' "${_parallel_statusfile}" | wc -l | awk '{ printf $1 }'`"
+   _parallel_fails="`rexekutor wc -l "${_parallel_statusfile}" | awk '{ printf $1 }'`"
    if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
    then
       log_trace2 "_parallel_jobs : ${_parallel_jobs}"
       log_trace2 "_parallel_fails: ${_parallel_fails}"
       log_trace2 "${_parallel_statusfile} : `cat "${_parallel_statusfile}"`"
    fi
-      remove_file_if_present "${_parallel_statusfile}"
 
-   [ -z ${_parallel_fails} ]
+   exekutor rm "${_parallel_statusfile}"
+
+   [ -z "${_parallel_fails}" ]
 }
 
 
@@ -164,11 +163,13 @@ _parallel_execute()
 
       exekutor "$@"
       rval=$?
+
+      # only append to status file if error
       if [ $rval -ne 0 ]
       then
          log_warning "$* failed with $rval"
+         redirect_append_exekutor "${_parallel_statusfile}" echo "${rval};$*"
       fi
-      redirect_append_exekutor "${_parallel_statusfile}" echo "${rval};$*"
    ) &
 }
 

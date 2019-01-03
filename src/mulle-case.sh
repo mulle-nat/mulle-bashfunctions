@@ -143,8 +143,6 @@ r_tweaked_de_camel_case()
 
 tweaked_de_camel_case()
 {
-   local RVAL
-
    r_tweaked_de_camel_case "$@"
 
    [ ! -z "${RVAL}" ] && echo "${RVAL}"

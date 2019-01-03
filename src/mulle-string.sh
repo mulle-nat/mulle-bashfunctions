@@ -59,8 +59,6 @@ r_concat()
 
 concat()
 {
-   local RVAL
-
    r_concat "$@"
    echo "$RVAL"
 }
@@ -173,8 +171,6 @@ r_space_concat()
 
 colon_concat()
 {
-   local RVAL
-
    r_colon_concat "$@"
 
    [ ! -z "${RVAL}" ] && echo "${RVAL}"
@@ -184,8 +180,6 @@ colon_concat()
 # use for lists w/o empty elements
 comma_concat()
 {
-   local RVAL
-
    r_comma_concat "$@"
 
    [ ! -z "${RVAL}" ] && echo "${RVAL}"
@@ -195,8 +189,6 @@ comma_concat()
 # use for CSV
 semicolon_concat()
 {
-   local RVAL
-
    r_semicolon_concat "$@"
 
    [ ! -z "${RVAL}" ] && echo "${RVAL}"
@@ -206,8 +198,6 @@ semicolon_concat()
 # use for filepaths
 slash_concat()
 {
-   local RVAL
-
    r_slash_concat "$@"
 
    [ ! -z "${RVAL}" ] && echo "${RVAL}"
@@ -256,8 +246,6 @@ ${line}"
 
 add_line()
 {
-   local RVAL
-
    r_add_line "$@"
 
    [ ! -z "${RVAL}" ] && echo "${RVAL}"
@@ -338,8 +326,6 @@ r_filepath_cleaned()
 
 filepath_cleaned()
 {
-   local RVAL
-
    r_filepath_cleaned "$@"
 
    [ ! -z "${RVAL}" ] && echo "${RVAL}"
@@ -416,8 +402,6 @@ r_filepath_concat()
 
 filepath_concat()
 {
-   local RVAL
-
    r_filepath_concat "$@"
 
    [ ! -z "${RVAL}" ] && echo "${RVAL}"
@@ -494,8 +478,6 @@ r_escaped_grep_pattern()
 
 escaped_grep_pattern()
 {
-   local RVAL
-
    r_escaped_grep_pattern "$@"
 
    [ ! -z "${RVAL}" ] && echo "${RVAL}"
@@ -521,8 +503,6 @@ r_escaped_sed_pattern()
 
 escaped_sed_pattern()
 {
-   local RVAL
-
    r_escaped_sed_pattern "$@"
 
    [ ! -z "${RVAL}" ] && echo "${RVAL}"
@@ -537,8 +517,6 @@ r_escaped_spaces()
 
 escaped_spaces()
 {
-   local RVAL
-
    r_escaped_spaces "$@"
 
    [ ! -z "${RVAL}" ] && echo "${RVAL}"
@@ -553,8 +531,6 @@ r_escaped_doublequotes()
 
 escaped_doublequotes()
 {
-   local RVAL
-
    r_escaped_doublequotes "$@"
 
    [ ! -z "${RVAL}" ] && echo "${RVAL}"
@@ -569,8 +545,6 @@ r_escaped_shellstring()
 
 escaped_shellstring()
 {
-   local RVAL
-
    r_escaped_shellstring "$@"
 
    [ ! -z "${RVAL}" ] && echo "${RVAL}"
@@ -729,8 +703,6 @@ r_fast_dirname()
 
 fast_basename()
 {
-   local RVAL
-
    r_fast_basename "$@"
 
    [ ! -z "${RVAL}" ] && echo "${RVAL}"
@@ -739,8 +711,6 @@ fast_basename()
 
 fast_dirname()
 {
-   local RVAL
-
    r_fast_dirname "$@"
 
    [ ! -z "${RVAL}" ] && echo "${RVAL}"
@@ -750,8 +720,6 @@ fast_dirname()
 # old function
 _fast_basename()
 {
-   local RVAL
-
    r_fast_basename "$@"
    _component="${RVAL}"
 }
@@ -760,8 +728,6 @@ _fast_basename()
 # old function
 _fast_dirname()
 {
-   local RVAL
-
    r_fast_dirname "$@"
    _directory="${RVAL}"
 }

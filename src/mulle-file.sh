@@ -66,9 +66,7 @@ mkdir_if_missing()
    if [ -L "$1" ]
    then
       local resolve
-      local RVAL
-
-      r_resolve_symlinks "$1"
+         r_resolve_symlinks "$1"
       resolve="${RVAL}"
       if [ ! -d "${resolve}" ]
       then
@@ -106,8 +104,6 @@ r_mkdir_parent_if_missing()
 
 mkdir_parent_if_missing()
 {
-   local RVAL
-
    if r_mkdir_parent_if_missing "$@"
    then
       echo "${RVAL}"
@@ -167,8 +163,6 @@ _create_file_if_missing()
    fi
 
    local directory
-   local RVAL
-
    r_fast_dirname "${path}"
    directory="${RVAL}"
    if [ ! -z "${directory}" ]
@@ -326,8 +320,6 @@ r_make_tmp()
 
 make_tmp_file()
 {
-   local RVAL
-
    r_make_tmp "$1"
 
    [ ! -z "${RVAL}" ] && echo "${RVAL}"
@@ -336,8 +328,6 @@ make_tmp_file()
 
 make_tmp_directory()
 {
-   local RVAL
-
    r_make_tmp "$1" "-d"
 
    [ ! -z "${RVAL}" ] && echo "${RVAL}"
@@ -386,8 +376,6 @@ r_resolve_symlinks()
 
 resolve_symlinks()
 {
-   local RVAL
-
    r_resolve_symlinks "$@"
    [ ! -z "${RVAL}" ] && echo "${RVAL}"
 }
@@ -400,8 +388,6 @@ resolve_symlinks()
 realpath()
 {
    [ -e "$1" ] || fail "only use realpath on existing files ($1)"
-
-   local RVAL
 
    r_resolve_symlinks "$1"
    canonicalize_path "${RVAL}"
@@ -421,8 +407,6 @@ create_symlink()
 
    [ -e "${url}" ]        || fail "${C_RESET}${C_BOLD}${url}${C_ERROR} does not exist ($PWD)"
    [ ! -z "${absolute}" ] || fail "absolute must be YES or NO"
-
-   local RVAL
 
    r_absolutepath "${url}"
    url="`realpath "${RVAL}"`"  # resolve symlinks

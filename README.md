@@ -32,6 +32,13 @@ OS          | Command
 macos       | `brew install mulle-kybernetik/software/mulle-bashfunctions`
 
 
+## Conventions
+
+`RVAL` is a global variable it may be used to pass return values from functions.
+The RVAL value can be clobbered by **any** function. Functions that return RVAL
+are prefixed with `r_` or `_r_` or somesuch.
+
+
 ## Usage
 
 In your program:

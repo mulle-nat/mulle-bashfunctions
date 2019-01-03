@@ -189,6 +189,12 @@ main()
       mkdir -p "${libexec}" 2> /dev/null
       install -v -m "${mode}" "${i}" "${libexec}" || exit 1
    done
+
+   envshare="${prefix}/share/mulle-env/mulle-nat"
+   mkdir -p "${envshare}" 2> /dev/null
+
+   # install only this one for now
+   cp -Rav src/mulle-nat/bash-script "${envshare}/"
 }
 
 main "$@"

@@ -174,6 +174,13 @@ options_technical_flags()
          MULLE_FLAG_LOG_EXEKUTOR='YES'
       ;;
 
+      -l-)
+         MULLE_FLAG_LOG_DEBUG=
+         MULLE_FLAG_LOG_ENVIRONMENT=
+         MULLE_FLAG_LOG_EXEKUTOR=
+         MULLE_FLAG_LOG_SETTINGS=
+      ;;
+
       -t|--trace)
          MULLE_TRACE='1848'
          ps4string='${BASH_SOURCE[0]##*/}:${LINENO}'
@@ -214,13 +221,17 @@ options_technical_flags()
          set -x
       ;;
 
-      -s|--silent)
+
+      -t-)
          MULLE_TRACE=
+         set +x
+      ;;
+
+      -s|--silent)
          MULLE_FLAG_LOG_TERSE='YES'
       ;;
 
-      --no-verbose)
-         MULLE_TRACE=
+      -v-|--no-verbose)
          MULLE_FLAG_LOG_TERSE=
       ;;
 

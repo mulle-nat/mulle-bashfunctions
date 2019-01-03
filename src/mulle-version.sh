@@ -84,8 +84,6 @@ check_version()
 
    local major
    local minor
-   local RVAL
-
    r_get_version_major "${version}"
    major="${RVAL}"
 

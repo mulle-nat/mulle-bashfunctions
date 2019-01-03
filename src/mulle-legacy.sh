@@ -61,8 +61,6 @@ prepend_to_search_path_if_missing()
    oldifs="$IFS"
    IFS=":"
 
-   local RVAL
-
    set -o noglob
    for i in $fullpath
    do
@@ -151,8 +149,6 @@ combined_escaped_search_path_if_exists()
 {
    local i
    local combinedpath
-   local RVAL
-
    set -o noglob
    for i in "$@"
    do
@@ -182,8 +178,6 @@ combined_escaped_search_path()
 {
    local i
    local combinedpath
-   local RVAL
-
    set -o noglob
    for i in "$@"
    do
@@ -211,8 +205,6 @@ remove_absolute_path_prefix_up_to()
 {
    local s="$1"
    local prefix="$2"
-
-   local RVAL
 
    r_fast_basename "${s}"
    if [ "${RVAL}" = "${prefix}" ]

@@ -39,6 +39,9 @@ log_printf()
 {
    local format="$1" ; shift
 
+# convenient place to check something that shouldn't happen
+#   [ "$__FAIL__" != 'YES' -a ! -w /tmp/vfl/.mulle/etc/sourcetree/config -a -e /tmp/vfl/.mulle/etc/sourcetree/config ] && __FAIL__="YES" && internal_fail "fail"
+
    if [ -z "${MULLE_EXEKUTOR_LOG_DEVICE}" ]
    then
       printf "${format}" "$@" >&2
@@ -220,6 +223,9 @@ _bail()
 #   fi
 # case "${UNM"
 #   sleep 1
+
+# Exit codes:
+#  http://tldp.org/LDP/abs/html/exitcodes.html#EXITCODESREF
    exit 1
 }
 

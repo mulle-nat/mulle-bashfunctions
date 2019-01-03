@@ -31,7 +31,7 @@
 #
 [ "${TRACE}" = 'YES' ] && set -x && : "$0" "$@"
 
-MULLE_BASHFUNCTIONS_VERSION="1.9.1"
+MULLE_BASHFUNCTIONS_VERSION="1.10.0"
 
 
 usage()
@@ -76,8 +76,6 @@ _find_library_path()
    local major
    local minor
    local patch
-   local RVAL
-
    r_get_version_major "${version}"
    major="${RVAL}"
    r_get_version_minor "${version}"

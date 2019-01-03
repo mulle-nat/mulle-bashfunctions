@@ -139,8 +139,9 @@ eval_exekutor()
 
 #
 # declared as harmless (read only)
+# old name reval_exekutor didnt make much sense
 #
-reval_exekutor()
+eval_rexekutor()
 {
    exekutor_trace "$@"
 

@@ -72,8 +72,6 @@ r_path_depth()
 
 path_depth()
 {
-   local RVAL
-
    r_path_depth "$@"
    [ ! -z "${RVAL}" ] && echo "${RVAL}"
 }
@@ -92,8 +90,6 @@ r_extensionless_basename()
 
 extensionless_basename()
 {
-   local RVAL
-
    r_extensionless_basename "$@"
    [ ! -z "${RVAL}" ] && echo "${RVAL}"
 }
@@ -113,8 +109,6 @@ r_path_extension()
 
 path_extension()
 {
-   local RVAL
-
    r_path_extension "$@"
    echo "${RVAL}"
 }
@@ -230,8 +224,6 @@ _r_relative_path_between()
 
 _relative_path_between()
 {
-   local RVAL
-
    _r_relative_path_between "$@"
 
    [ ! -z "${RVAL}" ] && echo "${RVAL}"
@@ -323,8 +315,6 @@ r_relative_path_between()
 
 relative_path_between()
 {
-   local RVAL
-
    r_relative_path_between "$@"
 
    [ ! -z "${RVAL}" ] && echo "${RVAL}"
@@ -366,8 +356,6 @@ r_compute_relative()
 
 compute_relative()
 {
-   local RVAL
-
    r_compute_relative "$@"
 
    [ ! -z "${RVAL}" ] && echo "${RVAL}"
@@ -444,8 +432,6 @@ r_absolutepath()
 
 absolutepath()
 {
-   local RVAL
-
    r_absolutepath "$@"
 
    [ ! -z "${RVAL}" ] && echo "${RVAL}"
@@ -475,8 +461,6 @@ r_simplified_absolutepath()
 
 simplified_absolutepath()
 {
-   local RVAL
-
    r_simplified_absolutepath "$@"
 
    [ ! -z "${RVAL}" ] && echo "${RVAL}"
@@ -506,8 +490,6 @@ r_symlink_relpath()
 
 symlink_relpath()
 {
-   local RVAL
-
    r_symlink_relpath "$@"
 
    [ ! -z "${RVAL}" ] && echo "${RVAL}"
@@ -772,8 +754,6 @@ simplified_path()
 #
 assert_sane_subdir_path()
 {
-   local RVAL
-
    r_simplified_path "$1"
 
    case "${RVAL}"  in
@@ -791,8 +771,6 @@ assert_sane_subdir_path()
 
 assert_sane_path()
 {
-   local RVAL
-
    r_simplified_path "$1"
 
    case "${RVAL}" in
