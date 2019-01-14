@@ -274,12 +274,13 @@ _r_make_tmp_in_dir_uuidgen()
             exekutor "${TOUCH}" "${RVAL}" 2> /dev/null && return 0
          ;;
       esac
+
       if [ ! -e "${RVAL}" ]
       then
          fluke=$((fluke + 1 ))
          if [ "${fluke}" -lt 3 ]
          then
-            fail "Could not repeatedly create \"${RVAL}\""
+            fail "Could not (eve repeatedly) create \"${RVAL}\" (${filetype:-f})"
          fi
       fi
    done
@@ -291,6 +292,8 @@ _r_make_tmp_in_dir()
    local tmpdir="$1"
    local name="$2"
    local filetype="$3"
+
+   mkdir_if_missing "${tmpdir}"
 
    [ ! -w "${tmpdir}" ] && fail "${tmpdir} does not exist or is not writable"
 
@@ -460,7 +463,8 @@ create_symlink()
 
    if [ -z "${oldlink}" -o "${oldlink}" != "${url}" ]
    then
-      exekutor ln -s -f "${url}" "${stashdir}" >&2 || fail "failed to setup symlink \"${stashdir}\" (to \"${url}\")"
+      exekutor ln -s -f "${url}" "${stashdir}" >&2 || \
+         fail "failed to setup symlink \"${stashdir}\" (to \"${url}\")"
    fi
 }
 

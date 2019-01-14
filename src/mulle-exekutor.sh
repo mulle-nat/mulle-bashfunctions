@@ -41,29 +41,70 @@ MULLE_EXEKUTOR_SH="included"
 # ####################################################################
 #                          Execution
 # ####################################################################
+exekutor_print_arrow()
+{
+   local arrow
+
+   [ -z "${MULLE_EXECUTABLE_PID}" ] && internal_fail "MULLE_EXECUTABLE_PID not set"
+
+   if [ -z "${MULLE_EXEKUTOR_LOG_DEVICE}"  \
+        -a ! -z "${BASHPID}" \
+        -a "${MULLE_EXECUTABLE_PID}" != "${BASHPID}" ]
+   then
+      arrow="=[${BASHPID:-0}]=>"
+   else
+      arrow="==>"
+   fi
+
+   printf "%s" "${arrow}"
+}
+
+
+eval_exekutor_print()
+{
+   exekutor_print_arrow
+
+   while [ $# -ne 0 ]
+   do
+      printf "%s" " $1"
+      shift
+   done
+   printf '\n'
+}
+
+
+exekutor_print()
+{
+   exekutor_print_arrow
+
+   while [ $# -ne 0 ]
+   do
+      case "$1" in
+         *[^a-zA-Z0-9._-]*)
+            printf "%s" " '$1'"
+         ;;
+
+         *)
+            printf "%s" " $1"
+         ;;
+      esac
+      shift
+   done
+   printf '\n'
+}
+
 
 exekutor_trace()
 {
+   local printer="$1"; shift
+
    if [  "${MULLE_FLAG_LOG_EXEKUTOR}" = 'YES' ]
    then
-      local arrow
-
-      [ -z "${MULLE_EXECUTABLE_PID}" ] && internal_fail "MULLE_EXECUTABLE_PID not set"
-
-      if [ -z "${MULLE_EXEKUTOR_LOG_DEVICE}"  \
-           -a ! -z "${BASHPID}" \
-           -a "${MULLE_EXECUTABLE_PID}" != "${BASHPID}" ]
-      then
-         arrow="=[${BASHPID:-0}]=>"
-      else
-         arrow="==>"
-      fi
-
       if [ -z "${MULLE_EXEKUTOR_LOG_DEVICE}" ]
       then
-         echo "${arrow}" "$@" >&2
+         ${printer} "$@" >&2
       else
-         echo "${arrow}" "$@" > "${MULLE_EXEKUTOR_LOG_DEVICE}"
+         ${printer} "$@" > "${MULLE_EXEKUTOR_LOG_DEVICE}"
       fi
    fi
 }
@@ -71,30 +112,17 @@ exekutor_trace()
 
 exekutor_trace_output()
 {
+   local printer="$1"; shift
    local redirect="$1"; shift
    local output="$1"; shift
 
    if [ "${MULLE_FLAG_LOG_EXEKUTOR}" = 'YES' ]
    then
-      local arrow
-
-      [ -z "${MULLE_EXECUTABLE_PID}" ] && internal_fail "MULLE_EXECUTABLE_PID not set"
-
-      # redirect exekutors are run in a subshell, so BASHPID is wrong
-      if [ -z "${MULLE_EXEKUTOR_LOG_DEVICE}" \
-           -a ! -z "${BASHPID}" \
-           -a "${MULLE_EXECUTABLE_PID}" != "${BASHPID}" ]
-      then
-         arrow="=[${BASHPID}]=>"
-      else
-         arrow="==>"
-      fi
-
       if [ -z "${MULLE_EXEKUTOR_LOG_DEVICE}" ]
       then
-         echo "${arrow}" "$@" "${redirect}" "${output}" >&2
+         ${printer} "$@" "${redirect}" "${output}" >&2
       else
-         echo "${arrow}" "$@" "${redirect}" "${output}" > "${MULLE_EXEKUTOR_LOG_DEVICE}"
+         ${printer} "$@" "${redirect}" "${output}" > "${MULLE_EXEKUTOR_LOG_DEVICE}"
       fi
    fi
 }
@@ -102,7 +130,7 @@ exekutor_trace_output()
 
 exekutor()
 {
-   exekutor_trace "$@"
+   exekutor_trace "exekutor_print" "$@"
 
    if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = 'YES' ]
    then
@@ -118,7 +146,7 @@ exekutor()
 #
 rexekutor()
 {
-   exekutor_trace "$@"
+   exekutor_trace "exekutor_print" "$@"
 
    "$@"
 }
@@ -126,7 +154,7 @@ rexekutor()
 
 eval_exekutor()
 {
-   exekutor_trace "$@"
+   exekutor_trace "eval_exekutor_print" "$@"
 
    if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = 'YES' ]
    then
@@ -143,7 +171,7 @@ eval_exekutor()
 #
 eval_rexekutor()
 {
-   exekutor_trace "$@"
+   exekutor_trace "eval_exekutor_print" "$@"
 
    eval "$@"
 }
@@ -151,7 +179,7 @@ eval_rexekutor()
 
 _eval_exekutor()
 {
-   exekutor_trace "$@"
+   exekutor_trace "eval_exekutor_print" "$@"
 
    if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = 'YES' ]
    then
@@ -167,7 +195,7 @@ redirect_exekutor()
    # funny not found problem ? the base directory of output is missing!a
    local output="$1"; shift
 
-   exekutor_trace_output '>' "${output}" "$@"
+   exekutor_trace_output "exekutor_print" '>' "${output}" "$@"
 
    if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = 'YES' ]
    then
@@ -183,7 +211,7 @@ redirect_eval_exekutor()
    # funny not found problem ? the base directory of output is missing!a
    local output="$1"; shift
 
-   exekutor_trace_output '>' "${output}" "$@"
+   exekutor_trace_output "eval_exekutor_print" '>' "${output}" "$@"
 
    if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = 'YES' ]
    then
@@ -199,7 +227,7 @@ redirect_append_exekutor()
    # funny not found problem ? the base directory of output is missing!a
    local output="$1"; shift
 
-   exekutor_trace_output '>>' "${output}" "$@"
+   exekutor_trace_output "exekutor_print" '>>' "${output}" "$@"
 
    if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = 'YES' ]
    then
@@ -215,7 +243,7 @@ _redirect_append_eval_exekutor()
    # You have a funny "not found" problem ? the base directory of output is missing!
    local output="$1"; shift
 
-   exekutor_trace_output '>>' "${output}" "$@"
+   exekutor_trace_output "eval_exekutor_print" '>>' "${output}" "$@"
 
    if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = 'YES' ]
    then
@@ -225,6 +253,7 @@ _redirect_append_eval_exekutor()
    ( eval "$@" ) >> "${output}"
 }
 
+
 #
 # output eval trace also into logfile
 #
@@ -232,16 +261,7 @@ logging_redirekt_exekutor()
 {
    local output="$1"; shift
 
-   local arrow
-
-   if [ "${PPID}" -ne "${MULLE_EXECUTABLE_PID}" ]
-   then
-      arrow="=[${PPID}]=>"
-   else
-      arrow="==>"
-   fi
-
-   echo "${arrow}" "$@" > "${output}"
+   exekutor_print "${arrow}" "$@" > "${output}"
    redirect_append_exekutor "${output}" "$@"
 }
 
@@ -250,17 +270,7 @@ logging_redirect_eval_exekutor()
 {
    local output="$1"; shift
 
-   # overwrite
-   local arrow
-
-   if [ "${PPID}" -ne "${MULLE_EXECUTABLE_PID}" ]
-   then
-      arrow="=[${PPID}]=>"
-   else
-      arrow="==>"
-   fi
-
-   echo "${arrow}" "$*" > "${output}"
+   eval_exekutor_print "${arrow}" "$@" > "${output}"
    _redirect_append_eval_exekutor "${output}" "$@"
 }
 
@@ -271,7 +281,7 @@ _redirect_append_tee_eval_exekutor()
    local output="$1"; shift
    local teeoutput="$1"; shift
 
-   exekutor_trace_output '>>' "${output}" "$@"
+   exekutor_trace_output "eval_exekutor_print" '>>' "${output}" "$@"
 
    if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = 'YES' ]
    then
@@ -287,17 +297,7 @@ logging_redirect_tee_eval_exekutor()
    local output="$1"; shift
    local teeoutput="$1"; shift
 
-   # overwrite
-   local arrow
-
-   if [ "${PPID}" -ne "${MULLE_EXECUTABLE_PID}" ]
-   then
-      arrow="=[${PPID}]=>"
-   else
-      arrow="==>"
-   fi
-
-   echo "${arrow}" "$*" tee "${teeoutput}" > "${output}"
+   eval_exekutor_print "${arrow}" "$@" | tee "${teeoutput}" > "${output}"
    _redirect_append_tee_eval_exekutor "${output}" "${teeoutput}" "$@"
 }
 

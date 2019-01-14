@@ -63,11 +63,15 @@ log_fail()
 }
 
 
+#
+# don't prefix with warning: just let the colors speak
+# errors are errors though
+#
 log_warning()
 {
    if [ "${MULLE_FLAG_LOG_TERSE}" != 'YES' ]
    then
-      log_printf "${C_WARNING}${MULLE_EXECUTABLE_FAIL_PREFIX} warning:${C_WARNING_TEXT} %b${C_RESET}\n" "$*"
+      log_printf "${C_WARNING}${MULLE_EXECUTABLE_FAIL_PREFIX}${C_WARNING_TEXT} %b${C_RESET}\n" "$*"
    fi
 }
 
@@ -122,10 +126,10 @@ log_debug()
 
    case "${MULLE_UNAME}" in
       linux)
-         log_printf "${C_BR_RED}$(date "+%s.%N") %b${C_RESET}\n" "$*"
+         log_printf "${C_DEBUG}$(date "+%s.%N") %b${C_RESET}\n" "$*"
       ;;
       *)
-         log_printf "${C_BR_RED}$(date "+%s") %b${C_RESET}\n" "$*"
+         log_printf "${C_DEBUG}$(date "+%s") %b${C_RESET}\n" "$*"
       ;;
    esac
 }
@@ -346,6 +350,7 @@ logging_initialize()
       fi
    fi
 
+   # https://stackoverflow.com/questions/4842424/list-of-ansi-color-escape-sequences
    # https://www.systutorials.com/241795/how-to-judge-whether-its-stderr-is-redirected-to-a-file-in-a-bash-script-on-linux/
    # do not colorize when /dev/stderr is redirected
    if [ "${MULLE_NO_COLOR}" != 'YES' ] && [ ! -f /dev/stderr ]
@@ -377,6 +382,7 @@ logging_initialize()
    C_SETTING="${C_GREEN}${C_FAINT}"
    C_TRACE="${C_FLUFF}${C_FAINT}"
    C_TRACE2="${C_RESET}${C_FAINT}"
+   C_DEBUG="\033[38;5;39m"
 
    C_WARNING_TEXT="${C_RESET}${C_RED}${C_BOLD}"
    C_ERROR_TEXT="${C_RESET}${C_BR_RED}${C_BOLD}"
