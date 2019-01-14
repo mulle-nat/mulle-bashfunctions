@@ -214,8 +214,7 @@ array_contains()
 
    local found
 
-   found="`echo "${array}" | fgrep -x "${value}"`"
-   [ ! -z "${found}" ]
+   find_line "${array}" "${value}"
 }
 
 

@@ -64,68 +64,40 @@ concat()
 }
 
 
-r_remove_prefix()
+#
+# works for a "common" set of separators
+#
+r_remove_ugly()
 {
-   local old
+   local s="$1"
+   local separator="${2:- }"
 
-   RVAL="$1"
-   old=''
+   local escaped
+   local dualescaped
+   local replacement
 
-   while [ "${RVAL}" != "${old}" ]
-   do
-      old="$RVAL"
-      RVAL="${RVAL#$2}"
-   done
-}
+   printf -v escaped '%q' "${separator}"
 
-
-r_remove_suffix()
-{
-   local old
-
-   RVAL="$1"
-   old=''
-
-   while [ "${RVAL}" != "${old}" ]
-   do
-      old="$RVAL"
-      RVAL="${RVAL%$2}"
-   done
-}
-
-
-r_remove_duplicate()
-{
-   local old
-   local s
-
-   RVAL="$1"
-   old=''
-
-   s="$2"
-   case "$s" in
+   dualescaped="${escaped//\//\/\/}"
+   replacement="${separator}"
+   case "${separator}" in
       */*)
-        s="${s//\//\/\/}"
+         replacement="${escaped}"
       ;;
    esac
 
+   local old
+
+   RVAL="${s}"
+   old=''
    while [ "${RVAL}" != "${old}" ]
    do
       old="${RVAL}"
-      RVAL="${RVAL//$s$s/$s}"
+      RVAL="${RVAL##[${separator}]}"
+      RVAL="${RVAL%%[${separator}]}"
+      RVAL="${RVAL//${dualescaped}${dualescaped}/${replacement}}"
    done
 }
-
-
-r_remove_ugly()
-{
-   local separator="${2:- }"
-
-   r_remove_prefix "$1" "${separator}"
-   r_remove_suffix "${RVAL}" "${separator}"
-   r_remove_duplicate "${RVAL}" "${separator}"
-}
-
 
 #
 # this is "cross-platform" because the paths on MINGW are converted to
@@ -252,6 +224,23 @@ add_line()
 }
 
 
+# this is faster than calling fgrep externally
+find_line()
+{
+   local lines="$1"
+   local search="$2"
+
+   local line
+
+   while read -r line
+   do
+      [ "${line}" = "${search}" ] && return 0
+   done <<< "${lines}"
+   return 1
+}
+
+
+
 r_add_unique_line()
 {
    local lines="$1"
@@ -269,7 +258,7 @@ r_add_unique_line()
       return
    fi
 
-   if fgrep -x -q -e "${line}" <<< "${lines}"
+   if find_line "${lines}" "${line}"
    then
       RVAL="${lines}"
       return
@@ -536,6 +525,7 @@ escaped_doublequotes()
    [ ! -z "${RVAL}" ] && echo "${RVAL}"
 }
 
+
 # MEMO: use printf "%q" dot shell escaping
 r_escaped_shellstring()
 {
@@ -678,7 +668,8 @@ r_fast_dirname()
       break
    done
 
-   last="${filename##*/}"
+   # need to escape filename here as it may contain wildcards
+   printf -v last '%q' "${filename##*/}"
    RVAL="${filename%${last}}"
 
    while :

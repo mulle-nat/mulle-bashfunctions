@@ -1,3 +1,9 @@
+### 1.10.1
+
+* `MULLE_HOSTNAME` is prefixed with `'_'` if the first character is '.'
+* add -t- and -l- option to negate debug flags
+* renamed `reval_exekutor` to `eval_rexekutor`
+
 ## 1.10.0
 
 * add -t- and -l- option to negate debug flags

@@ -183,6 +183,7 @@ test_comma_concat()
    output="`comma_concat "" ",,"`"
    expect_output "${output}" ""
 
+   set -x
    output="`comma_concat ",," ",,"`"
    expect_output "${output}" ""
 

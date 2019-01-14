@@ -246,7 +246,18 @@ _r_make_tmp_in_dir_uuidgen()
 
    local prev
    local uuid
+   local fluke
 
+   local MKDIR
+   local TOUCH
+
+   MKDIR="$(command -v mkdir)"
+   TOUCH="$(command -v touch)"
+
+   [ -z "${MKDIR}" ] && fail "No \"mkdir\" found in PATH ($PATH)"
+   [ -z "${TOUCH}" ] && fail "No \"touch\" found in PATH ($PATH)"
+
+   fluke=0
    RVAL=''
 
    while :
@@ -256,13 +267,21 @@ _r_make_tmp_in_dir_uuidgen()
 
       case "${filetype}" in
          *d*)
-            exekutor mkdir "${RVAL}" 2> /dev/null && return 0
+            exekutor "${MKDIR}" "${RVAL}" 2> /dev/null && return 0
          ;;
 
          *)
-            exekutor touch "${RVAL}" 2> /dev/null && return 0
+            exekutor "${TOUCH}" "${RVAL}" 2> /dev/null && return 0
          ;;
       esac
+      if [ ! -e "${RVAL}" ]
+      then
+         fluke=$((fluke + 1 ))
+         if [ "${fluke}" -lt 3 ]
+         then
+            fail "Could not repeatedly create \"${RVAL}\""
+         fi
+      fi
    done
 }
 

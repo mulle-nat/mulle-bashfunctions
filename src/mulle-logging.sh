@@ -95,6 +95,9 @@ log_fluff()
    if [ "${MULLE_FLAG_LOG_FLUFF}" = 'YES' ]
    then
       log_printf "${C_FLUFF}%b${C_RESET}\n" "$*"
+   else
+      # fluff should be shown when debug is on but not fluff
+      log_debug "$@"
    fi
 }
 
@@ -336,7 +339,11 @@ logging_initialize()
             MULLE_HOSTNAME="`hostname -s`"
          ;;
       esac
-      # MULLE_HOSTNAME="`printf "%s" "${MULLE_HOSTNAME}" | tr -c 'a-zA-Z0-9._-' '_'`"
+
+      if [ "${MULLE_HOSTNAME:0:1}" = '.' ]
+      then
+         MULLE_HOSTNAME="_${MULLE_HOSTNAME}"
+      fi
    fi
 
    # https://www.systutorials.com/241795/how-to-judge-whether-its-stderr-is-redirected-to-a-file-in-a-bash-script-on-linux/
