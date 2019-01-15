@@ -190,7 +190,7 @@ main()
       install -v -m "${mode}" "${i}" "${libexec}" || exit 1
    done
 
-   envshare="${prefix}/share/mulle-env/mulle-nat"
+   envshare="${prefix}/share/mulle-sde/mulle-nat"
    mkdir -p "${envshare}" 2> /dev/null
 
    # install only this one for now

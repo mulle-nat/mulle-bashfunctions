@@ -1,0 +1,180 @@
+#! /usr/bin/env bash
+#
+#   Copyright (c) <|YEAR|> <|USER|> - <|ORGNAIZATION|>
+#   All rights reserved.
+#
+#   Redistribution and use in source and binary forms, with or without
+#   modification, are permitted provided that the following conditions are met:
+#
+#   Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+#   Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+#   Neither the name of <|ORGNAIZATION|> nor the names of its contributors
+#   may be used to endorse or promote products derived from this software
+#   without specific prior written permission.
+#
+#   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+#   AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+#   IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+#   ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+#   LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+#   CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+#   SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+#   INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+#   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+#   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+#   POSSIBILITY OF SUCH DAMAGE.
+#
+[ "${TRACE}" = 'YES' -o "${<|ONESHOT_NAME|>_TRACE}" = 'YES' ] && set -x && : "$0" "$@"
+
+
+MULLE_EXECUTABLE_VERSION="0.0.0"
+
+
+print_flags()
+{
+   echo "   -f          : force operation"
+
+   options_technical_flags_usage "       : "
+}
+
+
+usage()
+{
+   [ $# -ne 0 ] && log_error "$*"
+
+   cat <<EOF >&2
+Usage:
+   ${MULLE_USAGE_NAME} [flags]
+
+   Does nothing
+
+Flags:
+EOF
+   print_flags | LC_ALL=C sort >&2
+
+   exit 1
+}
+
+
+main()
+{
+   local MULLE_FLAG_MAGNUM_FORCE='NO'
+
+   # technical flags
+   local MULLE_TRACE
+   local MULLE_FLAG_EXEKUTOR_DRY_RUN='NO'
+   local MULLE_FLAG_LOG_LOCAL='NO'
+   local MULLE_FLAG_LOG_DEBUG='NO'
+   local MULLE_FLAG_LOG_EXEKUTOR='NO'
+   local MULLE_FLAG_LOG_FLUFF='NO'
+   local MULLE_FLAG_LOG_SCRIPTS='NO'
+   local MULLE_FLAG_LOG_SETTINGS='NO'
+   local MULLE_FLAG_LOG_VERBOSE='NO'
+   local MULLE_FLAG_LOG_MERGE='NO'
+   local MULLE_TRACE_POSTPONE='NO'
+
+   #
+   # simple option handling
+   #
+   while [ $# -ne 0 ]
+   do
+      if options_technical_flags "$1"
+      then
+         shift
+         continue
+      fi
+
+      case "$1" in
+         -f|--force)
+            MULLE_FLAG_MAGNUM_FORCE='YES'
+         ;;
+
+         -h*|--help|help)
+            usage
+         ;;
+
+         --version)
+            echo "${MULLE_EXECUTABLE_VERSION}"
+            exit 0
+         ;;
+
+         -*)
+            usage "Unknown option \"$1\""
+         ;;
+
+         *)
+            break
+         ;;
+      esac
+
+      shift
+   done
+
+   options_setup_trace "${MULLE_TRACE}"
+
+   log_info "Does nothing"
+}
+
+
+########
+###
+### INIT
+###
+trap_fail()
+{
+   exit 1
+}
+
+
+_init()
+{
+   #
+   # minimal setup exit
+   #
+   if [ "$1" = "version" ]
+   then
+      echo "${MULLE_EXECUTABLE_VERSION}"
+      exit 0
+   fi
+
+   if [ -z "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}" ]
+   then
+      MULLE_BASHFUNCTIONS_LIBEXEC_DIR="`mulle-bashfunctions-env libexec-dir 2> /dev/null`"
+      if [ -z "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}" ]
+      then
+         if [ -z "`command -v "${executablepath}"`" ]
+         then
+             echo "Fatal Error: Could not find mulle-bashfunctions-env in PATH (not installed ?)" >&2
+         else
+            echo "Fatal Error: Could not find libexec of mulle-bashfunctions-env ($PWD)" >&2
+         fi
+         exit 1
+      fi
+   fi
+
+      # shellcheck source=../mulle-bashfunctions/src/mulle-string.sh
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions.sh" "minimal" &&
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-path.sh" &&
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-file.sh" ||
+      fail "failed to load bashfunctions from ${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}"
+
+   #  set -e # more pain then gain in the end
+   #  set -u # doesn't work with my style
+
+   trap trap_fail INT
+   set -o pipefail
+}
+
+###
+### INIT
+###
+########
+
+
+_init "$@" # needs params
+main "$@"
