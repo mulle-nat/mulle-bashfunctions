@@ -1,3 +1,7 @@
+### 1.10.4
+
+* `path_extension` returns empty on no path extension now
+
 ### 1.10.3
 
 * add some missing files

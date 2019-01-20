@@ -71,7 +71,7 @@ log_warning()
 {
    if [ "${MULLE_FLAG_LOG_TERSE}" != 'YES' ]
    then
-      log_printf "${C_WARNING}${MULLE_EXECUTABLE_FAIL_PREFIX}${C_WARNING_TEXT} %b${C_RESET}\n" "$*"
+      log_printf "${C_WARNING}%b${C_RESET}\n" "$*"
    fi
 }
 
@@ -384,7 +384,6 @@ logging_initialize()
    C_TRACE2="${C_RESET}${C_FAINT}"
    C_DEBUG="\033[38;5;39m"
 
-   C_WARNING_TEXT="${C_RESET}${C_RED}${C_BOLD}"
    C_ERROR_TEXT="${C_RESET}${C_BR_RED}${C_BOLD}"
 }
 

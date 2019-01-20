@@ -103,6 +103,10 @@ r_path_extension()
       *.*)
         RVAL="${RVAL##*.}"
       ;;
+
+      *)
+         RVAL=""
+      ;;
    esac
 }
 
@@ -110,7 +114,7 @@ r_path_extension()
 path_extension()
 {
    r_path_extension "$@"
-   echo "${RVAL}"
+   [ ! -z "${RVAL}" ] && echo "${RVAL}"
 }
 
 
