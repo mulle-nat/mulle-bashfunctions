@@ -531,16 +531,6 @@ dir_has_files()
 }
 
 
-write_protect_directory()
-{
-   if [ -d "$1" ]
-   then
-      log_verbose "Write-protecting ${C_RESET_BOLD}$1${C_VERBOSE} to avoid spurious header edits"
-      exekutor chmod -R a-w "$1"
-   fi
-}
-
-
 # ####################################################################
 #                         Inplace sed (that works)
 # ####################################################################

@@ -240,7 +240,6 @@ find_line()
 }
 
 
-
 r_add_unique_line()
 {
    local lines="$1"
@@ -276,8 +275,7 @@ r_add_unique_lines()
 
    RVAL="${lines}"
 
-   IFS="
-"; set -f
+   IFS=$'\n'; set -f
    for line in ${addlines}
    do
       IFS="${DEFAULT_IFS}"; set +f
@@ -295,21 +293,24 @@ r_add_unique_lines()
 #
 r_filepath_cleaned()
 {
+   RVAL="$1"
+
+   [ -z "${RVAL}" ] && return
+
    local old
 
-   RVAL="$1"
-   [ -z "${RVAL}" ] && return
    old=''
 
    # remove excess //, also inside components
+   # remove excess /./, also inside components
    while [ "${RVAL}" != "${old}" ]
    do
       old="${RVAL}"
-      RVAL="${RVAL%/}"
+      RVAL="${RVAL//\/.\//\/}"
       RVAL="${RVAL//\/\//\/}"
    done
 
-   [ -z "${RVAL}" ] && RVAL="/"
+   [ -z "${RVAL}" ] && RVAL="${1:0:1}"
 }
 
 
@@ -347,7 +348,7 @@ r_filepath_concat()
          "."|"./")
             if [ -z "${fallback}" ]
             then
-               fallback="."
+               fallback="./"
             fi
             continue
          ;;
@@ -382,9 +383,9 @@ r_filepath_concat()
 
    if [ ! -z "${s}" ]
    then
-      RVAL="${s}"
+      r_filepath_cleaned "${s}"
    else
-      RVAL="${fallback}"
+      RVAL="${fallback:0:1}" # / make ./ . again
    fi
 }
 
@@ -490,6 +491,18 @@ r_escaped_sed_pattern()
 }
 
 
+r_escaped_sed_replacement()
+{
+   local s="$1"
+
+   s="${s//\\/\\\\}"
+   s="${s//\//\\/}"
+   s="${s//&/\\&}"
+
+   RVAL="$s"
+}
+
+
 escaped_sed_pattern()
 {
    r_escaped_sed_pattern "$@"
@@ -512,9 +525,23 @@ escaped_spaces()
 }
 
 
-r_escaped_doublequotes()
+r_escaped_backslashes()
 {
    RVAL="${1//\\/\\\\}"
+}
+
+
+escaped_backslashes()
+{
+   r_escaped_backslashes "$@"
+
+   [ ! -z "${RVAL}" ] && echo "${RVAL}"
+}
+
+
+r_escaped_doublequotes()
+{
+   RVAL="${1//\"/\\\"}"
 }
 
 

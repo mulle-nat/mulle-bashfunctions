@@ -149,7 +149,7 @@ _init()
       then
          if [ -z "`command -v "${executablepath}"`" ]
          then
-             echo "Fatal Error: Could not find mulle-bashfunctions-env in PATH (not installed ?)" >&2
+            echo "Fatal Error: Could not find mulle-bashfunctions-env in PATH ($PATH) - mulle-bashfunctions not installed ?" >&2
          else
             echo "Fatal Error: Could not find libexec of mulle-bashfunctions-env ($PWD)" >&2
          fi

@@ -508,8 +508,7 @@ _simplify_components()
    [ -z "${MULLE_ARRAY_SH}" ] && . mulle-array.sh
 
    result= # voodoo linux fix ?
-   IFS="
-"
+   IFS=$'\n'
    set -o noglob
    for i in $*
    do
@@ -566,8 +565,7 @@ _path_from_components()
    local i
    local composedpath  # renamed this from path, fixes crazy bug on linux ?
 
-   IFS="
-"
+   IFS=$'\n'
    set -o noglob
    for i in $components
    do

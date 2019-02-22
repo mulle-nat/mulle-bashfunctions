@@ -237,7 +237,6 @@ _bail()
 }
 
 
-
 fail()
 {
    if [ ! -z "$*" ]
@@ -285,12 +284,54 @@ logging_trap_remove()
 }
 
 
+logging_initialize_color()
+{
+   # https://stackoverflow.com/questions/4842424/list-of-ansi-color-escape-sequences
+   # https://www.systutorials.com/241795/how-to-judge-whether-its-stderr-is-redirected-to-a-file-in-a-bash-script-on-linux/
+   # do not colorize when /dev/stderr is redirected
+   if [ "${MULLE_NO_COLOR}" != 'YES' ] && [ ! -f /dev/stderr ]
+   then
+      C_RESET="\033[0m"
+
+      # Useable Foreground colours, for black/white white/black
+      C_RED="\033[0;31m"     C_GREEN="\033[0;32m"
+      C_BLUE="\033[0;34m"    C_MAGENTA="\033[0;35m"
+      C_CYAN="\033[0;36m"
+
+      C_BR_RED="\033[0;91m"
+      C_BOLD="\033[1m"
+      C_FAINT="\033[2m"
+
+      C_RESET_BOLD="${C_RESET}${C_BOLD}"
+
+      if [ "${MULLE_LOGGING_TRAP}" != 'NO' ]
+      then
+         logging_trap_install
+      fi
+   fi
+
+   C_ERROR="${C_BR_RED}${C_BOLD}"
+   C_WARNING="${C_RED}${C_BOLD}"
+   C_INFO="${C_CYAN}${C_BOLD}"
+   C_VERBOSE="${C_GREEN}${C_BOLD}"
+   C_FLUFF="${C_GREEN}${C_BOLD}"
+   C_SETTING="${C_GREEN}${C_FAINT}"
+   C_TRACE="${C_FLUFF}${C_FAINT}"
+   C_TRACE2="${C_RESET}${C_FAINT}"
+   C_DEBUG="\033[38;5;39;40m"
+
+   C_ERROR_TEXT="${C_RESET}${C_BR_RED}${C_BOLD}"
+}
+
+
 logging_initialize()
 {
    if [ ! -z "${MULLE_EXECUTABLE}" ]
    then
       return
    fi
+
+   logging_initialize_color
 
    MULLE_EXECUTABLE="$0"
 
@@ -302,7 +343,7 @@ logging_initialize()
 
    #
    # this is useful for shortening filenames for output
-   # like echo "${filename}#${MULLE_USER_PWD}/"
+   # like echo "${filename#${MULLE_USER_PWD}/}"
    #
    if [ -z "${MULLE_USER_PWD}" ]
    then
@@ -349,42 +390,6 @@ logging_initialize()
          MULLE_HOSTNAME="_${MULLE_HOSTNAME}"
       fi
    fi
-
-   # https://stackoverflow.com/questions/4842424/list-of-ansi-color-escape-sequences
-   # https://www.systutorials.com/241795/how-to-judge-whether-its-stderr-is-redirected-to-a-file-in-a-bash-script-on-linux/
-   # do not colorize when /dev/stderr is redirected
-   if [ "${MULLE_NO_COLOR}" != 'YES' ] && [ ! -f /dev/stderr ]
-   then
-      C_RESET="\033[0m"
-
-      # Useable Foreground colours, for black/white white/black
-      C_RED="\033[0;31m"     C_GREEN="\033[0;32m"
-      C_BLUE="\033[0;34m"    C_MAGENTA="\033[0;35m"
-      C_CYAN="\033[0;36m"
-
-      C_BR_RED="\033[0;91m"
-      C_BOLD="\033[1m"
-      C_FAINT="\033[2m"
-
-      C_RESET_BOLD="${C_RESET}${C_BOLD}"
-
-      if [ "${MULLE_LOGGING_TRAP}" != 'NO' ]
-      then
-         logging_trap_install
-      fi
-   fi
-
-   C_ERROR="${C_BR_RED}${C_BOLD}"
-   C_WARNING="${C_RED}${C_BOLD}"
-   C_INFO="${C_CYAN}${C_BOLD}"
-   C_VERBOSE="${C_GREEN}${C_BOLD}"
-   C_FLUFF="${C_GREEN}${C_BOLD}"
-   C_SETTING="${C_GREEN}${C_FAINT}"
-   C_TRACE="${C_FLUFF}${C_FAINT}"
-   C_TRACE2="${C_RESET}${C_FAINT}"
-   C_DEBUG="\033[38;5;39m"
-
-   C_ERROR_TEXT="${C_RESET}${C_BR_RED}${C_BOLD}"
 }
 
 logging_initialize "$@"

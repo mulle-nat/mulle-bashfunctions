@@ -191,8 +191,7 @@ parallel_execute()
 
    local argument
 
-   set -o noglob;  IFS="
-"
+   set -o noglob;  IFS=$'\n'
    for argument in ${arguments}
    do
       set +o noglob; IFS="${DEFAULT_IFS}"

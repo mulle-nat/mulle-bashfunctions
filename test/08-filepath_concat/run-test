@@ -64,7 +64,7 @@ test_filepath_concat()
    expect_output "${output}" "/"
 
 # a /
-   output="`filepath_concat "a" "/" `"
+   output="`filepath_concat "a"  `"
    expect_output "${output}" "a"
 
    output="`filepath_concat "/" "a" `"
@@ -83,10 +83,10 @@ test_filepath_concat()
 
 # a/
    output="`filepath_concat "a/" "" `"
-   expect_output "${output}" "a"
+   expect_output "${output}" "a/"
 
    output="`filepath_concat "" "a/" `"
-   expect_output "${output}" "a"
+   expect_output "${output}" "a/"
 
 # /a
    output="`filepath_concat "/a" "" `"
@@ -97,10 +97,10 @@ test_filepath_concat()
 
 # /a/
    output="`filepath_concat "/a/" "" `"
-   expect_output "${output}" "/a"
+   expect_output "${output}" "/a/"
 
    output="`filepath_concat "" "/a/" `"
-   expect_output "${output}" "/a"
+   expect_output "${output}" "/a/"
 
 # //a
    output="`filepath_concat "//a" "" `"
@@ -112,10 +112,10 @@ test_filepath_concat()
 
 # a//
    output="`filepath_concat "a//" "" `"
-   expect_output "${output}" "a"
+   expect_output "${output}" "a/"
 
    output="`filepath_concat "" "a//" `"
-   expect_output "${output}" "a"
+   expect_output "${output}" "a/"
 
 # a//b
    output="`filepath_concat "a//b" "" `"
@@ -130,7 +130,7 @@ test_filepath_concat()
 
 # a b/
    output="`filepath_concat "a" "b/" `"
-   expect_output "${output}" "a/b"
+   expect_output "${output}" "a/b/"
 
 # a /b
    output="`filepath_concat "a" "/b" `"
@@ -138,7 +138,7 @@ test_filepath_concat()
 
 # a /b/
    output="`filepath_concat "a/" "/b/" `"
-   expect_output "${output}" "a/b"
+   expect_output "${output}" "a/b/"
 
 
 # /a b
@@ -147,7 +147,7 @@ test_filepath_concat()
 
 # /a b/
    output="`filepath_concat "/a" "b/" `"
-   expect_output "${output}" "/a/b"
+   expect_output "${output}" "/a/b/"
 
 # /a /b
    output="`filepath_concat "/a" "/b" `"
@@ -155,7 +155,7 @@ test_filepath_concat()
 
 # /a /b/
    output="`filepath_concat "/a/" "/b/" `"
-   expect_output "${output}" "/a/b"
+   expect_output "${output}" "/a/b/"
 
 
 # a/ b
@@ -164,7 +164,7 @@ test_filepath_concat()
 
 # a/ b/
    output="`filepath_concat "a/" "b/" `"
-   expect_output "${output}" "a/b"
+   expect_output "${output}" "a/b/"
 
 # a/ /b
    output="`filepath_concat "a/" "/b" `"
@@ -172,7 +172,7 @@ test_filepath_concat()
 
 # a/ /b/
    output="`filepath_concat "a/" "/b/" `"
-   expect_output "${output}" "a/b"
+   expect_output "${output}" "a/b/"
 
 
 # /a/ b
@@ -181,7 +181,7 @@ test_filepath_concat()
 
 # /a/ b/
    output="`filepath_concat "/a/" "b/" `"
-   expect_output "${output}" "/a/b"
+   expect_output "${output}" "/a/b/"
 
 # /a/ /b
    output="`filepath_concat "/a/" "/b" `"
@@ -189,7 +189,7 @@ test_filepath_concat()
 
 # /a/ /b/
    output="`filepath_concat "/a/" "/b/" `"
-   expect_output "${output}" "/a/b"
+   expect_output "${output}" "/a/b/"
 }
 
 

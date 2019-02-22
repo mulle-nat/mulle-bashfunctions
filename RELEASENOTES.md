@@ -1,3 +1,10 @@
+## 1.11.0
+
+* change `filepath_concat` to respect trailing / if part of filename
+* use $'\n' instead of literal linefeed
+* removed unused function `write_protect_directory`
+
+
 ### 1.10.4
 
 * `path_extension` returns empty on no path extension now

@@ -1,0 +1,112 @@
+#! /usr/bin/env bash
+
+[ "${TRACE}" = 'YES' ] && set -x
+
+
+stacktrace()
+{
+   local i=1
+   local line
+
+   while line="`caller $i`"
+   do
+      printf "${C_CYAN}%b${C_RESET}\n" "$i: #${line}"
+      ((i++))
+   done
+}
+
+
+expect_output()
+{
+   local output="$1"
+   local expected="$2"
+
+   if [ "${output}" != "${expected}" ]
+   then
+      echo "Got \"${output}\". Expected: \"${expected}\"" >&2
+      stacktrace >&2
+      exit 1
+   fi
+}
+
+
+fail()
+{
+   echo "Unexpected failure" >&2
+   stacktrace >&2
+   exit 1
+}
+
+
+test_filepath_cleaned()
+{
+   local output
+
+# EMPTY STRING
+   r_filepath_cleaned ""
+   expect_output "${RVAL}" ""
+
+# /
+   r_filepath_cleaned "/"
+   expect_output "${RVAL}" "/"
+
+# //
+   r_filepath_cleaned "//"
+   expect_output "${RVAL}" "/"
+
+   r_filepath_cleaned "///"
+   expect_output "${RVAL}" "/"
+
+# / a /
+   r_filepath_cleaned "a/"
+   expect_output "${RVAL}" "a/"
+
+   r_filepath_cleaned "/a"
+   expect_output "${RVAL}" "/a"
+
+   r_filepath_cleaned "/a/"
+   expect_output "${RVAL}" "/a/"
+
+   r_filepath_cleaned "/a//"
+   expect_output "${RVAL}" "/a/"
+
+   r_filepath_cleaned "//a//"
+   expect_output "${RVAL}" "/a/"
+
+# / a /
+   r_filepath_cleaned "a/."
+   expect_output "${RVAL}" "a/."
+
+   r_filepath_cleaned "/.a"
+   expect_output "${RVAL}" "/.a"
+
+   r_filepath_cleaned "/./a/"
+   expect_output "${RVAL}" "/a/"
+
+   r_filepath_cleaned "/a/./"
+   expect_output "${RVAL}" "/a/"
+
+   r_filepath_cleaned "/./a/./"
+   expect_output "${RVAL}" "/a/"
+}
+
+
+main()
+{
+   test_filepath_cleaned
+
+   echo "All tests passed" >&2
+}
+
+
+init()
+{
+   MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${MULLE_BASHFUNCTIONS_LIBEXEC_DIR:-../../src}"
+
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-string.sh" || exit 1
+}
+
+
+init "$@"
+main "$@"
+
