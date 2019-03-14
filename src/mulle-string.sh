@@ -224,6 +224,24 @@ add_line()
 }
 
 
+r_remove_line()
+{
+   local lines="$1"
+   local search="$2"
+
+   local line
+
+   RVAL=
+   while read -r line
+   do
+      if [ "${line}" != "${search}" ]
+      then
+         r_add_line "${RVAL}" "${line}"
+      fi
+   done <<< "${lines}"
+}
+
+
 # this is faster than calling fgrep externally
 find_line()
 {
@@ -240,6 +258,37 @@ find_line()
 }
 
 
+r_add_unique_line()
+{
+   local lines="$1"
+   local line="$2"
+
+   if [ -z "${line}" ]
+   then
+      RVAL="${lines}"
+      return
+   fi
+
+   if [ -z "${lines}" ]
+   then
+      RVAL="${line}"
+      return
+   fi
+
+   if find_line "${lines}" "${line}"
+   then
+      RVAL="${lines}"
+      return
+   fi
+
+   RVAL="${lines}
+${line}"
+}
+
+
+#
+# this removes any previous occurrence, its very costly
+#
 r_add_unique_line()
 {
    local lines="$1"
@@ -286,6 +335,25 @@ r_add_unique_lines()
 }
 
 
+# for very many lines use
+# `sed -n '1!G;h;$p' <<< "${lines}"`"
+
+r_reverse_lines()
+{
+   local lines="$1"
+
+   local line
+
+   RVAL=
+   set -o noglob ; IFS=$'\n'
+   for line in ${lines}
+   do
+      r_add_line "${line}" "${RVAL}"
+   done
+   IFS="${DEFAULT_IFS}" ; set +o noglob
+}
+
+
 #
 # makes somewhat prettier filenames, removing superflous "."
 # and trailing '/'
@@ -306,8 +374,8 @@ r_filepath_cleaned()
    while [ "${RVAL}" != "${old}" ]
    do
       old="${RVAL}"
-      RVAL="${RVAL//\/.\//\/}"
-      RVAL="${RVAL//\/\//\/}"
+      RVAL="${RVAL//\/.\///}"
+      RVAL="${RVAL//\/\///}"
    done
 
    [ -z "${RVAL}" ] && RVAL="${1:0:1}"

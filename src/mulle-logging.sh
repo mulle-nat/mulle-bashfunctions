@@ -301,14 +301,15 @@ logging_initialize_color()
       C_BR_RED="\033[0;91m"
       C_BOLD="\033[1m"
       C_FAINT="\033[2m"
-
-      C_RESET_BOLD="${C_RESET}${C_BOLD}"
+      C_SPECIAL_BLUE="\033[38;5;39;40m"
 
       if [ "${MULLE_LOGGING_TRAP}" != 'NO' ]
       then
          logging_trap_install
       fi
    fi
+
+   C_RESET_BOLD="${C_RESET}${C_BOLD}"
 
    C_ERROR="${C_BR_RED}${C_BOLD}"
    C_WARNING="${C_RED}${C_BOLD}"
@@ -318,7 +319,7 @@ logging_initialize_color()
    C_SETTING="${C_GREEN}${C_FAINT}"
    C_TRACE="${C_FLUFF}${C_FAINT}"
    C_TRACE2="${C_RESET}${C_FAINT}"
-   C_DEBUG="\033[38;5;39;40m"
+   C_DEBUG="${C_SPECIAL_BLUE}"
 
    C_ERROR_TEXT="${C_RESET}${C_BR_RED}${C_BOLD}"
 }

@@ -190,6 +190,12 @@ test_filepath_concat()
 # /a/ /b/
    output="`filepath_concat "/a/" "/b/" `"
    expect_output "${output}" "/a/b/"
+
+
+# some more tests
+# /a/ /b/
+   output="`filepath_concat "/Volumes/Source/srcM/MulleEOF/MulleEOAdaptor/MulleSybaseEOAdaptor" "src/Base" `"
+   expect_output "${output}" "/Volumes/Source/srcM/MulleEOF/MulleEOAdaptor/MulleSybaseEOAdaptor/src/Base"
 }
 
 
