@@ -36,98 +36,62 @@
 
 MULLE_ARRAY_SH="included"
 
-# declare "fail" outside
-# array contents can contain any characters except newline
+
 array_value_check()
 {
    local value="$1"
 
-   local n
-
-   n=`wc -l <<< "${value}" | awk '{ print $1}'`
-
-   [ "$n" -eq 0 ] && internal_fail "empty value"
-   [ "$n" -ne 1 ] && internal_fail "value \"${value}\" has linebreaks"
+   case "${value}" in
+      *$'\n'*)
+         internal_fail "\"${value}\" has unescaped linefeeds"
+      ;;
+   esac
 }
 
 
-array_index_check()
-{
-   local array="$1"
-   local i="$2"
-
-   [ -z "$i" ] && internal_fail "empty index"
-
-   local n
-
-   n=`array_count "${array}"`
-
-   [ "$i" -ge "$n" ] && internal_fail "index ${i} out of bounds ${n}"
-
-   echo "${i}"
-}
-
-
-array_add()
-{
-   local array="$1"
-   local value="$2"
-
-# DEBUG code
-#   value="`array_value_check "${value}"`"
-
-   if [ -z "${array}" ]
-   then
-       echo "${value}"
-   else
-       echo "${array}
-${value}"
-   fi
-}
-
-
-array_count()
+#
+# more specialed lines code, that's not even used anywhere I think
+#
+r_count_lines()
 {
    local array="$1"
 
-   if [ -z "${array}" ]
-   then
-      echo 0
-      return
-   fi
+   RVAL=0
 
-   echo "${array}" | wc -l | awk '{ print $1 }'
+   local line
+
+   set -o noglob ; IFS=$'\n'
+   for line in ${array}
+   do
+      RVAL=$((RVAL + 1))
+   done
+   IFS="${DEFAULT_IFS}" ; set +o noglob
 }
 
 
-array_get()
+r_get_line_at_index()
 {
    local array="$1"
-   local i="$2"
+   local i="${2:-0}"
 
-# DEBUG code
-#   n="`array_count "${array}"`"
-#   [ "$i" -ge "$n" ] && internal_fail "index ${i} out of bounds ${n}"
+   # for larger arrays:    sed -n "${i}p" <<< "${array}"
 
-   ((i++))
-
-# ???
-# ERROR ??? See: https://github.com/mulle-nat/mulle-bashfunctions/issues/1
-# Use #! /usr/bin/env bash
-# ???
-   sed -n "${i}p" <<< "${array}"
+   set -o noglob ; IFS=$'\n'
+   for RVAL in ${array}
+   do
+      if [ $i -eq 0 ]
+      then
+         IFS="${DEFAULT_IFS}" ; set +o noglob
+         return 0
+      fi
+      i=$((i - 1))
+   done
+   IFS="${DEFAULT_IFS}" ; set +o noglob
+   return 1
 }
 
 
-array_get_last()
-{
-   local array="$1"
-
-   tail -1 <<< "${array}"
-}
-
-
-array_insert()
+r_insert_line_at_index()
 {
    local array="$1"
    local i="$2"
@@ -135,152 +99,102 @@ array_insert()
 
    array_value_check "${value}"
 
-   local head_count
-   local tail_count
+   local line
+   local added='NO'
+   local rval
 
-# DEBUG code
-#   [ -z "${i}" ] && internal_fail "empty index"
-#
-   local n
-#
-   n="`array_count "${array}"`"
-#   [ "$i" -gt "$n" ] && internal_fail "index ${i} out of bounds ${n}"
+   RVAL=
+   rval=1
 
-   head_count="$i"
-   tail_count="$((n-$i))"
+   set -o noglob ; IFS=$'\n'
+   for line in ${array}
+   do
+      if [ $i -eq 0 ]
+      then
+         r_add_line "${RVAL}" "${value}"
+         rval=0
+      fi
+      r_add_line "${RVAL}" "${line}"
+      i=$((i - 1))
+   done
+   IFS="${DEFAULT_IFS}" ; set +o noglob
 
-   if [ "${head_count}" -ne 0 ]
+   if [ $i -eq 0 ]
    then
-      head "-${head_count}" <<< "${array}"
+      r_add_line "${RVAL}" "${value}"
+      rval=0
    fi
 
-   echo "${value}"
-
-   if [ "${tail_count}" -ne 0 ]
-   then
-      tail "-${tail_count}" <<< "${array}"
-   fi
+   return $rval
 }
-
-
-array_remove()
-{
-   local array="$1"
-   local value="$2"
-
-# DEBUG code
-#   value="`array_value_check "${value}"`"
-
-   if [ ! -z "${array}" ]
-   then
-       fgrep -v -x "${value}" <<< "${array}"
-   fi
-}
-
-
-array_remove_last()
-{
-   local array="$1"
-
-   local n
-
-   n=`array_count "${array}"`
-   case $n in
-      0)
-         fail "remove from empty array"
-      ;;
-
-      1)
-         return
-      ;;
-
-      *)
-         n="$((n-1))"
-      ;;
-   esac
-
-   echo "${array}" | head "-$n"
-}
-
-
-array_contains()
-{
-   local array
-   local value
-
-   array="$1"
-   value="$2"
-   array_value_check "${value}"
-
-   local found
-
-   find_line "${array}" "${value}"
-}
-
 
 #
-# declare "fail" outside
 # assoc array contents can contain any characters except newline
-# assoc array keys can contain any characters except newline
+# assoc array keys should be identifiers
 #
-#
-# currently escaping is provided for code "outside" of array, but it really
-# should be done within the functions (slow though)
-#
-_assoc_array_key_check()
+assoc_array_key_check()
 {
-   local n
+   local key="$1"
 
-   n=`echo "$1" | wc -w`
-   [ "$n" -eq 0 ] && internal_fail "empty value"
-   [ "$n" -ne 1 ] && internal_fail "key \"$1\" has spaces"
+   [ -z "${key}" ] && internal_fail "key is empty"
 
-   #
-   # escape charactes
-   # keys can't contain grep characters or '=''
-   #
-   echo "$1" | sed -e 's/[][\\.*^$=]/_/g'
+   local identifier
+
+   identifier="`printf "%s" "${key}" | tr -c 'a-zA-Z0-9' '_'`"
+   [ "${identifier}" != "${key}" ] && internal_fail "\"${key}\" has non-identifier characters"
 }
 
 
-_assoc_array_add()
+assoc_array_value_check()
+{
+   array_value_check "$@"
+}
+
+
+_r_assoc_array_add()
 {
    local array="$1"
    local key="$2"
    local value="$3"
+
+   assoc_array_key_check "${key}"
+   assoc_array_value_check "${value}"
 
 # DEBUG code
 #   key="`_assoc_array_key_check "$2"`"
 #   value="`array_value_check "$3"`"
 
-   local line
-
-   line="${key}=${value}"
-   if [ -z "${array}" ]
-   then
-       echo "${line}"
-   else
-       echo "${array}
-${line}"
-   fi
+   r_add_line "${array}" "${key}=${value}"
 }
 
 
-_assoc_array_remove()
+_r_assoc_array_remove()
 {
    local array="$1"
    local key="$2"
 
-   if [ ! -z "${array}" ]
-   then
-# DEBUG code
-#       key="`_assoc_array_key_check "${key}"`"
-      grep -v "^${key}=" <<< "${array}"
-   fi
+   local line
+   local delim
+
+   RVAL=
+   set -o noglob ; IFS=$'\n'
+   for line in ${array}
+   do
+      case "${line}" in
+         "${key}="*)
+         ;;
+
+         *)
+            RVAL="${line}${delim}${RVAL}"
+            delim=$'\n'
+         ;;
+      esac
+   done
+   IFS="${DEFAULT_IFS}" ; set +o noglob
 }
 
 
-assoc_array_get()
+r_assoc_array_get()
 {
    local array="$1"
    local key="$2"
@@ -288,17 +202,25 @@ assoc_array_get()
 # DEBUG code
 #   key="`_assoc_array_key_check "${key}"`"
 
-   grep "^${key}=" <<< "${array}" \
-      | sed -n 's/^[^=]*=\(.*\)$/\1/p'
-}
+   local line
+   local rval
 
+   RVAL=
+   rval=1
+   set -o noglob ; IFS=$'\n'
+   for line in ${array}
+   do
+      case "${line}" in
+         "${key}="*)
+            RVAL="${line#*=}"
+            rval=0
+            break
+         ;;
+      esac
+   done
+   IFS="${DEFAULT_IFS}" ; set +o noglob
 
-assoc_array_get_last()
-{
-   local array="$1"
-
-   tail -1 <<< "${array}" \
-      | sed -n 's/^[^=]*=\(.*\)$/\1/p'
+   return $rval
 }
 
 
@@ -318,7 +240,7 @@ assoc_array_all_values()
 }
 
 
-assoc_array_set()
+r_assoc_array_set()
 {
    local array="$1"
    local key="$2"
@@ -326,19 +248,22 @@ assoc_array_set()
 
    if [ -z "${value}" ]
    then
-      _assoc_array_remove "${array}" "${key}"
+      _r_assoc_array_remove "${array}" "${key}"
       return
    fi
 
    local old_value
 
-   old_value="`assoc_array_get "${array}" "${key}"`"
+   r_assoc_array_get "${array}" "${key}"
+   old_value="${RVAL}"
+
    if [ ! -z "${old_value}" ]
    then
-      array="`_assoc_array_remove "${array}" "${key}"`"
+      _r_assoc_array_remove "${array}" "${key}"
+      array="${RVAL}"
    fi
 
-   _assoc_array_add "${array}" "${key}" "${value}"
+   _r_assoc_array_add "${array}" "${key}" "${value}"
 }
 
 

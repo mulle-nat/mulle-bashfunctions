@@ -50,10 +50,9 @@ _r_tweaked_de_camel_case()
 {
    local s="$1"
 
-   local collectUpper
-   local collectLower
    local output
    local state
+   local collect
 
    local c
    local d
@@ -130,6 +129,12 @@ _r_tweaked_de_camel_case()
    fi
 
    RVAL="${output}"
+}
+
+
+r_capitalize_string()
+{
+   RVAL="$(tr '[:lower:]' '[:upper:]' <<< ${1:0:1})${1:1}"
 }
 
 

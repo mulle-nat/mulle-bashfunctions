@@ -42,8 +42,6 @@ MULLE_LEGACY_SH="included"
 # functions used by mulle-bootstrap but really too specialiced to be in
 # mulle-bash functions
 #
-
-
 prepend_to_search_path_if_missing()
 {
    local fullpath="$1"; shift
@@ -142,7 +140,6 @@ prepend_to_search_path_if_missing()
 
    slash_concat "${new_path}" "${tail_path}"
 }
-
 
 
 combined_escaped_search_path_if_exists()

@@ -60,28 +60,19 @@ exekutor_print_arrow()
 }
 
 
-eval_exekutor_print()
-{
-   exekutor_print_arrow
-
-   while [ $# -ne 0 ]
-   do
-      printf "%s" " $1"
-      shift
-   done
-   printf '\n'
-}
-
 
 exekutor_print()
 {
    exekutor_print_arrow
 
+   local escaped
+
    while [ $# -ne 0 ]
    do
       case "$1" in
-         *[^a-zA-Z0-9._-]*)
-            printf "%s" " '$1'"
+         *[^a-zA-Z0-9._-]*|"")
+            escaped="${1//\'/\'\"\'\"\'}"
+            printf "%s" " '${escaped}'"
          ;;
 
          *)
@@ -92,6 +83,22 @@ exekutor_print()
    done
    printf '\n'
 }
+
+
+eval_exekutor_print()
+{
+   exekutor_print_arrow
+
+   local escaped
+
+   while [ $# -ne 0 ]
+   do
+      printf "%s" " $1"
+      shift
+   done
+   printf '\n'
+}
+
 
 
 exekutor_trace()
@@ -138,6 +145,9 @@ exekutor()
    fi
 
    "$@"
+
+   MULLE_EXEKUTOR_RVAL=$?
+   return ${MULLE_EXEKUTOR_RVAL}
 }
 
 
@@ -149,6 +159,9 @@ rexekutor()
    exekutor_trace "exekutor_print" "$@"
 
    "$@"
+
+   MULLE_EXEKUTOR_RVAL=$?
+   return ${MULLE_EXEKUTOR_RVAL}
 }
 
 
@@ -162,6 +175,8 @@ eval_exekutor()
    fi
 
    eval "$@"
+   MULLE_EXEKUTOR_RVAL=$?
+   return ${MULLE_EXEKUTOR_RVAL}
 }
 
 
@@ -174,6 +189,8 @@ eval_rexekutor()
    exekutor_trace "eval_exekutor_print" "$@"
 
    eval "$@"
+   MULLE_EXEKUTOR_RVAL=$?
+   return ${MULLE_EXEKUTOR_RVAL}
 }
 
 
@@ -187,6 +204,9 @@ _eval_exekutor()
    fi
 
    eval "$@"
+
+   MULLE_EXEKUTOR_RVAL=$?
+   return ${MULLE_EXEKUTOR_RVAL}
 }
 
 
@@ -203,6 +223,9 @@ redirect_exekutor()
    fi
 
    ( "$@" ) > "${output}"
+
+   MULLE_EXEKUTOR_RVAL=$?
+   return ${MULLE_EXEKUTOR_RVAL}
 }
 
 
@@ -219,6 +242,9 @@ redirect_eval_exekutor()
    fi
 
    ( eval "$@" ) > "${output}"
+
+   MULLE_EXEKUTOR_RVAL=$?
+   return ${MULLE_EXEKUTOR_RVAL}
 }
 
 
@@ -235,6 +261,9 @@ redirect_append_exekutor()
    fi
 
    ( "$@" ) >> "${output}"
+
+   MULLE_EXEKUTOR_RVAL=$?
+   return ${MULLE_EXEKUTOR_RVAL}
 }
 
 
@@ -251,6 +280,9 @@ _redirect_append_eval_exekutor()
    fi
 
    ( eval "$@" ) >> "${output}"
+
+   MULLE_EXEKUTOR_RVAL=$?
+   return ${MULLE_EXEKUTOR_RVAL}
 }
 
 
@@ -261,7 +293,7 @@ logging_redirekt_exekutor()
 {
    local output="$1"; shift
 
-   exekutor_print "${arrow}" "$@" > "${output}"
+   exekutor_print "$@" > "${output}"
    redirect_append_exekutor "${output}" "$@"
 }
 
@@ -270,12 +302,12 @@ logging_redirect_eval_exekutor()
 {
    local output="$1"; shift
 
-   eval_exekutor_print "${arrow}" "$@" > "${output}"
+   eval_exekutor_print "$@" > "${output}"
    _redirect_append_eval_exekutor "${output}" "$@"
 }
 
 
-_redirect_append_tee_eval_exekutor()
+_append_tee_eval_exekutor()
 {
    # You have a funny "not found" problem ? the base directory of output is missing!
    local output="$1"; shift
@@ -288,17 +320,20 @@ _redirect_append_tee_eval_exekutor()
       return
    fi
 
-   ( eval "$@" ) | tee -a "${teeoutput}" >> "${output}"
+   ( eval "$@" ) | tee -a "${teeoutput}" "${output}"
+
+   MULLE_EXEKUTOR_RVAL=${PIPESTATUS[0]}
+   return ${MULLE_EXEKUTOR_RVAL}
 }
 
 
-logging_redirect_tee_eval_exekutor()
+logging_tee_eval_exekutor()
 {
    local output="$1"; shift
    local teeoutput="$1"; shift
 
-   eval_exekutor_print "${arrow}" "$@" | tee "${teeoutput}" > "${output}"
-   _redirect_append_tee_eval_exekutor "${output}" "${teeoutput}" "$@"
+   eval_exekutor_print "$@" | tee -a "${teeoutput}" "${output}"
+   _append_tee_eval_exekutor "${output}" "${teeoutput}" "$@"
 }
 
 :

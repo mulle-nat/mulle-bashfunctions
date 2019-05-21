@@ -1,0 +1,117 @@
+#! /usr/bin/env bash
+
+[ "${TRACE}" = 'YES' ] && set -x
+
+
+expect_output()
+{
+   local output="$1"
+   local expected="$2"
+
+   if [ "${output}" != "${expected}" ]
+   then
+      echo "Got \"${output}\". Expected: \"${expected}\"" >&2
+      exit 1
+   fi
+}
+
+
+fail()
+{
+   echo "Unexpected failure" >&2
+   exit 1
+}
+
+
+call()
+{
+   local sep
+   local i
+
+   printf "call( %d: " $#
+   for i in "$@"
+   do
+      printf "%s" "$sep"
+      printf "'%s'" "$i"
+      sep=","
+   done
+   printf ")\n"
+}
+
+
+test_exekutor()
+{
+   local  a='A'
+
+   exekutor call ""
+   exekutor call ''
+   exekutor call 'a'
+   exekutor call '''a'''
+   exekutor call '"a"'
+   exekutor call "'a'"
+   exekutor call 'a b'
+   exekutor call '''a b'''
+   exekutor call '"a b"'
+
+   exekutor call "$a"
+   exekutor call '$a'
+   exekutor call '''$a'''
+   exekutor call '"$a"'
+}
+
+
+test_eval_exekutor()
+{
+   local  a='A'
+   local  b='A B'
+
+   eval_exekutor call ""
+   eval_exekutor call ''
+   eval_exekutor call 'a'
+   eval_exekutor call '''a'''
+   eval_exekutor call '"a"'
+   eval_exekutor call "'a'"
+   eval_exekutor call 'a b'
+   eval_exekutor call '''a b'''
+   eval_exekutor call '"a b"'
+
+   eval_exekutor call "$a"
+   eval_exekutor call '$a'
+   eval_exekutor call '''$a'''
+   eval_exekutor call '"$a"'
+   eval_exekutor call "$b"
+   eval_exekutor call '$b'
+   eval_exekutor call '''$b'''
+   eval_exekutor call '"$b"'
+
+   eval_exekutor call a b
+   eval_exekutor call $a $b
+   eval_exekutor call "$a" "$b"
+   eval_exekutor call '$a' '$b'
+}
+
+
+main()
+{
+   MULLE_FLAG_LOG_EXEKUTOR='YES'
+
+   test_exekutor
+   echo
+   test_eval_exekutor
+
+   echo "All tests passed" >&2
+}
+
+
+init()
+{
+   MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${MULLE_BASHFUNCTIONS_LIBEXEC_DIR:-../../src}"
+
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-logging.sh" || exit 1
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-exekutor.sh" || exit 1
+}
+
+
+init "$@"
+main "$@"
+

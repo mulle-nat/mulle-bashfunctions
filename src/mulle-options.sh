@@ -138,8 +138,7 @@ before_trace_fail()
 after_trace_warning()
 {
    [ "${MULLE_TRACE}" = '1848' ] && \
-      log_warning "${MULLE_EXECUTABLE_FAIL_PREFIX}: $1 after -t \
-   invalidates -t"
+      log_warning "${MULLE_EXECUTABLE_FAIL_PREFIX}: $1 after -t invalidates -t"
 }
 
 

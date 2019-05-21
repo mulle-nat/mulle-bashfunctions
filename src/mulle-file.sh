@@ -65,10 +65,8 @@ mkdir_if_missing()
 
    if [ -L "$1" ]
    then
-      local resolve
-         r_resolve_symlinks "$1"
-      resolve="${RVAL}"
-      if [ ! -d "${resolve}" ]
+      r_resolve_symlinks "$1"
+      if [ ! -d "${RVAL}" ]
       then
          fail "failed to create directory \"$1\" as a symlink is there"
       fi
@@ -199,19 +197,30 @@ create_file_if_missing()
 }
 
 
-remove_file_if_present()
+_remove_file_if_present()
 {
    [ -z "$1" ] && internal_fail "empty path"
 
    if ! exekutor rm -f "$1" > /dev/null >&2
    then
-      if [ -e "$1" ]
+      if [ ! -e "$1" ]
       then
-         exekutor chmod u+w "$1"  >&2 || fail "Failed to make $1 writable"
-         exekutor rm -f "$1"  >&2     || fail "failed to remove \"$1\""
+         return 1
       fi
+      exekutor chmod u+w "$1"  >&2 || fail "Failed to make $1 writable"
+         exekutor rm -f "$1"  >&2     || fail "failed to remove \"$1\""
    fi
-   log_fluff "Removed \"$1\" ($PWD)"
+   return 0
+}
+
+remove_file_if_present()
+{
+   if _remove_file_if_present "$@"
+   then
+      log_fluff "Removed \"$1\" ($PWD)"
+      return 0
+   fi
+   return 1
 }
 
 
@@ -337,7 +346,6 @@ r_make_tmp()
 
    _r_make_tmp_in_dir "${tmpdir}" "${name}" "${filetype}"
 }
-
 
 
 make_tmp_file()
@@ -577,7 +585,7 @@ inplace_sed()
 #         exekutor chmod "${permissions}" "${tmpfile}"
          # move gives permission errors, this keeps everything OK
          exekutor cp "${tmpfile}" "${filename}"
-         remove_file_if_present "${tmpfile}"
+         _remove_file_if_present "${tmpfile}" # don't fluff log :)
       ;;
 
       *)

@@ -1,5 +1,14 @@
 ## 1.11.0
 
+* `find_item` added
+* `r_basename` and `r_dirname` supplant `r_fast_basename` and `r_fast_dirname`
+* improved the old array code with less backticks
+* improved quoting code
+* added `r_available_core_count` with heuristics
+* added `log_grep_warning_error` for mulle-make
+* exekutor routines now set `MULLE_EXEKUTOR_RVAL` for status
+* fix escaping but in `de_camel_case`
+* add `r_remove_lin,`  `r_add_unique_line` , `r_reverse_lines`
 * change `filepath_concat` to respect trailing / if part of filename
 * use $'\n' instead of literal linefeed
 * removed unused function `write_protect_directory`

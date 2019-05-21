@@ -55,15 +55,31 @@ r_get_core_count()
 # local _parallel_maxaverage
 r_convenient_max_load_average()
 {
-   r_get_core_count
+   local cores="$1"
 
-   _parallel_maxaverage=$((RVAL * 2))
+   if [ -z "${cores}" ]
+   then
+      r_get_core_count
+      cores="${RVAL}"
+   fi
+
+   case "${MULLE_UNAME}" in
+      linux)
+         RVAL=$((cores * 6))
+      ;;
+
+      *)
+         RVAL=$((cores * 2))
+      ;;
+   esac
 }
 
 
 wait_for_available_job()
 {
    log_entry "wait_for_available_job" "$@"
+
+   local maxjobs="${1:-8}"
 
    local running
    local count
@@ -73,7 +89,7 @@ wait_for_available_job()
       running=($(jobs -pr))  #  http://mywiki.wooledge.org/BashFAQ/004
       count=${#running[@]}
 
-      if [ ${count} -le ${_parallel_maxjobs:-8} ]
+      if [ ${count} -le ${maxjobs} ]
       then
          log_debug "Currently only ${count} jobs run, spawn another"
          break
@@ -84,20 +100,63 @@ wait_for_available_job()
 }
 
 
+get_current_load_average()
+{
+   uptime | sed -n -e 's/.*average[s]*:[ ]*\([0-9]*\).*/\1/p'
+}
+
+
+#
+# figure out how much cores we can use given current system load
+#
+r_available_core_count()
+{
+   log_entry "r_available_core_count" "$@"
+
+   local maxaverage="$1"
+
+   local cores
+
+   r_get_core_count
+   cores="${RVAL}"
+
+   if [ -z "${maxavg}" ]
+   then
+      r_convenient_max_load_average "${cores}"
+      maxaverage="${RVAL}"
+   fi
+
+   local loadavg
+   local available
+
+   loadavg="`get_current_load_average`"
+   available="$(( cores - loadavg ))"
+   if [ ${available} -lt 1 ]
+   then
+      available="1"
+   fi
+
+   RVAL="${available}"
+}
+
+
 wait_for_load_average()
 {
    log_entry "wait_for_load_average" "$@"
+
+   local maxaverage="${1:-8}"
 
    local loadavg
 
    while :
    do
       loadavg="`uptime | sed -n -e 's/.*average:[ ]*\([0-9]*\).*/\1/p'`"
-      if [ "${loadavg:-0}" -le ${_parallel_maxaverage:-8} ]
+      if [ "${loadavg:-0}" -le ${maxaverage} ]
       then
          break
       fi
       log_debug "Waiting on load average to come down"
+
       sleep 0.001s # 1000Hz
    done
 }

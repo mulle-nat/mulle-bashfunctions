@@ -231,58 +231,90 @@ r_remove_line()
 
    local line
 
+   local delim
+
    RVAL=
-   while read -r line
+   set -o noglob ; IFS=$'\n'
+   for line in ${lines}
    do
       if [ "${line}" != "${search}" ]
       then
-         r_add_line "${RVAL}" "${line}"
+         RVAL="${RVAL}${delim}${line}"
+         delim=$'\n'
       fi
-   done <<< "${lines}"
+   done
+   IFS="${DEFAULT_IFS}" ; set +o noglob
 }
 
 
+# can't have linefeeds as delimiter
+find_item()
+{
+   local line="$1"
+   local search="$2"
+   local delimiter="${3:-,}"
+
+   local clear
+
+   shopt -q extglob
+   clear=$?
+
+   rval=1
+   shopt -s extglob
+   case "${delim}${line}${delim}" in
+      *"${delim}${search}${delim}"*)
+         rval=0
+      ;;
+   esac
+   [ $clear -ne 0 ] && shopt -u extglob
+
+   return $rval
+}
+
+
+#
 # this is faster than calling fgrep externally
+# this is faster than while read line <<< lines
+# this is faster than for line in lines
+#
 find_line()
 {
    local lines="$1"
    local search="$2"
 
-   local line
+   local escaped_lines
+   local pattern
+   local rval
 
-   while read -r line
-   do
-      [ "${line}" = "${search}" ] && return 0
-   done <<< "${lines}"
-   return 1
-}
+# ensure leading and trailing linefeed for matching and $'' escaping
+   printf -v escaped_lines "%q" "
+${lines}
+"
 
+# add a linefeed here to get also $'' escaping
+   printf -v pattern "%q%s" "${search}
+"
+   # remove $'
+   pattern="${pattern:2}"
+   # remove \n'
+   pattern="${pattern%???}"
 
-r_add_unique_line()
-{
-   local lines="$1"
-   local line="$2"
+   local clear
 
-   if [ -z "${line}" ]
-   then
-      RVAL="${lines}"
-      return
-   fi
+   # keep extglob state
+   shopt -q extglob
+   clear=$?
 
-   if [ -z "${lines}" ]
-   then
-      RVAL="${line}"
-      return
-   fi
+   rval=1
+   shopt -s extglob
+   case "${escaped_lines}" in
+      *"\\n${pattern}\\n"*)
+         rval=0
+      ;;
+   esac
+   [ $clear -ne 0 ] && shopt -u extglob
 
-   if find_line "${lines}" "${line}"
-   then
-      RVAL="${lines}"
-      return
-   fi
-
-   RVAL="${lines}
-${line}"
+   return $rval
 }
 
 
@@ -294,15 +326,9 @@ r_add_unique_line()
    local lines="$1"
    local line="$2"
 
-   if [ -z "${line}" ]
+   if [ -z "${line}" -o -z "${lines}" ]
    then
-      RVAL="${lines}"
-      return
-   fi
-
-   if [ -z "${lines}" ]
-   then
-      RVAL="${line}"
+      RVAL="${lines}${line}"
       return
    fi
 
@@ -317,38 +343,23 @@ ${line}"
 }
 
 
-r_add_unique_lines()
-{
-   local lines="$1"
-   local addlines="$2"
-
-   RVAL="${lines}"
-
-   IFS=$'\n'; set -f
-   for line in ${addlines}
-   do
-      IFS="${DEFAULT_IFS}"; set +f
-
-      r_add_unique_line "${RVAL}" "${line}"
-   done
-   IFS="${DEFAULT_IFS}"; set +f
-}
-
-
+#
 # for very many lines use
 # `sed -n '1!G;h;$p' <<< "${lines}"`"
-
+#
 r_reverse_lines()
 {
    local lines="$1"
 
    local line
+   local delim
 
    RVAL=
    set -o noglob ; IFS=$'\n'
    for line in ${lines}
    do
-      r_add_line "${line}" "${RVAL}"
+      RVAL="${line}${delim}${RVAL}"
+      delim=$'\n'
    done
    IFS="${DEFAULT_IFS}" ; set +o noglob
 }
@@ -607,32 +618,24 @@ escaped_backslashes()
 }
 
 
+r_escaped_singlequotes()
+{
+   local quote="'"
+
+   RVAL="${*//${quote}/${quote}\"${quote}\"${quote}}"
+}
+
+
 r_escaped_doublequotes()
 {
-   RVAL="${1//\"/\\\"}"
+   RVAL="${*//\\/\\\\}"
+   RVAL="${RVAL//\"/\\\"}"
 }
 
 
-escaped_doublequotes()
+r_escaped_shell_string()
 {
-   r_escaped_doublequotes "$@"
-
-   [ ! -z "${RVAL}" ] && echo "${RVAL}"
-}
-
-
-# MEMO: use printf "%q" dot shell escaping
-r_escaped_shellstring()
-{
-   printf -v RVAL '%q' "$1"
-}
-
-
-escaped_shellstring()
-{
-   r_escaped_shellstring "$@"
-
-   [ ! -z "${RVAL}" ] && echo "${RVAL}"
+   printf -v RVAL '%q' "$*"
 }
 
 
@@ -716,7 +719,7 @@ expand_environment_variables()
 #
 
 # much faster than calling "basename"
-r_fast_basename()
+r_basename()
 {
    local filename="$1"
 
@@ -741,7 +744,14 @@ r_fast_basename()
 }
 
 
-r_fast_dirname()
+# old name -> fast_basename -> r_fast_basename -> r_basename
+r_fast_basename()
+{
+   r_basename "$@"
+}
+
+
+r_dirname()
 {
    local filename="$1"
 
@@ -784,6 +794,11 @@ r_fast_dirname()
          ;;
       esac
    done
+}
+
+r_fast_dirname()
+{
+   r_dirname "$@"
 }
 
 

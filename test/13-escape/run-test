@@ -72,10 +72,13 @@ test_doublequote()
    expect_output "${RVAL}" '\"'
 
    r_escaped_doublequotes '\"'
-   expect_output "${RVAL}" '\\"'
+   expect_output "${RVAL}" '\\\"'
 
    r_escaped_doublequotes '""'
    expect_output "${RVAL}" '\"\"'
+
+   r_escaped_doublequotes '"\\"'
+   expect_output "${RVAL}" '\"\\\\\"'
 }
 
 
