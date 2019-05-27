@@ -24,7 +24,7 @@ file( GLOB LIBRARY_SCRIPTS
    "src/*.sh"
 )
 
-file( TEMPLATE_FILE
+set( TEMPLATE_FILE
    "src/mulle-nat/bash-script/project/all/ONESHOT_NAME"
 )
 
