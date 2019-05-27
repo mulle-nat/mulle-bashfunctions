@@ -156,6 +156,7 @@ main()
 
    local bin
    local libexec
+   local share
 
    cd "`dirname -- "$0"`"
    cd ..
@@ -170,6 +171,7 @@ main()
 
    bin="${prefix}/bin"
    libexec="${prefix}/libexec/mulle-bashfunctions/${PROJECT_VERSION}"
+   share="${prefix}/share/mulle-bashfunctions/${PROJECT_VERSION}"
 
    if [ ! -d "${bin}" ]
    then
@@ -181,14 +183,21 @@ main()
       mkdir -p "${libexec}" || installer_fail "could not create ${libexec}"
    fi
 
+   if [ ! -d "${share}" ]
+   then
+      mkdir -p "${share}" || installer_fail "could not create ${share}"
+   fi
+
    install -m "${mode}" "mulle-bashfunctions-env" "${bin}/mulle-bashfunctions-env" || exit 1
    printf "install: ${C_MAGENTA}${C_BOLD}%s${C_RESET}\n" "${bin}/mulle-bashfunctions-env" >&2
 
    for i in src/mulle*.sh
    do
-      mkdir -p "${libexec}" 2> /dev/null
       install -v -m "${mode}" "${i}" "${libexec}" || exit 1
    done
+
+   i="src/mulle-nat/bash-script/project/all/ONESHOT_NAME"
+   install -v -m "${mode}" "${i}" "${share}" || exit 1
 
    envshare="${prefix}/share/mulle-sde/mulle-nat"
    mkdir -p "${envshare}" 2> /dev/null

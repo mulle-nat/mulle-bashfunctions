@@ -31,11 +31,13 @@
 #
 [ "${TRACE}" = 'YES' ] && set -x && : "$0" "$@"
 
-MULLE_BASHFUNCTIONS_VERSION="1.11.0"
+MULLE_BASHFUNCTIONS_VERSION="1.12.0"
 
 
 usage()
 {
+   [ ! -z "$*" ] && echo "error: $*" >&2
+
    cat <<EOF
 Usage:
    ${MULLE_EXECUTABLE_NAME} [command]
@@ -43,6 +45,7 @@ Usage:
    Locate bashfunctions install path for desired version.
 
 Commands:
+   init <script>           : create an empty script for mulle-bashfunctions
    libexec-dir [version]   : print best libexec filepath for desired version
    list                    : list installed versions
    version                 : print most recent version
@@ -128,6 +131,51 @@ find_library_path()
 }
 
 
+create_script()
+{
+   local script="$1"
+
+   local o='<|'
+   local c='|>'
+
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-string.sh" || exit 1
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-exekutor.sh" || exit 1
+
+   local nowdate
+   local nowtime
+   local nowyear
+
+   nowdate="`date "+%d.%m.%Y"`"
+   nowtime="`date "+%H:%M:%S"`"
+   nowyear="`date "+%Y"`"
+
+   local cmdline
+   local scriptname
+
+   r_basename "${script}"
+   scriptname="${RVAL}"
+
+   r_escaped_sed_replacement "${AUTHOR:-${USER:-USER}}"
+   cmdline="-e 's/${o}AUTHOR${c}/${RVAL}/g'"
+   r_escaped_sed_replacement "${nowdate}"
+   cmdline="${cmdline} -e 's/${o}DATE${c}/${RVAL}/g'"
+   r_escaped_sed_replacement "${ORGANIZATION:-ORGANIZATION}"
+   cmdline="${cmdline} -e 's/${o}ORGANIZATION${c}/${RVAL}/g'"
+   r_escaped_sed_replacement "${nowtime}"
+   cmdline="${cmdline} -e 's/${o}TIME${c}/${RVAL}/g'"
+   r_escaped_sed_replacement "${USER:-USER}"
+   cmdline="${cmdline} -e 's/${o}USER${c}/${RVAL}/g'"
+   r_escaped_sed_replacement "${nowyear}"
+   cmdline="${cmdline} -e 's/${o}YEAR${c}/${RVAL}/g'"
+   r_escaped_sed_replacement "${scriptname}"
+   cmdline="${cmdline} -e 's/${o}ONESHOT_NAME${c}/${RVAL}/g'"
+
+   redirect_eval_exekutor "${script}" sed "${cmdline}" \
+             "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/../share/ONESHOT_NAME" &&
+   chmod 755 "${script}"
+}
+
+
 main()
 {
    #
@@ -179,6 +227,16 @@ main()
       help)
          usage
       ;;
+
+      init|script)
+         if [ $# -ne 1 ]
+         then
+            usage "script requires one argument (only)"
+         fi
+
+         create_script "$1"
+      ;;
+
 
       libexec-dir|library-path)
          if [ $# -eq 0 ]

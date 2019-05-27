@@ -1,3 +1,8 @@
+## 1.12.0
+
+* mulle-bashfunctions-env gains an init command for quick script setup
+
+
 ## 1.11.0
 
 * `find_item` added

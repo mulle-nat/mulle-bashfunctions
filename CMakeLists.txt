@@ -24,6 +24,10 @@ file( GLOB LIBRARY_SCRIPTS
    "src/*.sh"
 )
 
+file( TEMPLATE_FILE
+   "src/mulle-nat/bash-script/project/all/ONESHOT_NAME"
+)
+
 
 set( MULLE_SDE_EXTENSION_DIRS
    "src/mulle-nat/bash-script"
@@ -41,6 +45,14 @@ PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
             GROUP_EXECUTE GROUP_READ
             WORLD_EXECUTE WORLD_READ
 DESTINATION "libexec/mulle-bashfunctions/${PROJECT_VERSION}")
+
+
+INSTALL( FILES ${TEMPLATE_FILE}
+PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
+            GROUP_EXECUTE GROUP_READ
+            WORLD_EXECUTE WORLD_READ
+DESTINATION "share/mulle-bashfunctions/${PROJECT_VERSION}")
+
 
 INSTALL( DIRECTORY ${MULLE_SDE_EXTENSION_DIRS}
 DESTINATION "share/mulle-sde/mulle-nat"
