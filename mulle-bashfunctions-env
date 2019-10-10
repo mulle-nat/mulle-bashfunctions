@@ -48,6 +48,7 @@ Commands:
    init <script>           : create an empty script for mulle-bashfunctions
    libexec-dir [version]   : print best libexec filepath for desired version
    list                    : list installed versions
+   uname                   : show system short name
    version                 : print most recent version
 EOF
 
@@ -228,6 +229,10 @@ main()
          usage
       ;;
 
+      hostname)
+         echo "${MULLE_HOSTNAME}"
+      ;;
+
       init|script)
          if [ $# -ne 1 ]
          then
@@ -250,6 +255,10 @@ main()
 
       list)
          list_libraries "$@" || exit 1
+      ;;
+
+      uname)
+         echo "${MULLE_UNAME}"
       ;;
 
       version)

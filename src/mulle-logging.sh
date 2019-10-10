@@ -421,6 +421,19 @@ logging_initialize()
             MULLE_UNAME="`cut -d_ -f1 <<< "${MULLE_UNAME}" | sed 's/64$//' `"
          ;;
       esac
+      if [ "${MULLE_UNAME}" = "linux" ]
+      then
+         local var
+
+         # check for WSL (Windows) we want this to be Windows then
+         read var < /proc/sys/kernel/osrelease
+         case "${var}" in 
+            *-Microsoft)
+               MULLE_UNAME="windows"
+               MULLE_EXE_EXTENSION=".exe"
+            ;;
+         esac
+      fi
       UNAME="${MULLE_UNAME}"  # backwards compatibility
    fi
 
