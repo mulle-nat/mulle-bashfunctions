@@ -477,6 +477,37 @@ filepath_concat()
 }
 
 
+r_upper_firstchar()
+{
+   RVAL="${1^}"
+   if [ "${RVAL}" = "$1^" ]
+   then
+      RVAL="`printf "${1:0:1}" | tr 'a-z' 'A-Z'`"
+      RVAL="${RVAL}${$1:1}"
+   fi
+}
+
+
+r_uppercase()
+{
+   RVAL="${1^^}"
+   if [ "${RVAL}" = "$1^^" ]
+   then
+      RVAL="`printf "$1" | tr 'a-z' 'A-Z'`"
+   fi
+}
+
+
+r_lowercase()
+{
+   RVAL="${1,,}"
+   if [ "${RVAL}" = "$1,," ]
+   then
+      RVAL="`printf "$1" | tr 'A-Z' 'a-z'`"
+   fi
+}
+
+
 # ####################################################################
 #                            Strings
 # ####################################################################
