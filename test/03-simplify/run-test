@@ -61,7 +61,7 @@ test2()
    result="`simplified_path "$1"`"
 
    [ "${result}" = "${2}" ] || fail "$1: ${result} != ${2}"
-   echo "$1 passed"
+   printf "%s\n" "$1 passed"
 }
 
 

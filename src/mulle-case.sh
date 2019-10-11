@@ -150,5 +150,27 @@ tweaked_de_camel_case()
 {
    r_tweaked_de_camel_case "$@"
 
-   [ ! -z "${RVAL}" ] && echo "${RVAL}"
+   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
+}
+
+
+#
+# make ID_FOO_R from idFooR
+#
+r_de_camel_case_upcase_identifier()
+{
+   r_tweaked_de_camel_case "$1"
+
+   RVAL="`printf "%s" "${RVAL}" | tr -c 'a-zA-Z0-9' '_'`"
+   RVAL="`tr 'a-z' 'A-Z' <<< "${RVAL}"`"
+
+   # ensure its a shell identifier
+   case "${RVAL}" in
+      [A-Za-z_]*)
+      ;;
+
+      *)
+         RVAL="_${RVAL}"
+      ;;
+   esac
 }

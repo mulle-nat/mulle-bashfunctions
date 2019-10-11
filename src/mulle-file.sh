@@ -104,7 +104,7 @@ mkdir_parent_if_missing()
 {
    if r_mkdir_parent_if_missing "$@"
    then
-      echo "${RVAL}"
+      printf "%s\n" "${RVAL}"
    fi
 }
 
@@ -171,7 +171,7 @@ _create_file_if_missing()
    log_fluff "Creating \"${path}\""
    if [ ! -z "$*" ]
    then
-      redirect_exekutor "${path}" echo "$*" || fail "failed to create \"{path}\""
+      redirect_exekutor "${path}" printf "%s\n" "$*" || fail "failed to create \"{path}\""
    else
       exekutor touch "${path}"  || fail "failed to create \"${path}\""
    fi
@@ -187,7 +187,7 @@ merge_line_into_file()
   then
      return
   fi
-  redirect_append_exekutor "${path}" echo "${line}"
+  redirect_append_exekutor "${path}" printf "%s\n" "${line}"
 }
 
 
@@ -203,12 +203,13 @@ _remove_file_if_present()
 
    if ! exekutor rm -f "$1" > /dev/null >&2
    then
+      # probably platform dependent if rm returns error on missing file though
       if [ ! -e "$1" ]
       then
          return 1
       fi
       exekutor chmod u+w "$1"  >&2 || fail "Failed to make $1 writable"
-         exekutor rm -f "$1"  >&2     || fail "failed to remove \"$1\""
+      exekutor rm -f "$1"  >&2     || fail "failed to remove \"$1\""
    fi
    return 0
 }
@@ -352,7 +353,7 @@ make_tmp_file()
 {
    r_make_tmp "$1"
 
-   [ ! -z "${RVAL}" ] && echo "${RVAL}"
+   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
 }
 
 
@@ -360,7 +361,7 @@ make_tmp_directory()
 {
    r_make_tmp "$1" "-d"
 
-   [ ! -z "${RVAL}" ] && echo "${RVAL}"
+   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
 }
 
 
@@ -407,7 +408,7 @@ r_resolve_symlinks()
 resolve_symlinks()
 {
    r_resolve_symlinks "$@"
-   [ ! -z "${RVAL}" ] && echo "${RVAL}"
+   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
 }
 
 
@@ -550,6 +551,20 @@ dir_has_files()
 #
 # So we have to do a lot here
 #
+# eval_sed()
+# {
+#    while [ $# -ne 0 ]
+#    do
+#       r_escaped_shell_string "$1"
+#       r_concat "${args}" "${RVAL}"
+#       args="${RVAL}"
+#       shift
+#    done
+#
+#    eval 'sed' "${args}"
+# }
+
+
 inplace_sed()
 {
    local tmpfile
@@ -563,7 +578,9 @@ inplace_sed()
 
          while [ $# -ne 1 ]
          do
-            args="${args} '$1'"
+            r_escaped_shell_string "$1"
+            r_concat "${args}" "${RVAL}"
+            args="${RVAL}"
             shift
          done
          filename="$1"
@@ -581,7 +598,7 @@ inplace_sed()
 
          r_make_tmp
          tmpfile="${RVAL}"
-         redirect_eval_exekutor "${tmpfile}" 'sed' ${args} "'${filename}'"
+         redirect_eval_exekutor "${tmpfile}" 'sed' "${args}" "'${filename}'"
 #         exekutor chmod "${permissions}" "${tmpfile}"
          # move gives permission errors, this keeps everything OK
          exekutor cp "${tmpfile}" "${filename}"

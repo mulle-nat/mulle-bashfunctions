@@ -13,9 +13,9 @@ test_symlink_relpath()
 
 run_test_0()
 {
-   echo "-------------" >&2
+   printf "%s\n" "-------------" >&2
    echo "test #0" >&2
-   echo "-------------" >&2
+   printf "%s\n" "-------------" >&2
 
    test_symlink_relpath "/a"     "/a"    "."
    test_symlink_relpath "/a"     "/a/"   "."
@@ -36,9 +36,9 @@ run_test_0()
 
 run_test_1()
 {
-   echo "-------------" >&2
+   printf "%s\n" "-------------" >&2
    echo "test #1" >&2
-   echo "-------------" >&2
+   printf "%s\n" "-------------" >&2
 
    test_symlink_relpath "/a"     "/a"     "."
    test_symlink_relpath "/a"     "/a/b"   ".."
@@ -56,9 +56,9 @@ run_test_1()
 
 run_test_2()
 {
-   echo "-------------" >&2
+   printf "%s\n" "-------------" >&2
    echo "test #2" >&2
-   echo "-------------" >&2
+   printf "%s\n" "-------------" >&2
 
    test_symlink_relpath "/x/y/z" "/a/b/c"  "../../../x/y/z"
 
@@ -68,9 +68,9 @@ run_test_2()
 
 run_test_3()
 {
-   echo "-------------" >&2
+   printf "%s\n" "-------------" >&2
    echo "test #3" >&2
-   echo "-------------" >&2
+   printf "%s\n" "-------------" >&2
 
    test_symlink_relpath "./a"     "a"      "."
    test_symlink_relpath "./a"     "a/b"    ".."
@@ -88,9 +88,9 @@ run_test_3()
 
 run_test_4()
 {
-   echo "-------------" >&2
+   printf "%s\n" "-------------" >&2
    echo "test #4" >&2
-   echo "-------------" >&2
+   printf "%s\n" "-------------" >&2
 
    test_symlink_relpath "./a"     "./a"      "."
    test_symlink_relpath "./a"     "./a/b"    ".."
@@ -108,9 +108,9 @@ run_test_4()
 
 run_test_5()
 {
-   echo "-------------" >&2
+   printf "%s\n" "-------------" >&2
    echo "test #5" >&2
-   echo "-------------" >&2
+   printf "%s\n" "-------------" >&2
 
    test_symlink_relpath "../a"     "./a"       "../../a"
    test_symlink_relpath "../a"     "./a/b"     "../../../a"
@@ -128,9 +128,9 @@ run_test_5()
 
 run_test_6()
 {
-   echo "-------------" >&2
+   printf "%s\n" "-------------" >&2
    echo "test #6" >&2
-   echo "-------------" >&2
+   printf "%s\n" "-------------" >&2
 
    test_symlink_relpath "../a"     "../a"       "."
    test_symlink_relpath "../a"     "../a/b"     ".."
@@ -148,9 +148,9 @@ run_test_6()
 
 run_test_7()
 {
-   echo "-------------" >&2
+   printf "%s\n" "-------------" >&2
    echo "test #7" >&2
-   echo "-------------" >&2
+   printf "%s\n" "-------------" >&2
 
    test_symlink_relpath "a/b"       "a/b"         "."
    test_symlink_relpath "a/b"       "a/./b"       "."

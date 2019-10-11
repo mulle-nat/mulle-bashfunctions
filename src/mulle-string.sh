@@ -39,6 +39,14 @@ MULLE_STRING_SH="included"
 #                            Concatenation
 # ####################################################################
 #
+
+# no seperator
+r_append()
+{
+   RVAL="${1}${2}"
+}
+
+
 r_concat()
 {
    local separator="${3:- }"
@@ -60,7 +68,16 @@ r_concat()
 concat()
 {
    r_concat "$@"
-   echo "$RVAL"
+   printf "%s\n" "$RVAL"
+}
+
+
+# https://stackoverflow.com/questions/369758/how-to-trim-whitespace-from-a-bash-variable
+r_trim_whitespace()
+{
+   RVAL="$*"
+   RVAL="${RVAL#"${RVAL%%[![:space:]]*}"}"
+   RVAL="${RVAL%"${RVAL##*[![:space:]]}"}"
 }
 
 
@@ -132,6 +149,28 @@ r_slash_concat()
    r_remove_duplicate "${RVAL}" "/"
 }
 
+# remove a value from a list
+r_list_remove()
+{
+   local sep="${3:- }"
+
+   RVAL="${sep}$1${sep}//${sep}$2${sep}/}"
+   RVAL="${RVAL##${sep}}"
+   RVAL="${RVAL%%${sep}}"
+}
+
+
+r_colon_remove()
+{
+   r_list_remove "$1" "$2" ":"
+}
+
+
+r_comma_remove()
+{
+   r_list_remove "$1" "$2" ","
+}
+
 
 # use for building sentences, where space is a separator and
 # not indenting or styling
@@ -145,7 +184,7 @@ colon_concat()
 {
    r_colon_concat "$@"
 
-   [ ! -z "${RVAL}" ] && echo "${RVAL}"
+   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
 }
 
 
@@ -154,7 +193,7 @@ comma_concat()
 {
    r_comma_concat "$@"
 
-   [ ! -z "${RVAL}" ] && echo "${RVAL}"
+   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
 }
 
 
@@ -163,7 +202,7 @@ semicolon_concat()
 {
    r_semicolon_concat "$@"
 
-   [ ! -z "${RVAL}" ] && echo "${RVAL}"
+   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
 }
 
 
@@ -172,7 +211,7 @@ slash_concat()
 {
    r_slash_concat "$@"
 
-   [ ! -z "${RVAL}" ] && echo "${RVAL}"
+   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
 }
 
 
@@ -183,7 +222,7 @@ add_cmake_path_if_exists()
 
    if [ ! -e "${path}" ]
    then
-      echo "${line}"
+      printf "%s\n" "${line}"
    else
       semicolon_concat "$@"
    fi
@@ -220,7 +259,7 @@ add_line()
 {
    r_add_line "$@"
 
-   [ ! -z "${RVAL}" ] && echo "${RVAL}"
+   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
 }
 
 
@@ -397,7 +436,7 @@ filepath_cleaned()
 {
    r_filepath_cleaned "$@"
 
-   [ ! -z "${RVAL}" ] && echo "${RVAL}"
+   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
 }
 
 
@@ -473,7 +512,7 @@ filepath_concat()
 {
    r_filepath_concat "$@"
 
-   [ ! -z "${RVAL}" ] && echo "${RVAL}"
+   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
 }
 
 
@@ -553,7 +592,7 @@ _unescape_linefeeds()
 
 unescape_linefeeds()
 {
-   echo "$@" | tr '|' '\012' | sed -e 's/\\$/|/g' -e '/^$/d'
+   printf "%s\n" "$@" | tr '|' '\012' | sed -e 's/\\$/|/g' -e '/^$/d'
 }
 
 
@@ -580,10 +619,11 @@ escaped_grep_pattern()
 {
    r_escaped_grep_pattern "$@"
 
-   [ ! -z "${RVAL}" ] && echo "${RVAL}"
+   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
 }
 
 
+# assumed that / is used like in sed -e 's/x/y/'
 r_escaped_sed_pattern()
 {
    local s="$1"
@@ -601,6 +641,7 @@ r_escaped_sed_pattern()
 }
 
 
+# assumed that / is used like in sed -e 's/x/y/'
 r_escaped_sed_replacement()
 {
    local s="$1"
@@ -617,7 +658,7 @@ escaped_sed_pattern()
 {
    r_escaped_sed_pattern "$@"
 
-   [ ! -z "${RVAL}" ] && echo "${RVAL}"
+   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
 }
 
 
@@ -631,7 +672,7 @@ escaped_spaces()
 {
    r_escaped_spaces "$@"
 
-   [ ! -z "${RVAL}" ] && echo "${RVAL}"
+   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
 }
 
 
@@ -645,7 +686,7 @@ escaped_backslashes()
 {
    r_escaped_backslashes "$@"
 
-   [ ! -z "${RVAL}" ] && echo "${RVAL}"
+   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
 }
 
 
@@ -682,7 +723,7 @@ string_has_prefix()
 
 string_remove_prefix()
 {
-   echo "${1#$2}"
+   printf "%s\n" "${1#$2}"
 }
 
 
@@ -694,7 +735,7 @@ string_has_suffix()
 
 string_remove_suffix()
 {
-   echo "${1%$2}"
+   printf "%s\n" "${1%$2}"
 }
 
 
@@ -716,7 +757,7 @@ expand_environment_variables()
     local next
     local rval=0
 
-    key="`echo "${string}" | sed -n 's/^\(.*\)\${\([A-Za-z_][A-Za-z0-9_:-]*\)}\(.*\)$/\2/p'`"
+    key="`printf "%s\n" "${string}" | sed -n 's/^\(.*\)\${\([A-Za-z_][A-Za-z0-9_:-]*\)}\(.*\)$/\2/p'`"
     if [ ! -z "${key}" ]
     then
        prefix="`sed 's/^\(.*\)\${\([A-Za-z_][A-Za-z0-9_:-]*\)}\(.*\)$/\1/' <<< "${string}" `"
@@ -739,7 +780,7 @@ expand_environment_variables()
        fi
     fi
 
-    echo "${string}"
+    printf "%s\n" "${string}"
     return $rval
 }
 
@@ -837,7 +878,7 @@ fast_basename()
 {
    r_fast_basename "$@"
 
-   [ ! -z "${RVAL}" ] && echo "${RVAL}"
+   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
 }
 
 
@@ -845,7 +886,7 @@ fast_dirname()
 {
    r_fast_dirname "$@"
 
-   [ ! -z "${RVAL}" ] && echo "${RVAL}"
+   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
 }
 
 

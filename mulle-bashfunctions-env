@@ -113,7 +113,7 @@ _find_local_library_path()
    then
       return 1
    fi
-   echo "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}"
+   printf "%s\n" "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}"
 }
 
 
@@ -190,7 +190,7 @@ main()
          ;;
 
          --version)
-            echo "${MULLE_BASHFUNCTIONS_VERSION}"
+            printf "%s\n" "${MULLE_BASHFUNCTIONS_VERSION}"
             exit 0
          ;;
 
@@ -246,7 +246,7 @@ main()
       libexec-dir|library-path)
          if [ $# -eq 0 ]
          then
-            echo "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}"
+            printf "%s\n" "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}"
             return 0
          fi
 
@@ -262,7 +262,7 @@ main()
       ;;
 
       version)
-         echo "${MULLE_BASHFUNCTIONS_VERSION}"
+         printf "%s\n" "${MULLE_BASHFUNCTIONS_VERSION}"
       ;;
 
       *)
@@ -444,7 +444,7 @@ _init()
 
       if [ -z "${_libexec_dir}" ]
       then
-         echo "$0 fatal Error: Could not find libexec (PWD: $PWD)" >&2
+         printf "%s\n" "$0 fatal Error: Could not find libexec (PWD: $PWD)" >&2
          exit 1
       fi
       MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${_libexec_dir}"
@@ -457,12 +457,12 @@ _init()
    then
       case "${1}" in
          libexec-dir|library-path)
-            echo "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}"
+            printf "%s\n" "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}"
             exit 0
          ;;
 
          version)
-            echo "${MULLE_BASHFUNCTIONS_VERSION}"
+            printf "%s\n" "${MULLE_BASHFUNCTIONS_VERSION}"
             exit 0
          ;;
       esac
