@@ -73,7 +73,7 @@ r_path_depth()
 path_depth()
 {
    r_path_depth "$@"
-   [ ! -z "${RVAL}" ] && echo "${RVAL}"
+   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
 }
 
 
@@ -91,7 +91,7 @@ r_extensionless_basename()
 extensionless_basename()
 {
    r_extensionless_basename "$@"
-   [ ! -z "${RVAL}" ] && echo "${RVAL}"
+   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
 }
 
 
@@ -114,7 +114,7 @@ r_path_extension()
 path_extension()
 {
    r_path_extension "$@"
-   [ ! -z "${RVAL}" ] && echo "${RVAL}"
+   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
 }
 
 
@@ -211,8 +211,8 @@ _r_relative_path_between()
    r_simplified_path "$2"
    b="${RVAL}"
 
-#   a="`echo "$1" | sed -e 's|/$||g'`"
-#   b="`echo "$2" | sed -e 's|/$||g'`"
+#   a="`printf "%s\n" "$1" | sed -e 's|/$||g'`"
+#   b="`printf "%s\n" "$2" | sed -e 's|/$||g'`"
 
    [ -z "${a}" ] && internal_fail "Empty path (\$1)"
    [ -z "${b}" ] && internal_fail "Empty path (\$2)"
@@ -230,7 +230,7 @@ _relative_path_between()
 {
    _r_relative_path_between "$@"
 
-   [ ! -z "${RVAL}" ] && echo "${RVAL}"
+   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
 }
 
 
@@ -321,7 +321,7 @@ relative_path_between()
 {
    r_relative_path_between "$@"
 
-   [ ! -z "${RVAL}" ] && echo "${RVAL}"
+   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
 }
 
 
@@ -362,7 +362,7 @@ compute_relative()
 {
    r_compute_relative "$@"
 
-   [ ! -z "${RVAL}" ] && echo "${RVAL}"
+   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
 }
 
 
@@ -381,7 +381,21 @@ cd_physical()
 
 physicalpath()
 {
-  ( cd "$1" && pwd -P ) 2>/dev/null
+   if [ -d "$1" ]
+   then
+      ( cd "$1" && pwd -P ) 2>/dev/null
+      return $?
+   fi
+
+   local dir
+   local file
+
+   r_fast_dirname "$1"
+   dir="${RVAL}"
+   r_fast_basename "$1"
+   file="${RVAL}"
+
+   ( cd "$1" && concat "`pwd -P`" "${file}" ) 2>/dev/null
 }
 
 
@@ -438,7 +452,7 @@ absolutepath()
 {
    r_absolutepath "$@"
 
-   [ ! -z "${RVAL}" ] && echo "${RVAL}"
+   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
 }
 
 
@@ -467,7 +481,7 @@ simplified_absolutepath()
 {
    r_simplified_absolutepath "$@"
 
-   [ ! -z "${RVAL}" ] && echo "${RVAL}"
+   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
 }
 
 
@@ -496,7 +510,7 @@ symlink_relpath()
 {
    r_symlink_relpath "$@"
 
-   [ ! -z "${RVAL}" ] && echo "${RVAL}"
+   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
 }
 
 
@@ -552,7 +566,7 @@ _simplify_components()
 
    IFS="${DEFAULT_IFS}"
 
-   echo "${result}"
+   printf "%s\n" "${result}"
 }
 
 
@@ -579,7 +593,7 @@ _path_from_components()
    then
       echo "."
    else
-      echo "${composedpath}" | sed 's|^\(..*\)/$|\1|'
+      printf "%s\n" "${composedpath}" | sed 's|^\(..*\)/$|\1|'
    fi
 }
 
@@ -743,7 +757,7 @@ simplified_path()
       ;;
 
       *)
-         echo "$1"
+         printf "%s\n" "$1"
       ;;
    esac
 }

@@ -57,7 +57,7 @@ prepend_to_search_path_if_missing()
    local i
 
    oldifs="$IFS"
-   IFS=":"
+   IFS=':'
 
    set -o noglob
    for i in $fullpath
@@ -86,7 +86,7 @@ prepend_to_search_path_if_missing()
       r_simplified_absolutepath "${binpath}"
       binpath="${RVAL}"
 
-      IFS=":"
+      IFS=':'
       set -o noglob
 
       for i in $fullpath
@@ -114,7 +114,7 @@ prepend_to_search_path_if_missing()
       tail_path="${RVAL}"
    done
 
-   IFS=":"
+   IFS=':'
    set -o noglob
 
    for i in $fullpath
@@ -167,7 +167,7 @@ combined_escaped_search_path_if_exists()
    done
    set +o noglob
 
-   echo "${combinedpath}"
+   printf "%s\n" "${combinedpath}"
 }
 
 
@@ -193,7 +193,7 @@ combined_escaped_search_path()
    done
    set +o noglob
 
-   echo "${combinedpath}"
+   printf "%s\n" "${combinedpath}"
 }
 
 
@@ -212,6 +212,6 @@ remove_absolute_path_prefix_up_to()
    r_escaped_sed_pattern "${prefix}"
    prefix="${RVAL}"
 
-   echo "${s}" | sed "s|^.*/${prefix}/\(.*\)*|\1|g"
+   printf "%s\n" "${s}" | sed "s|^.*/${prefix}/\(.*\)*|\1|g"
 }
 

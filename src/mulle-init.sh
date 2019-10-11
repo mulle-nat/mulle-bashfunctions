@@ -125,7 +125,7 @@ _get_libexec_dir()
    if [ ! -f "${_libexec_dir}/${matchfile}" ]
    then
       unset _libexec_dir
-      echo "$0 fatal error: Could not find \"${subdir}\" libexec ($PWD)" >&2
+      printf "%s\n" "$0 fatal error: Could not find \"${subdir}\" libexec ($PWD)" >&2
       exit 1
    fi
 }

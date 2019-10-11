@@ -211,8 +211,7 @@ log_grep_warning_error()
 
       capture='NO'
 
-      IFS=$'\n'
-      while read -r line
+      while IFS=$'\n' read -r line
       do
          case "${line}" in
             error:*|warning:*|*:[0-9]*:*error:*|*:[0-9]*:*warning:*|*undefined*reference*)
@@ -232,7 +231,7 @@ log_grep_warning_error()
             continue
          fi
 
-         echo "${line}"
+         printf "%s\n" "${line}"
       done
    )
 
@@ -394,7 +393,7 @@ logging_initialize()
 
    #
    # this is useful for shortening filenames for output
-   # like echo "${filename#${MULLE_USER_PWD}/}"
+   # like printf "%s\n" "${filename#${MULLE_USER_PWD}/}"
    #
    if [ -z "${MULLE_USER_PWD}" ]
    then

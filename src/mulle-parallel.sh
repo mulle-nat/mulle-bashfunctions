@@ -36,10 +36,12 @@ r_get_core_count()
 {
    if [ -z "${MULLE_CORES}" ]
    then
-      MULLE_CORES="`nproc 2> /dev/null`"
+      # Linux (absolute path for restricted environments)
+      MULLE_CORES="`/usr/bin/nproc 2> /dev/null`"
       if [ -z "${MULLE_CORES}" ]
       then
-         MULLE_CORES="`sysctl -n hw.ncpu 2> /dev/null`"
+         # Apple (absolute path for restricted environments)
+         MULLE_CORES="`/usr/sbin/sysctl -n hw.ncpu 2> /dev/null`"
       fi
 
       if [ -z "${MULLE_CORES}" ]
@@ -227,7 +229,7 @@ _parallel_execute()
       if [ $rval -ne 0 ]
       then
          log_warning "$* failed with $rval"
-         redirect_append_exekutor "${_parallel_statusfile}" echo "${rval};$*"
+         redirect_append_exekutor "${_parallel_statusfile}" printf "%s\n" "${rval};$*"
       fi
    ) &
 }

@@ -93,7 +93,7 @@ eval_exekutor_print()
 
    while [ $# -ne 0 ]
    do
-      printf "%s" " $1"
+      printf "%s" " `echo \"$1\"`"
       shift
    done
    printf '\n'
