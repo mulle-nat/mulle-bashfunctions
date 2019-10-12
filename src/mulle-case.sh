@@ -132,11 +132,6 @@ _r_tweaked_de_camel_case()
 }
 
 
-r_capitalize_string()
-{
-   RVAL="$(tr '[:lower:]' '[:upper:]' <<< ${1:0:1})${1:1}"
-}
-
 
 r_tweaked_de_camel_case()
 {
@@ -161,8 +156,8 @@ r_de_camel_case_upcase_identifier()
 {
    r_tweaked_de_camel_case "$1"
 
-   RVAL="`printf "%s" "${RVAL}" | tr -c 'a-zA-Z0-9' '_'`"
-   RVAL="`tr 'a-z' 'A-Z' <<< "${RVAL}"`"
+   r_identifier "$1"
+   r_lowercase "${RVAL}"
 
    # ensure its a shell identifier
    case "${RVAL}" in

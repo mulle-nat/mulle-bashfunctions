@@ -374,6 +374,20 @@ logging_initialize_color()
 }
 
 
+_r_lowercase()
+{
+   case "${BASH_VERSION}" in 
+      [0123]*)
+         RVAL="`printf "$1" | tr '[:upper:]' '[:lower:]'`"
+      ;;
+
+      *)
+         RVAL="${1,,}"
+      ;;
+   esac
+}
+
+
 logging_initialize()
 {
    if [ ! -z "${MULLE_EXECUTABLE}" ]
@@ -414,12 +428,12 @@ logging_initialize()
    #
    if [ -z "${MULLE_UNAME}" ]
    then
-      MULLE_UNAME="`uname | tr 'A-Z' 'a-z'`"
-      case "${MULLE_UNAME}" in
-         *)
-            MULLE_UNAME="`cut -d_ -f1 <<< "${MULLE_UNAME}" | sed 's/64$//' `"
-         ;;
-      esac
+      _r_lowercase "`uname`" 
+      MULLE_UNAME="${RVAL}"
+
+      MULLE_UNAME="${MULLE_UNAME%%_*}"
+      MULLE_UNAME="${MULLE_UNAME%64}"
+
       if [ "${MULLE_UNAME}" = "linux" ]
       then
          local var

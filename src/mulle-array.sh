@@ -140,8 +140,10 @@ assoc_array_key_check()
 
    local identifier
 
-   identifier="`printf "%s" "${key}" | tr -c 'a-zA-Z0-9' '_'`"
-   [ "${identifier}" != "${key}" ] && internal_fail "\"${key}\" has non-identifier characters"
+   r_identifier "${key}"
+   identifier="${RVAL}"
+
+   [ "${identifier}" != "${key}" -a "${identifier}" != "_${key}" ] && internal_fail "\"${key}\" has non-identifier characters"
 }
 
 

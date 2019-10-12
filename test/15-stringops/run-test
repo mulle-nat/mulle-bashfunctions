@@ -1,0 +1,202 @@
+#! /usr/bin/env bash
+
+[ "${TRACE}" = 'YES' ] && set -x
+
+
+stacktrace()
+{
+   local i=1
+   local line
+
+   while line="`caller $i`"
+   do
+      printf "${C_CYAN}%b${C_RESET}\n" "$i: #${line}"
+      ((i++))
+   done
+}
+
+
+expect_output()
+{
+   local output="$1"
+   local expected="$2"
+
+   if [ "${output}" != "${expected}" ]
+   then
+      echo "Got \"${output}\". Expected: \"${expected}\"" >&2
+      stacktrace >&2
+      exit 1
+   fi
+}
+
+
+fail()
+{
+   echo "Unexpected failure" >&2
+   stacktrace >&2
+   exit 1
+}
+
+
+test_uppercase()
+{
+   local output
+
+# EMPTY STRING
+   r_uppercase ""
+   expect_output "${RVAL}" ""
+
+# SPACE
+   r_uppercase " "
+   expect_output "${RVAL}" " "
+
+# a
+   r_uppercase "a"
+   expect_output "${RVAL}" "A"
+
+# a SPACES
+   r_uppercase "a "
+   expect_output "${RVAL}" "A "
+
+# a b
+   r_uppercase "a b"
+   expect_output "${RVAL}" "A B"
+
+# A b,
+   r_uppercase "A b"
+   expect_output "${RVAL}" "A B"
+
+# A B,
+   r_uppercase "A B"
+   expect_output "${RVAL}" "A B"
+}
+
+
+
+test_lowercase()
+{
+   local output
+
+# EMPTY STRING
+   r_lowercase ""
+   expect_output "${RVAL}" ""
+
+# SPACE
+   r_lowercase " "
+   expect_output "${RVAL}" " "
+
+# a
+   r_lowercase "a"
+   expect_output "${RVAL}" "a"
+
+# a SPACES
+   r_lowercase "a "
+   expect_output "${RVAL}" "a "
+
+# a b
+   r_lowercase "a b"
+   expect_output "${RVAL}" "a b"
+
+# A b,
+   r_lowercase "A b"
+   expect_output "${RVAL}" "a b"
+
+# A B,
+   r_lowercase "A B"
+   expect_output "${RVAL}" "a b"
+}
+
+
+
+test_capitalize()
+{
+   local output
+
+# EMPTY STRING
+   r_capitalize ""
+   expect_output "${RVAL}" ""
+
+# SPACE
+   r_capitalize " "
+   expect_output "${RVAL}" " "
+
+# a
+   r_capitalize "a"
+   expect_output "${RVAL}" "A"
+
+# a SPACES
+   r_capitalize "a "
+   expect_output "${RVAL}" "A "
+
+# a b
+   r_capitalize "a b"
+   expect_output "${RVAL}" "A b"
+
+# A b,
+   r_capitalize "A b"
+   expect_output "${RVAL}" "A b"
+
+# A B,
+   r_capitalize "A B"
+   expect_output "${RVAL}" "A b"
+}
+
+
+test_identifier()
+{
+   local output
+
+# EMPTY STRING
+   r_identifier ""
+   expect_output "${RVAL}" ""
+
+# SPACE
+   r_identifier " "
+   expect_output "${RVAL}" "_"
+
+# a
+   r_identifier "a"
+   expect_output "${RVAL}" "a"
+
+# a SPACES
+   r_identifier "a "
+   expect_output "${RVAL}" "a_"
+
+# a b
+   r_identifier "a b"
+   expect_output "${RVAL}" "a_b"
+
+# A b,
+   r_identifier "A b"
+   expect_output "${RVAL}" "A_b"
+
+# A B,
+   r_identifier "0"
+   expect_output "${RVAL}" "_0"
+}
+
+
+
+
+main()
+{
+   test_uppercase
+   test_lowercase
+   test_capitalize
+   test_identifier
+
+   echo "All tests passed" >&2
+}
+
+
+init()
+{
+   MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${MULLE_BASHFUNCTIONS_LIBEXEC_DIR:-../../src}"
+
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-string.sh" || exit 1
+}
+
+
+init "$@"
+main "$@"
+

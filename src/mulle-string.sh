@@ -518,32 +518,64 @@ filepath_concat()
 
 r_upper_firstchar()
 {
-   RVAL="${1^}"
-   if [ "${RVAL}" = "$1^" ]
-   then
-      RVAL="`printf "${1:0:1}" | tr 'a-z' 'A-Z'`"
-      RVAL="${RVAL}${$1:1}"
-   fi
+   case "${BASH_VERSION}" in 
+      [0123]*)
+         RVAL="`printf "${1:0:1}" | tr '[:lower:]' '[:upper:]'`"
+         RVAL="${RVAL}${$1:1}"      
+      ;;
+
+      *)
+         RVAL="${1^}"
+      ;;
+   esac
 }
+
+
+r_capitalize()
+{
+   r_lowercase "$@"
+   r_upper_firstchar "${RVAL}"
+}
+
 
 
 r_uppercase()
 {
-   RVAL="${1^^}"
-   if [ "${RVAL}" = "$1^^" ]
-   then
-      RVAL="`printf "$1" | tr 'a-z' 'A-Z'`"
-   fi
+   case "${BASH_VERSION}" in 
+      [0123]*)
+         RVAL="`printf "$1" | tr '[:lower:]' '[:upper:]'`"
+      ;;
+
+      *)
+        RVAL="${1^^}"
+      ;;
+   esac
 }
 
 
 r_lowercase()
 {
-   RVAL="${1,,}"
-   if [ "${RVAL}" = "$1,," ]
-   then
-      RVAL="`printf "$1" | tr 'A-Z' 'a-z'`"
-   fi
+   case "${BASH_VERSION}" in 
+      [0123]*)
+         RVAL="`printf "$1" | tr '[:upper:]' '[:lower:]'`"
+      ;;
+
+      *)
+         RVAL="${1,,}"
+      ;;
+   esac
+}
+
+
+r_identifier()
+{
+   # works in bash 3.2
+   RVAL="${1//[^a-zA-Z0-9]/_}"
+   case "${RVAL}" in 
+      [0-9]*)
+         RVAL="_${RVAL}"
+      ;;
+   esac
 }
 
 
