@@ -263,29 +263,6 @@ stacktrace()
 }
 
 
-_bail()
-{
-#   should kill process group...
-#   kills calling shell too though
-#   kill 0
-
-#   if [ ! -z "${MULLE_EXECUTABLE_PID}" ]
-#   then
-#      kill -INT "${MULLE_EXECUTABLE_PID}"  # kill myself (especially, if executing in subshell)
-#      if [ $$ -ne ${MULLE_EXECUTABLE_PID} ]
-#      then
-#         kill -INT $$  # actually useful
-#      fi
-#   fi
-# case "${UNM"
-#   sleep 1
-
-# Exit codes:
-#  http://tldp.org/LDP/abs/html/exitcodes.html#EXITCODESREF
-   exit 1
-}
-
-
 fail()
 {
    if [ ! -z "$*" ]
@@ -298,7 +275,7 @@ fail()
       stacktrace
    fi
 
-   _bail
+   exit 1
 }
 
 
@@ -306,7 +283,7 @@ internal_fail()
 {
    log_printf "${C_ERROR}${MULLE_EXECUTABLE_FAIL_PREFIX} *** internal error ***:${C_ERROR_TEXT} %b${C_RESET}\n" "$*"
    stacktrace
-   _bail
+   exit 1
 }
 
 
@@ -439,7 +416,7 @@ logging_initialize()
          local var
 
          # check for WSL (Windows) we want this to be Windows then
-         read var < /proc/sys/kernel/osrelease
+         read -r var < /proc/sys/kernel/osrelease
          case "${var}" in
             *-Microsoft)
                MULLE_UNAME="windows"

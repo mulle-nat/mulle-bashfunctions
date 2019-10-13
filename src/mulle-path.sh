@@ -397,7 +397,7 @@ physicalpath()
    r_basename "$1"
    file="${RVAL}"
 
-   ( cd "$1" && concat "`pwd -P`" "${file}" ) 2>/dev/null
+   ( cd "${dir}" && concat "`pwd -P`" "${file}" ) 2>/dev/null
 }
 
 
@@ -526,7 +526,7 @@ _simplify_components()
    result= # voodoo linux fix ?
    IFS=$'\n'
    set -o noglob
-   for i in $*
+   for i in "$@"
    do
       IFS="${DEFAULT_IFS}"
 

@@ -254,7 +254,6 @@ _r_make_tmp_in_dir_uuidgen()
    local name="$2"
    local filetype="$3"
 
-   local prev
    local uuid
    local fluke
 
@@ -369,42 +368,6 @@ make_tmp_directory()
 #                        Symbolic Links
 # ####################################################################
 #
-
-#
-# stolen from:
-# http://stackoverflow.com/questions/1055671/how-can-i-get-the-behavior-of-gnus-readlink-f-on-a-mac
-# ----
-#
-r_prepend_path_if_relative()
-{
-   case "$2" in
-      /*)
-         RVAL="$2"
-      ;;
-
-      *)
-         RVAL="$1/$2"
-      ;;
-   esac
-}
-
-
-r_resolve_symlinks()
-{
-   local path
-
-   RVAL="$1"
-
-   path="`readlink "${RVAL}"`"
-   if [ $? -eq 0 ]
-   then
-      r_dirname "${RVAL}"
-      r_prepend_path_if_relative "${RVAL}" "${path}"
-      r_resolve_symlinks "${RVAL}"
-   fi
-}
-
-
 resolve_symlinks()
 {
    r_resolve_symlinks "$@"
@@ -433,8 +396,6 @@ create_symlink()
    local stashdir="$2"  # stashdir of this clone (absolute or relative to $PWD)
    local absolute="$3"
 
-   local srcname
-   local directory
 
    [ -e "${url}" ]        || fail "${C_RESET}${C_BOLD}${url}${C_ERROR} does not exist ($PWD)"
    [ ! -z "${absolute}" ] || fail "absolute must be YES or NO"
@@ -444,8 +405,10 @@ create_symlink()
 
    # need to do this otherwise the symlink fails
 
-   r_basename "${url}"
-   srcname="${RVAL}"
+   local directory
+   # local srcname
+   # r_basename "${url}"
+   # srcname="${RVAL}"
    r_dirname "${stashdir}"
    directory="${RVAL}"
 
@@ -533,7 +496,6 @@ dir_has_files()
    esac
 
    local empty
-   local result
 
    empty="`rexekutor find "${dirpath}" -xdev -mindepth 1 -maxdepth 1 -name "[a-zA-Z0-9_-]*" ${flags} "$@" -print 2> /dev/null`"
    [ ! -z "$empty" ]

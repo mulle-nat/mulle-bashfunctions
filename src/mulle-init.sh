@@ -38,14 +38,6 @@
 MULLE_INIT_SH="included"
 
 
-
-#
-# ####
-# #### this is a duplicate of mulle-init
-# #### Do not edit this, edit mulle-init and then copy back to here
-# ####
-#
-
 # export into RVAL global
 r_dirname()
 {
@@ -92,32 +84,36 @@ r_dirname()
 
 
 #
-# ####
-# #### this is a duplicate of mulle-init
-# #### Do not edit this, edit mulle-init and then copy back to here
-# ####
+# stolen from:
+# http://stackoverflow.com/questions/1055671/how-can-i-get-the-behavior-of-gnus-readlink-f-on-a-mac
+# ----
 #
+r_prepend_path_if_relative()
+{
+   case "$2" in
+      /*)
+         RVAL="$2"
+      ;;
 
-# result in RVAL global
+      *)
+         RVAL="$1/$2"
+      ;;
+   esac
+}
+
+
 r_resolve_symlinks()
 {
-   if RVAL="`readlink "$1"`"
+   local path
+
+   RVAL="$1"
+
+   path="`readlink "${RVAL}"`"
+   if [ $? -eq 0 ]
    then
-      case "${RVAL}" in
-         /*)
-            r_resolve_symlinks "${RVAL}"
-         ;;
-
-         *)
-            local linkpath
-
-            linkpath="${RVAL}"
-            r_dirname "${RVAL}"
-            r_resolve_symlinks "${RVAL}/${linkpath}"
-         ;;
-      esac
-   else
-      RVAL="$1"
+      r_dirname "${RVAL}"
+      r_prepend_path_if_relative "${RVAL}" "${path}"
+      r_resolve_symlinks "${RVAL}"
    fi
 }
 

@@ -291,7 +291,7 @@ find_item()
 {
    local line="$1"
    local search="$2"
-   local delimiter="${3:-,}"
+   local delim="${3:-,}"
 
    local clear
 
@@ -331,7 +331,7 @@ ${lines}
 "
 
 # add a linefeed here to get also $'' escaping
-   printf -v pattern "%q%s" "${search}
+   printf -v pattern "%q" "${search}
 "
    # remove $'
    pattern="${pattern:2}"
