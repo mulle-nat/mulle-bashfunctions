@@ -518,10 +518,10 @@ filepath_concat()
 
 r_upper_firstchar()
 {
-   case "${BASH_VERSION}" in 
+   case "${BASH_VERSION}" in
       [0123]*)
          RVAL="`printf "${1:0:1}" | tr '[:lower:]' '[:upper:]'`"
-         RVAL="${RVAL}${$1:1}"      
+         RVAL="${RVAL}${$1:1}"
       ;;
 
       *)
@@ -541,7 +541,7 @@ r_capitalize()
 
 r_uppercase()
 {
-   case "${BASH_VERSION}" in 
+   case "${BASH_VERSION}" in
       [0123]*)
          RVAL="`printf "$1" | tr '[:lower:]' '[:upper:]'`"
       ;;
@@ -555,7 +555,7 @@ r_uppercase()
 
 r_lowercase()
 {
-   case "${BASH_VERSION}" in 
+   case "${BASH_VERSION}" in
       [0123]*)
          RVAL="`printf "$1" | tr '[:upper:]' '[:lower:]'`"
       ;;
@@ -571,7 +571,7 @@ r_identifier()
 {
    # works in bash 3.2
    RVAL="${1//[^a-zA-Z0-9]/_}"
-   case "${RVAL}" in 
+   case "${RVAL}" in
       [0-9]*)
          RVAL="_${RVAL}"
       ;;

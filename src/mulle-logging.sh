@@ -376,7 +376,7 @@ logging_initialize_color()
 
 _r_lowercase()
 {
-   case "${BASH_VERSION}" in 
+   case "${BASH_VERSION}" in
       [0123]*)
          RVAL="`printf "$1" | tr '[:upper:]' '[:lower:]'`"
       ;;
@@ -428,7 +428,7 @@ logging_initialize()
    #
    if [ -z "${MULLE_UNAME}" ]
    then
-      _r_lowercase "`uname`" 
+      _r_lowercase "`uname`"
       MULLE_UNAME="${RVAL}"
 
       MULLE_UNAME="${MULLE_UNAME%%_*}"
@@ -440,14 +440,13 @@ logging_initialize()
 
          # check for WSL (Windows) we want this to be Windows then
          read var < /proc/sys/kernel/osrelease
-         case "${var}" in 
+         case "${var}" in
             *-Microsoft)
                MULLE_UNAME="windows"
                MULLE_EXE_EXTENSION=".exe"
             ;;
          esac
       fi
-      UNAME="${MULLE_UNAME}"  # backwards compatibility
    fi
 
    if [ -z "${MULLE_HOSTNAME}" ]
