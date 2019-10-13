@@ -771,56 +771,6 @@ string_remove_suffix()
 }
 
 
-# ####################################################################
-#                            Expansion
-# ####################################################################
-#
-#
-# expands ${LOGNAME} and ${LOGNAME:-foo} but does not use eval
-#
-expand_environment_variables()
-{
-    local string="$1"
-
-    local key
-    local value
-    local prefix
-    local suffix
-    local next
-    local rval=0
-
-    key="`printf "%s\n" "${string}" | sed -n 's/^\(.*\)\${\([A-Za-z_][A-Za-z0-9_:-]*\)}\(.*\)$/\2/p'`"
-    if [ ! -z "${key}" ]
-    then
-       prefix="`sed 's/^\(.*\)\${\([A-Za-z_][A-Za-z0-9_:-]*\)}\(.*\)$/\1/' <<< "${string}" `"
-       suffix="`sed 's/^\(.*\)\${\([A-Za-z_][A-Za-z0-9_:-]*\)}\(.*\)$/\3/' <<< "${string}" `"
-       value="`eval echo \$\{${key}\}`"
-       if [ -z "${value}" ]
-       then
-          rval=1
-       fi
-
-       next="${prefix}${value}${suffix}"
-       if [ "${next}" != "${string}" ]
-       then
-          expand_environment_variables "${prefix}${value}${suffix}"
-          if [ $? -eq 0 ]
-          then
-              return $rval
-          fi
-          return 1
-       fi
-    fi
-
-    printf "%s\n" "${string}"
-    return $rval
-}
-
-
-#
-# it's in string because it doesn't do FS calls
-# or use environment variables
-#
 
 # much faster than calling "basename"
 r_basename()
@@ -845,13 +795,6 @@ r_basename()
          ;;
       esac
    done
-}
-
-
-# old name -> fast_basename -> r_fast_basename -> r_basename
-r_fast_basename()
-{
-   r_basename "$@"
 }
 
 
@@ -898,43 +841,6 @@ r_dirname()
          ;;
       esac
    done
-}
-
-r_fast_dirname()
-{
-   r_dirname "$@"
-}
-
-
-fast_basename()
-{
-   r_fast_basename "$@"
-
-   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
-}
-
-
-fast_dirname()
-{
-   r_fast_dirname "$@"
-
-   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
-}
-
-
-# old function
-_fast_basename()
-{
-   r_fast_basename "$@"
-   _component="${RVAL}"
-}
-
-
-# old function
-_fast_dirname()
-{
-   r_fast_dirname "$@"
-   _directory="${RVAL}"
 }
 
 

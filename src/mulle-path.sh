@@ -60,7 +60,7 @@ r_path_depth()
 
       while [ "$name" != "." -a "${name}" != '/' ]
       do
-         r_fast_dirname "${name}"
+         r_dirname "${name}"
          name="${RVAL}"
 
          depth=$(($depth + 1))
@@ -82,7 +82,7 @@ path_depth()
 #
 r_extensionless_basename()
 {
-   r_fast_basename "$@"
+   r_basename "$@"
 
    RVAL="${RVAL%.*}"
 }
@@ -97,7 +97,7 @@ extensionless_basename()
 
 r_path_extension()
 {
-   r_fast_basename "$@"
+   r_basename "$@"
 
    case "${RVAL}" in
       *.*)
@@ -129,15 +129,17 @@ _canonicalize_dir_path()
 
 _canonicalize_file_path()
 {
-   local _component
-   local _directory
+   local component
+   local directory
 
-   _fast_basename "$1"
-   _fast_dirname "$1"
+   r_basename "$1"
+   component="${RVAL}"
+   r_dirname "$1"
+   directory="${RVAL}"
 
    (
-     cd "${_directory}" 2>/dev/null &&
-     echo "`pwd -P`/${_component}"
+     cd "${directory}" 2>/dev/null &&
+     echo "`pwd -P`/${component}"
    ) || return 1
 }
 
@@ -390,9 +392,9 @@ physicalpath()
    local dir
    local file
 
-   r_fast_dirname "$1"
+   r_dirname "$1"
    dir="${RVAL}"
-   r_fast_basename "$1"
+   r_basename "$1"
    file="${RVAL}"
 
    ( cd "$1" && concat "`pwd -P`" "${file}" ) 2>/dev/null

@@ -85,7 +85,7 @@ r_mkdir_parent_if_missing()
 {
    local dstdir="$1"
 
-   r_fast_dirname "${dstdir}"
+   r_dirname "${dstdir}"
    case "${RVAL}" in
       ""|"\.")
       ;;
@@ -161,7 +161,7 @@ _create_file_if_missing()
    fi
 
    local directory
-   r_fast_dirname "${path}"
+   r_dirname "${path}"
    directory="${RVAL}"
    if [ ! -z "${directory}" ]
    then
@@ -398,7 +398,7 @@ r_resolve_symlinks()
    path="`readlink "${RVAL}"`"
    if [ $? -eq 0 ]
    then
-      r_fast_dirname "${RVAL}"
+      r_dirname "${RVAL}"
       r_prepend_path_if_relative "${RVAL}" "${path}"
       r_resolve_symlinks "${RVAL}"
    fi
@@ -444,9 +444,9 @@ create_symlink()
 
    # need to do this otherwise the symlink fails
 
-   r_fast_basename "${url}"
+   r_basename "${url}"
    srcname="${RVAL}"
-   r_fast_dirname "${stashdir}"
+   r_dirname "${stashdir}"
    directory="${RVAL}"
 
    mkdir_if_missing "${directory}"

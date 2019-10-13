@@ -28,8 +28,9 @@ test_dirname()
 {
    local filename="$1"
 
+   r_dirname "${filename}"
 
-   local output="`fast_dirname "${filename}"`"
+   local output="${RVAL}"
    local expected="`dirname -- "${filename}"`"
 
    if [ "${output}" != "${expected}" ]

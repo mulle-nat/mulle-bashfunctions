@@ -38,29 +38,90 @@
 MULLE_INIT_SH="included"
 
 
-# result in _linkpath global
-_resolve_symlinks()
-{
-   if _linkpath="`readlink "$1"`"
-   then
-      case "${_linkpath}" in
-         /*)
-            _resolve_symlinks "${_linkpath}"
-         ;;
-         *)
-            local _directory
 
-            _fast_dirname "$1"
-            _resolve_symlinks "${_directory}/${_linkpath}"
+#
+# ####
+# #### this is a duplicate of mulle-init
+# #### Do not edit this, edit mulle-init and then copy back to here
+# ####
+#
+
+# export into RVAL global
+r_dirname()
+{
+   RVAL="$1"
+
+   while :
+   do
+      case "${RVAL}" in
+         /)
+            return
+         ;;
+
+         */)
+            RVAL="${RVAL%?}"
+            continue
+         ;;
+      esac
+      break
+   done
+
+   local last
+
+   last="${RVAL##*/}"
+   RVAL="${RVAL%${last}}"
+
+   while :
+   do
+      case "${RVAL}" in
+         /)
+           return
+         ;;
+
+         */)
+            RVAL="${RVAL%?}"
+         ;;
+
+         *)
+            RVAL="${RVAL:-.}"
+            return
+         ;;
+      esac
+   done
+}
+
+
+#
+# ####
+# #### this is a duplicate of mulle-init
+# #### Do not edit this, edit mulle-init and then copy back to here
+# ####
+#
+
+# result in RVAL global
+r_resolve_symlinks()
+{
+   if RVAL="`readlink "$1"`"
+   then
+      case "${RVAL}" in
+         /*)
+            r_resolve_symlinks "${RVAL}"
+         ;;
+
+         *)
+            local linkpath
+
+            linkpath="${RVAL}"
+            r_dirname "${RVAL}"
+            r_resolve_symlinks "${RVAL}/${linkpath}"
          ;;
       esac
    else
-      _linkpath="$1"
+      RVAL="$1"
    fi
 }
 
 
-# return _libexecdir
 #
 # executablepath: will be $0
 # subdir: will be mulle-bashfunctions/${VERSION}
@@ -68,7 +129,7 @@ _resolve_symlinks()
 #
 # Written this way, so it can get reused
 #
-_get_libexec_dir()
+r_get_libexec_dir()
 {
    local executablepath="$1"
    local subdir="$2"
@@ -86,45 +147,40 @@ _get_libexec_dir()
       ;;
    esac
 
-   local _linkpath
+   r_resolve_symlinks "${executablepath}"
+   executablepath="${RVAL}"
 
-   _resolve_symlinks "${executablepath}"
-   executablepath="${_linkpath}"
+   r_dirname "${executablepath}"
+   exedirpath="${RVAL}"
 
-   local _directory
-
-   _fast_dirname "${executablepath}"
-   exedirpath="${_directory}"
-
-   _fast_dirname "${exedirpath}"
-   prefix="${_directory}"
+   r_dirname "${exedirpath}"
+   prefix="${RVAL}"
 
 
    # now setup the global variable
 
-   _libexec_dir="${prefix}/libexec/${subdir}"
-
-   if [ ! -f "${_libexec_dir}/${matchfile}" ]
+   RVAL="${prefix}/libexec/${subdir}"
+   if [ ! -f "${RVAL}/${matchfile}" ]
    then
-      _libexec_dir="${exedirpath}/src"
+      RVAL="${exedirpath}/src"
    fi
 
-   case "$_libexec_dir" in
+   case "$RVAL" in
       /*|~*)
       ;;
 
       .)
-         _libexec_dir="$PWD"
+         RVAL="$PWD"
       ;;
 
       *)
-         _libexec_dir="$PWD/${_libexec_dir}"
+         RVAL="$PWD/${RVAL}"
       ;;
    esac
 
-   if [ ! -f "${_libexec_dir}/${matchfile}" ]
+   if [ ! -f "${RVAL}/${matchfile}" ]
    then
-      unset _libexec_dir
+      unset RVAL
       printf "%s\n" "$0 fatal error: Could not find \"${subdir}\" libexec ($PWD)" >&2
       exit 1
    fi

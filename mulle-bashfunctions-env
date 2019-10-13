@@ -96,10 +96,8 @@ _find_library_path()
    patchpattern="${patch:-[0-9]*}"
 
    local prefix
-   local _directory
 
-   _fast_dirname "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}"
-   prefix="${_directory}"
+   prefix="${MULLE_BASHFUNCTIONS_LIBEXEC_DIR%/*}"
 
    ls -1d "${prefix}"/${majorpattern}.${minorpattern}.${patchpattern} 2> /dev/null | sort -nr | head -1
 }
@@ -273,52 +271,52 @@ main()
 }
 
 
+
 #
-# Memo: to avoid confusion
-#    variables containing a filesystem path to a directory end with _DIR
-#    other variables containing a filesystem path end with _FILE
-#    variables containing search paths end with _PATH
+# ####
+# #### this is a duplicate of mulle-init
+# #### Do not edit this, edit mulle-init and then copy back to here
+# ####
 #
 
-# export into _directory global
-_fast_dirname()
+# export into RVAL global
+r_dirname()
 {
-   local filename="$1"
-
-   local last
+   RVAL="$1"
 
    while :
    do
-      case "${filename}" in
+      case "${RVAL}" in
          /)
-            _directory="${filename}"
             return
          ;;
 
          */)
-            filename="${filename%?}"
+            RVAL="${RVAL%?}"
             continue
          ;;
       esac
       break
    done
 
-   last="${filename##*/}"
-   _directory="${filename%${last}}"
+   local last
+
+   last="${RVAL##*/}"
+   RVAL="${RVAL%${last}}"
 
    while :
    do
-      case "${_directory}" in
+      case "${RVAL}" in
          /)
            return
          ;;
 
          */)
-            _directory="${_directory%?}"
+            RVAL="${RVAL%?}"
          ;;
 
          *)
-            _directory="${_directory:-.}"
+            RVAL="${RVAL:-.}"
             return
          ;;
       esac
@@ -333,25 +331,26 @@ _fast_dirname()
 # ####
 #
 
-# result in _linkpath global
-_resolve_symlinks()
+# result in RVAL global
+r_resolve_symlinks()
 {
-   if _linkpath="`readlink "$1"`"
+   if RVAL="`readlink "$1"`"
    then
-      case "${_linkpath}" in
+      case "${RVAL}" in
          /*)
-            _resolve_symlinks "${_linkpath}"
+            r_resolve_symlinks "${RVAL}"
          ;;
 
          *)
-            local _directory
+            local linkpath
 
-            _fast_dirname "$1"
-            _resolve_symlinks "${_directory}/${_linkpath}"
+            linkpath="${RVAL}"
+            r_dirname "${RVAL}"
+            r_resolve_symlinks "${RVAL}/${linkpath}"
          ;;
       esac
    else
-      _linkpath="$1"
+      RVAL="$1"
    fi
 }
 
@@ -364,7 +363,6 @@ _resolve_symlinks()
 #
 
 
-# return _libexecdir
 #
 # executablepath: will be $0
 # subdir: will be mulle-bashfunctions/${VERSION}
@@ -372,7 +370,7 @@ _resolve_symlinks()
 #
 # Written this way, so it can get reused
 #
-_get_libexec_dir()
+r_get_libexec_dir()
 {
    local executablepath="$1"
    local subdir="$2"
@@ -390,64 +388,65 @@ _get_libexec_dir()
       ;;
    esac
 
-   local _linkpath
+   r_resolve_symlinks "${executablepath}"
+   executablepath="${RVAL}"
 
-   _resolve_symlinks "${executablepath}"
-   executablepath="${_linkpath}"
+   r_dirname "${executablepath}"
+   exedirpath="${RVAL}"
 
-   local _directory
-
-   _fast_dirname "${executablepath}"
-   exedirpath="${_directory}"
-
-   _fast_dirname "${exedirpath}"
-   prefix="${_directory}"
+   r_dirname "${exedirpath}"
+   prefix="${RVAL}"
 
 
    # now setup the global variable
 
-   _libexec_dir="${prefix}/libexec/${subdir}"
-
-   if [ ! -f "${_libexec_dir}/${matchfile}" ]
+   RVAL="${prefix}/libexec/${subdir}"
+   if [ ! -f "${RVAL}/${matchfile}" ]
    then
-      _libexec_dir="${exedirpath}/src"
+      RVAL="${exedirpath}/src"
    fi
 
-   case "$_libexec_dir" in
+   case "$RVAL" in
       /*|~*)
       ;;
 
       .)
-         _libexec_dir="$PWD"
+         RVAL="$PWD"
       ;;
 
       *)
-         _libexec_dir="$PWD/${_libexec_dir}"
+         RVAL="$PWD/${RVAL}"
       ;;
    esac
 
-   if [ ! -f "${_libexec_dir}/${matchfile}" ]
+   if [ ! -f "${RVAL}/${matchfile}" ]
    then
-      unset _libexec_dir
+      unset RVAL
    fi
 }
 
 
+#
+# Memo: to avoid confusion
+#    variables containing a filesystem path to a directory end with _DIR
+#    other variables containing a filesystem path end with _FILE
+#    variables containing search paths end with _PATH
+#
 _init()
 {
    # nice for tests
    if [ -z "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}" ]
    then
-      _get_libexec_dir "$0" \
+      r_get_libexec_dir "$0" \
                         "mulle-bashfunctions/${MULLE_BASHFUNCTIONS_VERSION}" \
                         "mulle-bashfunctions.sh"
 
-      if [ -z "${_libexec_dir}" ]
+      if [ -z "${RVAL}" ]
       then
          printf "%s\n" "$0 fatal Error: Could not find libexec (PWD: $PWD)" >&2
          exit 1
       fi
-      MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${_libexec_dir}"
+      MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${RVAL}"
    fi
 
    #

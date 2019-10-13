@@ -28,8 +28,9 @@ test_basename()
 {
    local filename="$1"
 
+   r_basename "${filename}"
 
-   local output="`fast_basename "${filename}"`"
+   local output="${RVAL}"
    local expected="`basename -- "${filename}"`"
 
    if [ "${output}" != "${expected}" ]

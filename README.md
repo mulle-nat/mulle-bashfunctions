@@ -1,6 +1,6 @@
 # 🥊 mulle-bashfunctions, a collection of bash functions
 
-![Last version](https://img.shields.io/github/tag/{{PUBLISHER}}/mulle-bashfunctions.svg)
+![Last version](https://img.shields.io/github/tag/mulle-nat/mulle-bashfunctions.svg)
 
 
 This is a bash function library used and shared by a lot of mulle tools.
@@ -12,8 +12,8 @@ Executable                | Description
 `mulle-bashfunctions-env` | Find the location of the mulle-bashfunctions library
 
 
-Use `mulle-bashfunctions-env --version 1` to find the place of the scripts that
-provide version 1 compatibility.
+Use `mulle-bashfunctions-env --version 2` to find the place of the scripts that
+provide version 2 compatibility.
 
 
 ## Install

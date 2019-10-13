@@ -6,7 +6,7 @@
 ## 1.11.0
 
 * `find_item` added
-* `r_basename` and `r_dirname` supplant `r_fast_basename` and `r_fast_dirname`
+* `r_basename` and `r_dirname` supplant `r_basename` and `r_dirname`
 * improved the old array code with less backticks
 * improved quoting code
 * added `r_available_core_count` with heuristics
@@ -138,7 +138,7 @@
 
 * improve startup time greatly
 * avoid globbing problems in for loops
-* fast_dirname and fast_basename added
+* fast_dirname and basename -- added
 
 
 ### 1.2.3
