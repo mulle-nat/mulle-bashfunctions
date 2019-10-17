@@ -209,6 +209,7 @@ r_assoc_array_get()
 
    RVAL=
    rval=1
+
    set -o noglob ; IFS=$'\n'
    for line in ${array}
    do

@@ -397,7 +397,7 @@ physicalpath()
    r_basename "$1"
    file="${RVAL}"
 
-   ( cd "${dir}" && concat "`pwd -P`" "${file}" ) 2>/dev/null
+   ( cd "${dir}" && filepath_concat "`pwd -P`" "${file}" ) 2>/dev/null
 }
 
 

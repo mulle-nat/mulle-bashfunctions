@@ -1,3 +1,13 @@
+# 2.0.0
+
+* version 2
+* remove `r_prepend_path_if_relative`
+* remove some old unused functions for version 2
+* standardize on `r_dirname` and `r_basename` and remove all the other variations
+* redo mulle-init to use RVAL functions
+* fix some bugs found by shellcheck
+
+
 ## 1.12.0
 
 * mulle-bashfunctions-env gains an init command for quick script setup

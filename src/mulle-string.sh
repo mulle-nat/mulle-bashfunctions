@@ -248,8 +248,7 @@ r_add_line()
       then
          RVAL="${lines}"
       else
-         RVAL="${lines}
-${line}"
+         RVAL="${lines}"$'\n'"${line}"
       fi
    fi
 }
@@ -521,7 +520,7 @@ r_upper_firstchar()
    case "${BASH_VERSION}" in
       [0123]*)
          RVAL="`printf "${1:0:1}" | tr '[:lower:]' '[:upper:]'`"
-         RVAL="${RVAL}${$1:1}"
+         RVAL="${RVAL}${1:1}"
       ;;
 
       *)

@@ -157,7 +157,6 @@ _init()
       fi
    fi
 
-      # shellcheck source=../mulle-bashfunctions/src/mulle-string.sh
    . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions.sh" "minimal" &&
    . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-path.sh" &&
    . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-file.sh" ||
@@ -177,4 +176,15 @@ _init()
 
 
 _init "$@" # needs params
-main "$@"
+
+args=""
+for arg in "$@"
+do
+   arg="${arg//${quote}/${quote}\"${quote}\"${quote}}"
+   args="${args} '${arg}'"
+done
+
+unset quote
+unset arg
+
+eval main "${<|ONESHOT_NAME|>_FLAGS}" "${args}"
