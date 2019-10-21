@@ -1,3 +1,7 @@
+### 2.0.2
+
+* symlink resolver fix
+
 ### 2.0.1
 
 * fix wrong caseconversion

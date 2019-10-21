@@ -31,7 +31,7 @@
 #
 [ "${TRACE}" = 'YES' ] && set -x && : "$0" "$@"
 
-MULLE_BASHFUNCTIONS_VERSION="2.0.1"
+MULLE_BASHFUNCTIONS_VERSION="2.0.2"
 
 
 usage()
@@ -345,7 +345,7 @@ r_resolve_symlinks()
             local linkpath
 
             linkpath="${RVAL}"
-            r_dirname "${RVAL}"
+            r_dirname "$1"
             r_resolve_symlinks "${RVAL}/${linkpath}"
          ;;
       esac
