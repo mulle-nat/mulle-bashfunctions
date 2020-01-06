@@ -1,35 +1,7 @@
 #! /usr/bin/env bash
-#
-#   Copyright (c) <|YEAR|> <|USER|> - <|ORGANIZATION|>
-#   All rights reserved.
-#
-#   Redistribution and use in source and binary forms, with or without
-#   modification, are permitted provided that the following conditions are met:
-#
-#   Redistributions of source code must retain the above copyright notice, this
-#   list of conditions and the following disclaimer.
-#
-#   Redistributions in binary form must reproduce the above copyright notice,
-#   this list of conditions and the following disclaimer in the documentation
-#   and/or other materials provided with the distribution.
-#
-#   Neither the name of <|ORGANIZATION|> nor the names of its contributors
-#   may be used to endorse or promote products derived from this software
-#   without specific prior written permission.
-#
-#   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-#   AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-#   IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-#   ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
-#   LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-#   CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-#   SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-#   INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-#   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-#   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-#   POSSIBILITY OF SUCH DAMAGE.
-#
-[ "${TRACE}" = 'YES' -o "${<|ONESHOT_NAME|>_TRACE}" = 'YES' ] && set -x && : "$0" "$@"
+<|HEADER|>
+
+[ "${TRACE}" = 'YES' -o "${<|ONESHOT_UPCASE_IDENTIFIER|>_TRACE}" = 'YES' ] && set -x && : "$0" "$@"
 
 
 MULLE_EXECUTABLE_VERSION="0.0.0"
@@ -39,6 +11,10 @@ print_flags()
 {
    echo "   -f          : force operation"
 
+   ##
+   ## ADD YOUR FLAGS HERE
+   ##
+
    options_technical_flags_usage "       : "
 }
 
@@ -47,11 +23,16 @@ usage()
 {
    [ $# -ne 0 ] && log_error "$*"
 
+
    cat <<EOF >&2
 Usage:
-   ${MULLE_USAGE_NAME} [flags]
+   <|ONESHOT_IDENTIFIER|> [flags]
 
-   Does nothing
+   Does nothing at the moment.
+
+   ##
+   ## ADD YOUR USAGE HERE HERE
+   ##
 
 Flags:
 EOF
@@ -79,7 +60,7 @@ main()
    local MULLE_TRACE_POSTPONE='NO'
 
    #
-   # simple option handling
+   # simple flag handling
    #
    while [ $# -ne 0 ]
    do
@@ -103,8 +84,13 @@ main()
             exit 0
          ;;
 
+
+         ##
+         ## ADD YOUR FLAGS HERE
+         ##
+
          -*)
-            usage "Unknown option \"$1\""
+            usage "Unknown flag \"$1\""
          ;;
 
          *)
@@ -117,14 +103,19 @@ main()
 
    options_setup_trace "${MULLE_TRACE}"
 
-   log_info "Does nothing"
+   log_info "Does nothing, but will soon"
+
+   ##
+   ## ADD YOUR CODE HERE
+   ##
 }
 
 
 ########
 ###
-### INIT
+### INIT - You usually won't edit code below
 ###
+
 trap_fail()
 {
    exit 1
@@ -141,6 +132,16 @@ _init()
       printf "%s\n" "${MULLE_EXECUTABLE_VERSION}"
       exit 0
    fi
+
+   #
+   # leading backslash ? looks like we're getting called from
+   # mingw via a .BAT or so
+   #
+   case "$PATH" in
+      '\\'*)
+         PATH="${PATH//\\/\/}"
+      ;;
+   esac
 
    if [ -z "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}" ]
    then
@@ -167,24 +168,16 @@ _init()
 
    trap trap_fail INT
    set -o pipefail
+
+   call_main "${<|ONESHOT_UPCASE_IDENTIFIER|>_FLAGS}" "$@"
 }
+
+
+_init "$@" # will call main indirectly via call_main
 
 ###
 ### INIT
 ###
 ########
 
-
-_init "$@" # needs params
-
-args=""
-for arg in "$@"
-do
-   arg="${arg//${quote}/${quote}\"${quote}\"${quote}}"
-   args="${args} '${arg}'"
-done
-
-unset quote
-unset arg
-
-eval main "${<|ONESHOT_NAME|>_FLAGS}" "${args}"
+<|FOOTER|>

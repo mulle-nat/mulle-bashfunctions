@@ -181,3 +181,25 @@ r_get_libexec_dir()
       exit 1
    fi
 }
+
+
+call_main()
+{
+   local flags="$1"; shift
+
+   local quote
+   local arg
+
+   quote="'"
+   args=""
+   for arg in "$@"
+   do
+      arg="${arg//${quote}/${quote}\"${quote}\"${quote}}"
+      args="${args} '${arg}'"
+   done
+
+   unset quote
+   unset arg
+
+   eval main "${flags}" "${args}"
+}

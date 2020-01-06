@@ -24,13 +24,8 @@ file( GLOB LIBRARY_SCRIPTS
    "src/*.sh"
 )
 
-set( TEMPLATE_FILE
-   "src/mulle-nat/bash-script/project/all/ONESHOT_NAME"
-)
-
-
 set( MULLE_SDE_EXTENSION_DIRS
-   "src/mulle-nat/bash-script"
+   "src/mulle-nat/file.sh"
 )
 
 INSTALL( FILES ${SCRIPTS}

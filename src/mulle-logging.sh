@@ -315,7 +315,8 @@ logging_initialize_color()
    # https://stackoverflow.com/questions/4842424/list-of-ansi-color-escape-sequences
    # https://www.systutorials.com/241795/how-to-judge-whether-its-stderr-is-redirected-to-a-file-in-a-bash-script-on-linux/
    # do not colorize when /dev/stderr is redirected
-   if [ "${MULLE_NO_COLOR}" != 'YES' ] && [ ! -f /dev/stderr ]
+   # https://no-color.org/
+   if [ -z "${NO_COLOR}" -a "${MULLE_NO_COLOR}" != 'YES' ] && [ ! -f /dev/stderr ]
    then
       C_RESET="\033[0m"
 

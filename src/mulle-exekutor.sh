@@ -176,6 +176,9 @@ eval_exekutor()
 
    eval "$@"
    MULLE_EXEKUTOR_RVAL=$?
+
+   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-2}" ] && stacktrace
+
    return ${MULLE_EXEKUTOR_RVAL}
 }
 
@@ -190,6 +193,9 @@ eval_rexekutor()
 
    eval "$@"
    MULLE_EXEKUTOR_RVAL=$?
+
+   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-2}" ] && stacktrace
+
    return ${MULLE_EXEKUTOR_RVAL}
 }
 
@@ -206,6 +212,9 @@ _eval_exekutor()
    eval "$@"
 
    MULLE_EXEKUTOR_RVAL=$?
+
+   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-2}" ] && stacktrace
+
    return ${MULLE_EXEKUTOR_RVAL}
 }
 
@@ -225,6 +234,9 @@ redirect_exekutor()
    ( "$@" ) > "${output}"
 
    MULLE_EXEKUTOR_RVAL=$?
+
+   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-2}" ] && stacktrace
+
    return ${MULLE_EXEKUTOR_RVAL}
 }
 
@@ -244,6 +256,9 @@ redirect_eval_exekutor()
    ( eval "$@" ) > "${output}"
 
    MULLE_EXEKUTOR_RVAL=$?
+
+   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-2}" ] && stacktrace
+
    return ${MULLE_EXEKUTOR_RVAL}
 }
 
@@ -263,6 +278,9 @@ redirect_append_exekutor()
    ( "$@" ) >> "${output}"
 
    MULLE_EXEKUTOR_RVAL=$?
+
+   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-2}" ] && stacktrace
+
    return ${MULLE_EXEKUTOR_RVAL}
 }
 
@@ -282,6 +300,9 @@ _redirect_append_eval_exekutor()
    ( eval "$@" ) >> "${output}"
 
    MULLE_EXEKUTOR_RVAL=$?
+
+   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-2}" ] && stacktrace
+
    return ${MULLE_EXEKUTOR_RVAL}
 }
 
@@ -323,6 +344,9 @@ _append_tee_eval_exekutor()
    ( eval "$@" ) | tee -a "${teeoutput}" "${output}"
 
    MULLE_EXEKUTOR_RVAL=${PIPESTATUS[0]}
+
+   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-2}" ] && stacktrace
+
    return ${MULLE_EXEKUTOR_RVAL}
 }
 

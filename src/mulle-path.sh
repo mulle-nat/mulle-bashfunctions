@@ -98,16 +98,14 @@ extensionless_basename()
 r_path_extension()
 {
    r_basename "$@"
-
    case "${RVAL}" in
       *.*)
         RVAL="${RVAL##*.}"
-      ;;
-
-      *)
-         RVAL=""
+        return
       ;;
    esac
+
+   RVAL=""
 }
 
 
@@ -397,7 +395,7 @@ physicalpath()
    r_basename "$1"
    file="${RVAL}"
 
-   ( cd "${dir}" && filepath_concat "`pwd -P`" "${file}" ) 2>/dev/null
+   filepath_concat "`physicalpath "${dir}"`" "${file}"
 }
 
 

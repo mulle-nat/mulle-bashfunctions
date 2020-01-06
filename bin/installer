@@ -196,14 +196,11 @@ main()
       install -v -m "${mode}" "${i}" "${libexec}" || exit 1
    done
 
-   i="src/mulle-nat/bash-script/project/all/ONESHOT_NAME"
-   install -v -m "${mode}" "${i}" "${share}" || exit 1
-
    envshare="${prefix}/share/mulle-sde/mulle-nat"
    mkdir -p "${envshare}" 2> /dev/null
 
    # install only this one for now
-   cp -Rav src/mulle-nat/bash-script "${envshare}/"
+   cp -Rav src/mulle-nat/file.sh "${envshare}/"
 }
 
 main "$@"
