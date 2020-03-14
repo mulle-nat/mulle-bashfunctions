@@ -34,7 +34,7 @@ macos       | `brew install mulle-kybernetik/software/mulle-bashfunctions`
 
 ## Conventions
 
-`RVAL` is a global variable it may be used to pass return values from functions.
+`RVAL` is a global variable. It is used to pass return values from functions.
 The RVAL value can be clobbered by **any** function. Functions that return RVAL
 are prefixed with `r_` or `_r_` or somesuch.
 
@@ -55,3 +55,18 @@ MULLE_BASHFUNCTIONS_LIBEXEC_DIR="`mulle-bashfunctions-env libexec-dir 2> /dev/nu
 
 Now you can call the functions provided by the library.
 
+#### Quick start with mulle-sde
+
+You can get a functional template shell script with mulle-sde:
+
+```
+# must have .sh extension initially
+mulle-sde add --vendor mulle-nat my-script.sh
+```
+
+
+## Author
+
+[Nat!](//www.mulle-kybernetik.com/weblog) for
+[Mulle kybernetiK](//www.mulle-kybernetik.com) and
+[Codeon GmbH](//www.codeon.de)

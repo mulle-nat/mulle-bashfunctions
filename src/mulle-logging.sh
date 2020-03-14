@@ -427,6 +427,13 @@ logging_initialize()
       fi
    fi
 
+   #
+   # Tip: you can change the hostname to "travis-ci" via Travis settings
+   #      Set MULLE_HOSTNAME to "travis-ci" there. Then you can load travis
+   #      specific settings using host domain environment variables.
+   #
+   #      mulle-env environment --hostname-travis-ci set FOO "VfL Bochum"
+   #
    if [ -z "${MULLE_HOSTNAME}" ]
    then
       case "${MULLE_UNAME}" in

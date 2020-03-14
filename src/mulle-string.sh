@@ -40,7 +40,7 @@ MULLE_STRING_SH="included"
 # ####################################################################
 #
 
-# no seperator
+# no separator
 r_append()
 {
    RVAL="${1}${2}"

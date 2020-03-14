@@ -185,7 +185,13 @@ r_get_libexec_dir()
 
 call_main()
 {
-   local flags="$1"; shift
+   local flags="$1"; [ $# -ne 0 ] && shift
+
+   if [ -z "${flags}" ]
+   then
+      main "$@"
+      return $?
+   fi
 
    local quote
    local arg
