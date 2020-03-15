@@ -215,26 +215,6 @@ slash_concat()
 }
 
 
-add_cmake_path_if_exists()
-{
-   local line="$1"
-   local path="$2"
-
-   if [ ! -e "${path}" ]
-   then
-      printf "%s\n" "${line}"
-   else
-      semicolon_concat "$@"
-   fi
-}
-
-
-add_cmake_path()
-{
-   semicolon_concat "$@"
-}
-
-
 r_add_line()
 {
    local lines="$1"
@@ -285,7 +265,12 @@ r_remove_line()
 }
 
 
+#
 # can't have linefeeds as delimiter
+# e.g. find_item "a,b,c" b -> 0
+#      find_item "a,b,c" d -> 1
+#      find_item "a,b,c" "," -> 1
+#
 find_item()
 {
    local line="$1"

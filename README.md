@@ -3,7 +3,21 @@
 ![Last version](https://img.shields.io/github/tag/mulle-nat/mulle-bashfunctions.svg)
 
 
-This is a bash function library used and shared by a lot of mulle tools.
+This is a bash function library used by a lot of mulle tools. It is
+compatible with bash v3.2, because that is the baseline available on macos.
+
+### Features
+
+* A common framework for initializing a script with subscripts
+* Array and associative array for backwards compatibility
+* Execution control, trace external commands without executing them
+* Extensive major.minor.patch version support
+* Logging with color or without
+* Parsing of common command flags
+* Support for parallel execution of multiple tasks
+* Various file functions with an emphasis on safety
+* Various string functions, like escaping, case conversion, searching
+
 It's not documented, so you probably are just here, because it's a prerequisite
 for another mulle tool.
 
@@ -12,8 +26,8 @@ Executable                | Description
 `mulle-bashfunctions-env` | Find the location of the mulle-bashfunctions library
 
 
-Use `mulle-bashfunctions-env --version 2` to find the place of the scripts that
-provide version 2 compatibility.
+Use `mulle-bashfunctions-env --version 3` to find the place of the scripts that
+provide version 3 compatibility.
 
 
 ## Install

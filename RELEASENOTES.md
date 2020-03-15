@@ -1,3 +1,12 @@
+### 3.0.1
+
+* remove unused `add_cmake_path` and `add_cmake_path_if_exists`
+* added `file_is_binary` to file functions
+* the `logging_tee_eval_exekutor` has moved to mulle-make as it is only used there
+* lost the init command, this is now handled by `mulle-sde add`, consequently had to up the version to 3
+* `_init` now should call main via `call_main` to enable insertion of FLAGS via environment
+* use ``NO_COLOR`` instead of ``MULLE_NO_COLOR`` since its a standardization attempt i can deal with
+
 # 3.0.0
 
 * added `file_is_binary` to file functions
