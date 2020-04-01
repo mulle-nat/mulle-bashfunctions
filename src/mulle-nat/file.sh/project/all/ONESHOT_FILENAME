@@ -26,7 +26,7 @@ usage()
 
    cat <<EOF >&2
 Usage:
-   <|ONESHOT_IDENTIFIER|> [flags]
+   <|ONESHOT_NAME|> [flags]
 
    Does nothing at the moment.
 

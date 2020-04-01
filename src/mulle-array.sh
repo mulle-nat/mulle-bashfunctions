@@ -60,7 +60,7 @@ r_count_lines()
 
    local line
 
-   set -o noglob ; IFS=$'\n'
+   set -o noglob; IFS=$'\n'
    for line in ${array}
    do
       RVAL=$((RVAL + 1))
@@ -76,7 +76,7 @@ r_get_line_at_index()
 
    # for larger arrays:    sed -n "${i}p" <<< "${array}"
 
-   set -o noglob ; IFS=$'\n'
+   set -o noglob; IFS=$'\n'
    for RVAL in ${array}
    do
       if [ $i -eq 0 ]
@@ -106,7 +106,7 @@ r_insert_line_at_index()
    RVAL=
    rval=1
 
-   set -o noglob ; IFS=$'\n'
+   set -o noglob; IFS=$'\n'
    for line in ${array}
    do
       if [ $i -eq 0 ]
@@ -179,7 +179,7 @@ _r_assoc_array_remove()
    local delim
 
    RVAL=
-   set -o noglob ; IFS=$'\n'
+   set -o noglob; IFS=$'\n'
    for line in ${array}
    do
       case "${line}" in
@@ -210,7 +210,7 @@ r_assoc_array_get()
    RVAL=
    rval=1
 
-   set -o noglob ; IFS=$'\n'
+   set -o noglob; IFS=$'\n'
    for line in ${array}
    do
       case "${line}" in

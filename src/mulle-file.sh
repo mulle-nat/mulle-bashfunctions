@@ -214,6 +214,7 @@ _remove_file_if_present()
    return 0
 }
 
+
 remove_file_if_present()
 {
    if _remove_file_if_present "$@"
@@ -554,6 +555,7 @@ inplace_sed()
             args="${RVAL}"
             shift
          done
+
          filename="$1"
 
          if [ ! -w "${filename}" ]

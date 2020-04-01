@@ -252,7 +252,7 @@ r_remove_line()
    local delim
 
    RVAL=
-   set -o noglob ; IFS=$'\n'
+   set -o noglob; IFS=$'\n'
    for line in ${lines}
    do
       if [ "${line}" != "${search}" ]
@@ -378,7 +378,7 @@ r_reverse_lines()
    local delim
 
    RVAL=
-   set -o noglob ; IFS=$'\n'
+   set -o noglob; IFS=$'\n'
    for line in ${lines}
    do
       RVAL="${line}${delim}${RVAL}"
