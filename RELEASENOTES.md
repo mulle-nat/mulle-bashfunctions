@@ -1,3 +1,8 @@
+## 3.1.0
+
+* added `r_expanded_string` to do eval printf -v a bit more safely
+
+
 ### 3.0.1
 
 * remove unused `add_cmake_path` and `add_cmake_path_if_exists`

@@ -828,4 +828,26 @@ r_dirname()
 }
 
 
+#
+# should be safe from malicious backticks and so forth, unfortunately
+# this is not smart enough to parse all valid contents properly
+#
+r_expanded_string()
+{
+   local string="$*"
+
+   # we don't want dangerous expansions though
+   # https://www.tldp.org/LDP/Bash-Beginners-Guide/html/sect_03_04.html
+
+   case "${string}" in
+      *\$\(*|*\`*|*\>\(*|*\<\)*)
+         RVAL="${string}"  # keep as is then
+         return 1
+      ;;
+   esac
+
+   eval printf -v RVAL "\"%s\"" "\"${string}\""
+   return 0
+}
+
 :
