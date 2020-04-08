@@ -52,13 +52,13 @@ main()
 
    a="abc";
 
-   expect_output  "$(expanded_string '')"               ''
-   expect_output  "$(expanded_string 'a')"              'a'
-   expect_output  "$(expanded_string '${a}')"           'abc'
-   expect_output  "$(expanded_string '${b}')"           ''
-   expect_output  "$(expanded_string '${b:-abc}')"      'abc'
-   expect_output  "$(expanded_string '`danger`')"       '`danger`'
-   expect_output  "$(expanded_string 'x$(danger)y')"    'x$(danger)y'
+   expect_output  "$(expanded_string '')"                   ''
+   expect_output  "$(expanded_string 'a')"                  'a'
+   expect_output  "$(expanded_string '${a}')"               'abc'
+   expect_output  "$(expanded_string '${b}')"               ''
+   expect_output  "$(expanded_string '${b:-abc}')"          'abc'
+   expect_output  "$(expanded_string '`danger`${a}')"       '`danger`${a}'
+   expect_output  "$(expanded_string 'x$(danger)${a}y')"    'x$(danger)${a}y'
 
    echo "All tests passed" >&2
 }
