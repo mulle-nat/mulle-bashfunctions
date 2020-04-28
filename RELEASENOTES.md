@@ -1,3 +1,7 @@
+### 3.1.1
+
+* no color if TERM is dumb + one obvious bug fix in `merge_line_into_file`
+
 ## 3.1.0
 
 * added `r_expanded_string` to do eval printf -v a bit more safely

@@ -161,6 +161,7 @@ _create_file_if_missing()
    fi
 
    local directory
+
    r_dirname "${path}"
    directory="${RVAL}"
    if [ ! -z "${directory}" ]
@@ -183,7 +184,7 @@ merge_line_into_file()
   local path="$1"
   local line="$2"
 
-  if fgrep -s -q -x "${name}" "${path}" 2> /dev/null
+  if fgrep -s -q -x "${line}" "${path}" 2> /dev/null
   then
      return
   fi
@@ -507,7 +508,13 @@ dir_has_files()
 
    local empty
 
-   empty="`rexekutor find "${dirpath}" -xdev -mindepth 1 -maxdepth 1 -name "[a-zA-Z0-9_-]*" ${flags} "$@" -print 2> /dev/null`"
+   empty="`rexekutor find "${dirpath}" -xdev \
+                                       -mindepth 1 \
+                                       -maxdepth 1 \
+                                       -name "[a-zA-Z0-9_-]*" \
+                                       ${flags} \
+                                       "$@" \
+                                       -print 2> /dev/null`"
    [ ! -z "$empty" ]
 }
 

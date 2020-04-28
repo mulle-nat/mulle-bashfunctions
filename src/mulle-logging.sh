@@ -316,6 +316,14 @@ logging_initialize_color()
    # https://www.systutorials.com/241795/how-to-judge-whether-its-stderr-is-redirected-to-a-file-in-a-bash-script-on-linux/
    # do not colorize when /dev/stderr is redirected
    # https://no-color.org/
+
+   # fix for Xcode
+   case "${TERM}" in
+      dumb)
+         MULLE_NO_COLOR=YES
+      ;;
+   esac
+
    if [ -z "${NO_COLOR}" -a "${MULLE_NO_COLOR}" != 'YES' ] && [ ! -f /dev/stderr ]
    then
       C_RESET="\033[0m"

@@ -132,7 +132,6 @@ _r_tweaked_de_camel_case()
 }
 
 
-
 r_tweaked_de_camel_case()
 {
    # need this for [A-B] to be case sensitive, dont'ask
