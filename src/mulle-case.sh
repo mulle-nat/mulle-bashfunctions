@@ -157,7 +157,7 @@ r_de_camel_case_upcase_identifier()
    r_identifier "${RVAL}"
    r_uppercase "${RVAL}"
 
-   # ensure its a shell identifier
+   # ensure it's a shell identifier
    case "${RVAL}" in
       [A-Za-z_]*)
       ;;

@@ -60,7 +60,7 @@ exekutor_print_arrow()
 }
 
 
-
+# keep output down to 240 byte per line
 exekutor_print()
 {
    exekutor_print_arrow
@@ -72,11 +72,11 @@ exekutor_print()
       case "$1" in
          *[^a-zA-Z0-9._-]*|"")
             escaped="${1//\'/\'\"\'\"\'}"
-            printf "%s" " '${escaped}'"
+            printf "%.240s" " '${escaped}'"
          ;;
 
          *)
-            printf "%s" " $1"
+            printf "%.240s" " $1"
          ;;
       esac
       shift
@@ -98,7 +98,6 @@ eval_exekutor_print()
    done
    printf '\n'
 }
-
 
 
 exekutor_trace()
@@ -285,7 +284,6 @@ redirect_append_exekutor()
 }
 
 
-
 _redirect_append_eval_exekutor()
 {
    # You have a funny "not found" problem ? the base directory of output is missing!
@@ -305,6 +303,39 @@ _redirect_append_eval_exekutor()
    [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-2}" ] && stacktrace
 
    return ${MULLE_EXEKUTOR_RVAL}
+}
+
+
+_append_tee_eval_exekutor()
+{
+   # You have a funny "not found" problem ? the base directory of output is missing!
+   local output="$1"; shift
+   local teeoutput="$1"; shift
+
+   exekutor_trace_output "eval_exekutor_print" '>>' "${output}" "$@"
+
+   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = 'YES' ]
+   then
+      return
+   fi
+
+   ( eval "$@" ) 2>&1 | tee -a "${teeoutput}" "${output}"
+
+   MULLE_EXEKUTOR_RVAL=${PIPESTATUS[0]}
+
+   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-2}" ] && stacktrace
+
+   return ${MULLE_EXEKUTOR_RVAL}
+}
+
+
+logging_tee_eval_exekutor()
+{
+   local output="$1"; shift
+   local teeoutput="$1"; shift
+
+   eval_exekutor_print "$@" | tee -a "${teeoutput}" "${output}"
+   _append_tee_eval_exekutor "${output}" "${teeoutput}" "$@"
 }
 
 

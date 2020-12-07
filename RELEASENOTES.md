@@ -1,3 +1,12 @@
+## 3.2.0
+
+* added `remove_duplicate_lines` functions
+* changed/fixed parameter order in `merge_line_into_file` now line,file
+* keep `exekutor_print` output down to 240 characters
+* added `logging_tee_eval_exekutor` from mulle-make
+* upped cmake requirement ot 3.13
+
+
 ### 3.1.1
 
 * no color if TERM is dumb + one obvious bug fix in `merge_line_into_file`

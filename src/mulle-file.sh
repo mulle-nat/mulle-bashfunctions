@@ -181,8 +181,8 @@ _create_file_if_missing()
 
 merge_line_into_file()
 {
-  local path="$1"
-  local line="$2"
+  local line="$1"
+  local path="$2"
 
   if fgrep -s -q -x "${line}" "${path}" 2> /dev/null
   then

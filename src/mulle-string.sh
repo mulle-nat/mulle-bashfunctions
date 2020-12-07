@@ -366,6 +366,25 @@ ${line}"
 }
 
 
+
+r_remove_duplicate_lines()
+{
+   RVAL="`awk '!x[$0]++' <<< "$@"`"
+}
+
+
+remove_duplicate_lines()
+{
+   awk '!x[$0]++' <<< "$@"
+}
+
+
+remove_duplicate_lines_stdin()
+{
+   awk '!x[$0]++'
+}
+
+
 #
 # for very many lines use
 # `sed -n '1!G;h;$p' <<< "${lines}"`"

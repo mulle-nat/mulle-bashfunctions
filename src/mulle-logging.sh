@@ -384,6 +384,7 @@ logging_initialize()
    logging_initialize_color
 
    MULLE_EXECUTABLE="$0"
+   # MULLE_EXECUTABLE_BIN_DIR="${MULLE_EXECUTABLE%/*}"
 
    # can be convenient to overload by caller sometimes
    if [ -z "${MULLE_EXECUTABLE_NAME}" ]

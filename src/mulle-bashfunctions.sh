@@ -78,37 +78,50 @@ then
       fi
 
       #
-      # These are not so often used, so increase speed one
-      # can turn then off using "minimal"
+      # These are not so often used, so increase speed. One
+      # can turn them off using "minimal". '' is the default
       #
-      if [ "$1" != "minimal" ]
-      then
-         if [ -z "${MULLE_ARRAY_SH}" ]
-         then
-            # shellcheck source=mulle-array.sh
-            . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-array.sh"     || return 1
-         fi
-         if [ -z "${MULLE_VERSION_SH}" ]
-         then
-            # shellcheck source=mulle-version.sh
-            . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-version.sh"   || return 1
-         fi
-         if [ -z "${MULLE_PATH_SH}" ]
-         then
-            # shellcheck source=mulle-path.sh
-            . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-path.sh"      || return 1
-         fi
-         if [ -z "${MULLE_FILE_SH}" ]
-         then
-            # shellcheck source=mulle-file.sh
-            . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-file.sh"      || return 1
-         fi
-         if [ -z "${MULLE_CASE_SH}" ]
-         then
-            # shellcheck source=mulle-case.sh
-            . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-case.sh"      || return 1
-         fi
-      fi
+      case "$1" in
+         minimal)
+         ;;
+
+         *)
+            if [ -z "${MULLE_PATH_SH}" ]
+            then
+               # shellcheck source=mulle-path.sh
+               . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-path.sh"      || return 1
+            fi
+            if [ -z "${MULLE_FILE_SH}" ]
+            then
+               # shellcheck source=mulle-file.sh
+               . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-file.sh"      || return 1
+            fi
+         ;;
+      esac
+
+      case "$1" in
+         'all')
+            if [ -z "${MULLE_ARRAY_SH}" ]
+            then
+               # shellcheck source=mulle-array.sh
+               . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-array.sh"     || return 1
+            fi
+            if [ -z "${MULLE_VERSION_SH}" ]
+            then
+               # shellcheck source=mulle-version.sh
+               . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-version.sh"   || return 1
+            fi
+            if [ -z "${MULLE_CASE_SH}" ]
+            then
+               # shellcheck source=mulle-case.sh
+               . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-case.sh"      || return 1
+            fi
+            if [ -z "${MULLE_PARALLEL_SH}" ]
+            then
+               # shellcheck source=mulle-parallel.sh
+               . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-parallel.sh"      || return 1
+            fi
+      esac
    }
 
    __bashfunctions_loader "$@" || exit 1
