@@ -194,7 +194,7 @@ merge_line_into_file()
 
 create_file_if_missing()
 {
-  _create_file_if_missing "$1" "# intentionally blank file"
+   _create_file_if_missing "$1" "# intentionally blank file"
 }
 
 

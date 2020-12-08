@@ -1,3 +1,7 @@
+### 3.2.1
+
+* use sysctl for loadavg on freebsd/darwin
+
 ## 3.2.0
 
 * added `remove_duplicate_lines` functions

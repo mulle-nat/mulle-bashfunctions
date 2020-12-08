@@ -102,9 +102,18 @@ wait_for_available_job()
 }
 
 
+# just the floored load integer (i.e. 0.89 -> 0)
 get_current_load_average()
 {
-   uptime | sed -n -e 's/.*average[s]*:[ ]*\([0-9]*\).*/\1/p'
+   case "${MULLE_UNAME}" in
+      freebsd|darwin)
+         sysctl -n vm.loadavg | sed -n -e 's/.*{[ ]*\([0-9]*\).*/\1/p'
+      ;;
+
+      *)
+         uptime | sed -n -e 's/.*average[s]*:[ ]*\([0-9]*\).*/\1/p'
+      ;;
+   esac
 }
 
 
@@ -152,7 +161,7 @@ wait_for_load_average()
 
    while :
    do
-      loadavg="`uptime | sed -n -e 's/.*average:[ ]*\([0-9]*\).*/\1/p'`"
+      loadavg="`get_current_load_average`"
       if [ "${loadavg:-0}" -le ${maxaverage} ]
       then
          break
