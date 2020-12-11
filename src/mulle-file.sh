@@ -370,10 +370,43 @@ make_tmp_directory()
 #                        Symbolic Links
 # ####################################################################
 #
+
+# resolve actual file pointed to by multiple symlinks
 resolve_symlinks()
 {
    r_resolve_symlinks "$@"
    [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
+}
+
+
+r_resolve_all_path_symlinks()
+{
+   local path="$1"
+
+   local resolved
+
+   r_resolve_symlinks "${path}"
+   resolved="${RVAL}"
+
+   local filename
+   local directory
+   local resolved
+
+   r_dirname "${resolved}"
+   directory="${RVAL}"
+
+   case "${directory}" in
+      ''|'/')
+         RVAL="${resolved}"
+      ;;
+
+      *)
+         r_basename "${resolved}"
+         filename="${RVAL}"
+         r_resolve_all_path_symlinks "${directory}"
+         r_filepath_concat "${RVAL}" "${filename}"
+      ;;
+   esac
 }
 
 
