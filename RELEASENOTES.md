@@ -1,3 +1,8 @@
+## 3.3.0
+
+* r_resolve_all_path_symlinks added
+
+
 ### 3.2.1
 
 * use sysctl for loadavg on freebsd/darwin
