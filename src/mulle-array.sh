@@ -50,7 +50,7 @@ array_value_check()
 
 
 #
-# more specialed lines code, that's not even used anywhere I think
+# more specialized lines code, that's not even used anywhere I think
 #
 r_count_lines()
 {
@@ -74,7 +74,7 @@ r_get_line_at_index()
    local array="$1"
    local i="${2:-0}"
 
-   # for larger arrays:    sed -n "${i}p" <<< "${array}"
+   # for larger arrays:    sed -n "${i}pq" <<< "${array}"
 
    set -o noglob; IFS=$'\n'
    for RVAL in ${array}
@@ -127,6 +127,79 @@ r_insert_line_at_index()
 
    return $rval
 }
+
+
+
+r_lines_in_range()
+{
+   local array="$1"
+   local i="$2"
+   local n="$3"
+
+   # this is not really faster for smaller arrays
+   declare -a bash_array
+   declare -a res_array
+
+   IFS=$'\n' read -r -d '' -a bash_array <<< "${array}"
+
+   local j
+   local sentinel
+
+   sentinel=$((i + n))
+
+   j=0
+   while [ $i -lt ${sentinel} ]
+   do
+      res_array[${j}]="${bash_array[${i}]}"
+      i=$((i + 1))
+      j=$((j + 1))
+   done
+
+   RVAL="${res_array[*]}"
+}
+
+
+#r_replace_lines_in_range()
+#{
+#   local array="$1"
+#   local i="$2"
+#   local j="$3"
+#   local replacement="$4"
+#
+#   [ ${i} -gt ${j} ] && internal_fail "i greater than j"
+#
+#   local line
+#   local index
+#   local result
+#
+#   set -o noglob; IFS=$'\n'
+#   index=0
+#   for line in ${array}
+#   do
+#      if [ ${index} -ge ${i} -a ${index} -le ${j} ]
+#      then
+#         if [ ${index} -eq ${i} ]
+#         then
+#            r_add_line "${result}" "${replacement}"
+#            result="${RVAL}"
+#         fi
+#         continue
+#      fi
+#
+#      index=$((index + 1))
+#
+#      r_add_line "${result}" "${line}"
+#      result="${RVAL}"
+#   done
+#
+#   IFS="${DEFAULT_IFS}" ; set +o noglob
+#
+#   [ ${i} -ge ${index} ] && internal_fail "i $i invalid"
+#   [ ${j} -ge ${index} ] && internal_fail "j $j invalid"
+#
+#   RVAL="${result}"
+#}
+
 
 #
 # assoc array contents can contain any characters except newline
@@ -298,3 +371,4 @@ assoc_array_augment_with_array()
 }
 
 :
+

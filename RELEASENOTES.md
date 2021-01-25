@@ -1,3 +1,9 @@
+## 3.4.0
+
+* `r_expanded_string` is now a proper interpreter and not just an eval for safety
+* added r_unescaped_doublequotes and r_lines_in_range
+* New URL parser mulle-url.sh. 
+
 ## 3.3.0
 
 * r_resolve_all_path_symlinks added

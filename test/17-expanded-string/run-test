@@ -1,0 +1,92 @@
+#! /usr/bin/env bash
+
+[ "${TRACE}" = 'YES' ] && set -x
+
+
+stacktrace()
+{
+   local i=1
+   local line
+
+   while line="`caller $i`"
+   do
+      printf "${C_CYAN}%b${C_RESET}\n" "$i: #${line}"
+      ((i++))
+   done
+}
+
+
+expect_output()
+{
+   local output="$1"
+   local expected="$2"
+
+   if [ "${output}" != "${expected}" ]
+   then
+      echo "Got \"${output}\". Expected: \"${expected}\"" >&2
+      stacktrace >&2
+      exit 1
+   fi
+}
+
+
+fail()
+{
+   echo "Unexpected failure" >&2
+   stacktrace >&2
+   exit 1
+}
+
+
+main()
+{
+   a="1"
+   b="2"
+   c="3"
+   d="4"
+   e="5"
+   f="6"
+   g="7"
+   h="8"
+   i="9"
+   j="10"
+
+   r_expanded_string 'a${b:-${c}}'
+   expect_output "${RVAL}" "a${b:-${c}}"
+
+   r_expanded_string 'x${unknown:-default}y'
+   expect_output "${RVAL}" "x${unknown:-default}y"
+
+   r_expanded_string 'x${unknown:-default}y' 'NO'
+   expect_output "${RVAL}" "xdefaulty"
+
+   r_expanded_string 'x${unknown}y'
+   expect_output "${RVAL}" "x${unknown}y"
+
+   r_expanded_string 'x${a}y${b}z'
+   expect_output "${RVAL}" "x${a}y${b}z"
+
+   r_expanded_string '${a}${b}'
+   expect_output "${RVAL}" "${a}${b}"
+
+   r_expanded_string '${a}'
+   expect_output "${RVAL}" "${a}"
+
+   r_expanded_string 'x'
+   expect_output "${RVAL}" "x"
+
+   r_expanded_string 'a${b:-c${d:-e}}g${h:-i}j'
+   expect_output "${RVAL}" "a${b:-c${d:-e}}g${h:-i}j"
+}
+
+
+init()
+{
+   MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${MULLE_BASHFUNCTIONS_LIBEXEC_DIR:-../../src}"
+
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-string.sh" || exit 1
+}
+
+
+init "$@"
+main "$@"

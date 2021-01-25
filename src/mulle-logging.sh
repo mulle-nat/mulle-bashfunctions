@@ -158,7 +158,7 @@ log_entry()
       shift
    done
 
-   log_debug "${functionname}" "${args}"
+   log_debug "${functionname} ${args}"
 }
 
 

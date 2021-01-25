@@ -237,7 +237,7 @@ _parallel_execute()
       # only append to status file if error
       if [ $rval -ne 0 ]
       then
-         log_warning "$* failed with $rval"
+         log_warning "warning: $* failed with $rval"
          redirect_append_exekutor "${_parallel_statusfile}" printf "%s\n" "${rval};$*"
       fi
    ) &

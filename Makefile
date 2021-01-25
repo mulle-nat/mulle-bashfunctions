@@ -10,6 +10,7 @@ src/mulle-options.sh \
 src/mulle-parallel.sh \
 src/mulle-path.sh \
 src/mulle-string.sh \
+src/mulle-url.sh \
 src/mulle-version.sh
 
 

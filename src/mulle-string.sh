@@ -740,6 +740,13 @@ r_escaped_doublequotes()
 }
 
 
+r_unescaped_doublequotes()
+{
+   RVAL="${*//\\\"/\"}"
+   RVAL="${RVAL//\\\\/\\}"
+}
+
+
 r_escaped_shell_string()
 {
    printf -v RVAL '%q' "$*"
@@ -851,22 +858,177 @@ r_dirname()
 # should be safe from malicious backticks and so forth, unfortunately
 # this is not smart enough to parse all valid contents properly
 #
+_r_prefix_with_unquoted_string()
+{
+   local s="$1"
+   local c="$2"
+
+   local prefix
+   local e_prefix
+   local head
+
+   while :
+   do
+      prefix="${s%%${c}*}"             # a${
+      if [ "${prefix}" = "${_s}" ]
+      then
+         RVAL=
+         return 1
+      fi
+
+      e_prefix="${_s%%\\${c}*}"         # a\\${ or whole string if no match
+      if [ "${e_prefix}" = "${_s}" ]
+      then
+         RVAL="${head}${prefix}"
+         return 0
+      fi
+
+      if [ "${#e_prefix}" -gt "${#prefix}" ]
+      then
+         RVAL="${head}${prefix}"
+         return 0
+      fi
+
+      e_prefix="${e_prefix}\\${c}"
+      head="${head}${e_prefix}"
+      s="${s#${e_prefix}}"
+   done
+}
+
+
+#
+# should be safe from malicious backticks and so forth, unfortunately
+# this is not smart enough to parse all valid contents properly
+#
+_r_expand_string()
+{
+   local prefix_opener
+   local prefix_closer
+   local identifier
+   local identifier_1
+   local identifier_2
+   local anything
+   local value
+   local default_value
+   local head
+   local found
+
+   # ex: "a${b:-c${d:-e}}g"
+   while [ ${#_s} -ne 0 ]
+   do
+      # look for ${
+      _r_prefix_with_unquoted_string "${_s}" '${'
+      found=$?
+      prefix_opener="${RVAL}" # can be empty
+
+      #
+      # if there is an } before hand, then we stop execution
+      # but we consume that. If there is none at all we bail
+      #
+      if ! _r_prefix_with_unquoted_string "${_s}" '}'
+      then
+         if [ ${found} -eq 0 ]
+         then
+            log_error "missing '}'"
+            RVAL=
+            return 1
+         fi
+
+         #
+         # if we don't have an opener ${ or it comes after us we
+         # are done
+         #
+      else
+         prefix_closer="${RVAL}"
+         if [ ${found} -ne 0 -o ${#prefix_closer} -lt ${#prefix_opener} ]
+         then
+            _s="${_s#${prefix_closer}\}}"
+            RVAL="${head}${prefix_closer}"
+            return 0
+         fi
+      fi
+
+      #
+      # No ${ here, then we are done
+      #
+      if [ ${found} -ne 0 ]
+      then
+         RVAL="${head}${_s}"
+         return 0
+      fi
+
+      #
+      # the middle is what we evaluate, that'_s whats left in '_s'
+      #
+      head="${head}${prefix_opener}"   # copy verbatim and continue
+
+      _s="${_s#${prefix_opener}}"
+      _s="${_s#\$\{}"
+
+      #
+      # identifier_1 : ${identifier}
+      # identifier_2 : ${identifier:-anything}
+      #
+      anything=
+      identifier_1="${_s%%\}*}"     # this can't fail
+      identifier_2="${_s%%:-*}"
+      if [ "${identifier_2}" = "${_s}" ]
+      then
+         identifier_2=""
+      fi
+
+      default_value=
+      if [ -z "${identifier_2}" -o ${#identifier_1} -lt ${#identifier_2} ]
+      then
+         identifier="${identifier_1}"
+         _s="${_s#${identifier}\}}"
+         anything=
+      else
+         identifier="${identifier_2}"
+         _s="${_s#${identifier}:-}"
+         anything="${_s}"
+         if [ ! -z "${anything}" ]
+         then
+            if ! _r_expand_string
+            then
+               return 1
+            fi
+            default_value="${RVAL}"
+         fi
+      fi
+
+      # idiot protection
+      r_identifier "${identifier}"
+      identifier="${RVAL}"
+
+      if [ "${_expand}" = 'YES' ]
+      then
+         value="${!identifier:-${default_value}}"
+      else
+         value="${default_value}"
+      fi
+      head="${head}${value}"
+   done
+
+   RVAL="${head}"
+   return 0
+}
+
+
 r_expanded_string()
 {
-   local string="$*"
+   local string="$1"
+   local expand="${2:-YES}"
 
-   # we don't want dangerous expansions though
-   # https://www.tldp.org/LDP/Bash-Beginners-Guide/html/sect_03_04.html
+   local _s="${string}"
+   local _expand="${expand}"
 
-   case "${string}" in
-      *\$\(*|*\`*|*\>\(*|*\<\)*)
-         RVAL="${string}"  # keep as is then
-         return 1
-      ;;
-   esac
+   local rval
 
-   eval printf -v RVAL "\"%s\"" "\"${string}\""
-   return 0
+   _r_expand_string
+   rval=$?
+
+   return $rval
 }
 
 :
