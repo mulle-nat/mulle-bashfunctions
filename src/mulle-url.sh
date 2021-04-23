@@ -77,7 +77,6 @@ r_url_remove_fragment()
 }
 
 
-
 url_remove_scheme()
 {
    sed 's/^[^:]*:\(.*\)/\1/'
@@ -95,6 +94,32 @@ url_remove_fragment()
    sed 's/^\([^#]*\)#.*/\1/'
 }
 
+
+#
+# zip not a proper file compression but an archive format like tar
+# tgz is the same
+#
+url_has_file_compression_extension()
+{
+   case "$1" in
+      *.z|*.gz|*.bz2|*.xz)
+         return 0
+      ;;
+   esac
+   return 1
+}
+
+
+r_url_remove_file_compression_extension()
+{
+   RVAL="${1%.z}"
+   [ "${RVAL}" != "$1" ] && return
+   RVAL="${1%.gz}"
+   [ "${RVAL}" != "$1" ] && return
+   RVAL="${1%.bz2}"
+   [ "${RVAL}" != "$1" ] && return
+   RVAL="${1%.xz}"
+}
 
 
 

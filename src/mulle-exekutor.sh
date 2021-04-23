@@ -306,6 +306,29 @@ _redirect_append_eval_exekutor()
 }
 
 
+_append_tee_exekutor()
+{
+   # You have a funny "not found" problem ? the base directory of output is missing!
+   local output="$1"; shift
+   local teeoutput="$1"; shift
+
+   exekutor_trace_output "eval_exekutor_print" '>>' "${output}" "$@"
+
+   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = 'YES' ]
+   then
+      return
+   fi
+
+   ( "$@" ) 2>&1 | tee -a "${teeoutput}" "${output}"
+
+   MULLE_EXEKUTOR_RVAL=${PIPESTATUS[0]}
+
+   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-2}" ] && stacktrace
+
+   return ${MULLE_EXEKUTOR_RVAL}
+}
+
+
 _append_tee_eval_exekutor()
 {
    # You have a funny "not found" problem ? the base directory of output is missing!
@@ -329,6 +352,17 @@ _append_tee_eval_exekutor()
 }
 
 
+
+logging_tee_exekutor()
+{
+   local output="$1"; shift
+   local teeoutput="$1"; shift
+
+   exekutor_print "$@" | tee -a "${teeoutput}" "${output}"
+   _append_tee_exekutor "${output}" "${teeoutput}" "$@"
+}
+
+
 logging_tee_eval_exekutor()
 {
    local output="$1"; shift
@@ -337,6 +371,7 @@ logging_tee_eval_exekutor()
    eval_exekutor_print "$@" | tee -a "${teeoutput}" "${output}"
    _append_tee_eval_exekutor "${output}" "${teeoutput}" "$@"
 }
+
 
 
 #

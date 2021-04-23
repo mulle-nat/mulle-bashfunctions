@@ -188,7 +188,7 @@ _parallel_begin()
    _parallel_jobs=0
    _parallel_fails=0
 
-   r_make_tmp "mulle-parallel"
+   r_make_tmp "mulle-parallel" || exit 1
    _parallel_statusfile="${RVAL}"
 
    if [ -z "${_parallel_maxjobs}" ]

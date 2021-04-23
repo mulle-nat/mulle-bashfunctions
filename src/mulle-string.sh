@@ -265,6 +265,32 @@ r_remove_line()
 }
 
 
+r_remove_line_once()
+{
+   local lines="$1"
+   local search="$2"
+
+   local line
+
+   local delim
+
+   RVAL=
+   set -o noglob; IFS=$'\n'
+   for line in ${lines}
+   do
+      if [ -z "${search}" -o "${line}" != "${search}" ]
+      then
+         RVAL="${RVAL}${delim}${line}"
+         delim=$'\n'
+      else 
+         search="" 
+      fi
+   done
+   IFS="${DEFAULT_IFS}" ; set +o noglob
+}
+
+
+
 #
 # can't have linefeeds as delimiter
 # e.g. find_item "a,b,c" b -> 0

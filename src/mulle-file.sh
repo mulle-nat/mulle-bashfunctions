@@ -202,15 +202,15 @@ _remove_file_if_present()
 {
    [ -z "$1" ] && internal_fail "empty path"
 
-   if ! exekutor rm -f "$1" > /dev/null >&2
+   # we don't want to test before hand if the file exists, because that's
+   # slow. If we don't use the -f flag, then we might get stuck on a prompt
+   # though. We don't want an error message, so -f is also fine
+   #
+   if ! exekutor rm -f "$1" 2> /dev/null
    then
-      # probably platform dependent if rm returns error on missing file though
-      if [ ! -e "$1" ]
-      then
-         return 1
-      fi
-      exekutor chmod u+w "$1"  >&2 || fail "Failed to make $1 writable"
-      exekutor rm -f "$1"  >&2     || fail "failed to remove \"$1\""
+      # oughta be superflous on macOS but gives error codes...
+      exekutor chmod u+w "$1"  || fail "Failed to make $1 writable"
+      exekutor rm -f "$1"      || fail "failed to remove \"$1\""
    fi
    return 0
 }
@@ -218,9 +218,9 @@ _remove_file_if_present()
 
 remove_file_if_present()
 {
-   if _remove_file_if_present "$@"
+   if _remove_file_if_present "$1"
    then
-      log_fluff "Removed \"$1\" ($PWD)"
+      log_fluff "Removed \"${1#${PWD}/}\" ($PWD)"
       return 0
    fi
    return 1
@@ -584,6 +584,8 @@ inplace_sed()
    local filename
 #   local permissions
 
+   local rval 
+
    case "${MULLE_UNAME}" in
       darwin|freebsd)
          # exekutor sed -i '' "$@"
@@ -612,6 +614,8 @@ inplace_sed()
          r_make_tmp
          tmpfile="${RVAL}"
          redirect_eval_exekutor "${tmpfile}" 'sed' "${args}" "'${filename}'"
+         rval=$?
+
 #         exekutor chmod "${permissions}" "${tmpfile}"
          # move gives permission errors, this keeps everything OK
          exekutor cp "${tmpfile}" "${filename}"
@@ -620,8 +624,11 @@ inplace_sed()
 
       *)
          exekutor sed -i'' "$@"
+         rval=$?
       ;;
    esac
+
+   return ${rval}
 }
 
 
