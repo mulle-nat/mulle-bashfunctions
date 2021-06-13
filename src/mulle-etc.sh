@@ -36,7 +36,7 @@ MULLE_ETC_SH="included"
 
 
 # functions to maintain .mulle/etc and .mulle/share folders
-# share folders are periodically updated by upgrades and etc folders 
+# share folders are periodically updated by upgrades and etc folders
 # contain user edits. The unchanged files are symlinked, so that only the
 # etc folder is used, but the unchanged contents are still upgradable
 #
@@ -105,9 +105,10 @@ etc_symlink_or_copy_file()
    local srcfile="$1"
    local dstdir="$2"
    local filename="$3"
+   local symlink="$4"
 
-   [ -f "${srcfile}" ] || internal_fail "\"${srcfile}\" does not exist or not a file"
-   [ -d "${dstdir}" ]  || internal_fail "\"${dstdir}\" does not exist or not a directory"
+   [ -f "${srcfile}" ] || internal_fail "\"${srcfile}\" does not exist or is not a file"
+   [ -d "${dstdir}" ]  || internal_fail "\"${dstdir}\" does not exist or is not a directory"
 
    local dstfile
 
@@ -125,6 +126,8 @@ etc_symlink_or_copy_file()
       fail "\"${dstfile}\" already exists"
    fi
 
+   r_mkdir_parent_if_missing "${dstfile}"
+
    local flags
 
    if [ "${MULLE_FLAG_LOG_FLUFF}" = 'YES' ]
@@ -132,20 +135,32 @@ etc_symlink_or_copy_file()
       flags="-v"
    fi
 
-   case "${MULLE_UNAME}" in
-      mingw)
-         exekutor cp ${flags} "${srcfile}" "${dstfile}"
-         exekutor chmod ug+w "${dstfile}"
-         return $?
-      ;;
-   esac
+   if [ -z "${symlink}" ]
+   then
+      case "${MULLE_UNAME}" in
+         mingw)
+            symlink="NO"
+         ;;
 
-   local linkrel
+         *)
+            symlink="YES"
+         ;;
+      esac
+   fi
 
-   r_relative_path_between "${srcfile}" "${dstdir}"
-   linkrel="${RVAL}"
+   if [ "${symlink}" = 'YES' ]
+   then
+      local linkrel
 
-   exekutor ln -s ${flags} "${linkrel}" "${dstfile}"
+      r_relative_path_between "${srcfile}" "${dstdir}"
+      linkrel="${RVAL}"
+
+      exekutor ln -s ${flags} "${linkrel}" "${dstfile}"
+      return $?
+   fi
+
+   exekutor cp ${flags} "${srcfile}" "${dstfile}" &&
+   exekutor chmod ug+w "${dstfile}"
 }
 
 
@@ -155,6 +170,7 @@ etc_setup_from_share_if_needed()
 
    local etc="$1"
    local share="$2"
+   local symlink="$3"
 
    if [ -d "${etc}" ]
    then
@@ -172,22 +188,44 @@ etc_setup_from_share_if_needed()
       flags="-v"
    fi
 
-   local file
    local filename
+   local base
 
    #
    # use per default symlinks and change to file on edit (makes it
    # easier to upgrade unedited files
    #
-   shopt -s nullglob
-   for filename in "${share}"/*
+   IFS=$'\n'; set -f
+   for filename in `find "${share}" ! -type d -print`
    do
-      shopt -u nullglob
-      etc_symlink_or_copy_file "${filename}" "${etc}"
+      IFS="${DEFAULT_IFS}"; set +f
+      r_basename "${filename}"
+      etc_symlink_or_copy_file "${filename}" \
+                               "${etc}" \
+                               "${RVAL}" \
+                               "${symlink}"
    done
-   shopt -u nullglob
+   IFS="${DEFAULT_IFS}"; set +f
 }
 
+
+etc_remove_if_possible()
+{
+   log_entry "etc_remove_if_possible" "$@"
+
+   local etc="$1"
+   local share="$2"
+
+   if [ ! -d "${etc}" ]
+   then
+      return
+   fi
+
+   if dirs_contain_same_files "${etc}" "${share}"
+   then
+      rmdir_safer "${etc}"
+   fi
+}
 
 
 #
@@ -198,13 +236,12 @@ etc_repair_files()
 {
    log_entry "etc_repair_files" "$@"
 
-   local dstdir="$1"
-   local srcdir="$2"
+   local srcdir="$1" # share
+   local dstdir="$2" # etc
+
    local glob="$3"
    local add="$4"
-
-   srcdir="${MULLE_MATCH_SHARE_DIR}/${OPTION_FOLDER_NAME}"
-   dstdir="${MULLE_MATCH_ETC_DIR}/${OPTION_FOLDER_NAME}"
+   local symlink="$5"
 
    if [ ! -d "${dstdir}" ]
    then
@@ -219,33 +256,39 @@ etc_repair_files()
 
    can_remove_etc='YES'
 
+   dstdir="${dstdir%%/}"
+   srcdir="${srcdir%%/}"
+
    #
    # go through etc, throw out symlinks that point to nowhere
    # create symlinks for files that are identical in share and throw old
    # files away
    #
-   shopt -s nullglob
-   for dstfile in "${dstdir}"/* # dstdir is etc
+   IFS=$'\n'; set -f
+   for dstfile in `find "${dstdir}" ! -type d -print` # dstdir is etc
    do
-      shopt -u nullglob
+      IFS="${DEFAULT_IFS}"; set +f
 
-      r_basename "${dstfile}"
-      filename="${RVAL}"
+      filename="${dstfile#${dstdir}/}"
       srcfile="${srcdir}/${filename}"
 
       if [ -L "${dstfile}" ]
       then
          if ! ( cd "${dstdir}" && [ -f "`readlink "${filename}"`" ] )
          then
-            globtest="${glob}${filename#${glob}}"   # hack for patternfile 
+            # hack for patternfile only works for flat structure probably
+            globtest="${glob}${filename#${glob}}"
             if [ ! -z "${glob}" ] && [ -f "${srcdir}"/${globtest} ]
             then
                log_verbose "\"${filename}\" moved to ${globtest}: relink"
-               exekutor rm "${dstfile}"
-               etc_symlink_or_copy_file "${srcdir}/"${globtest} "${dstdir}"
+               remove_file_if_present "${dstfile}"
+               etc_symlink_or_copy_file "${srcdir}/"${globtest} \
+                                        "${dstdir}" \
+                                        "" \
+                                        "${symlink}"
             else
                log_verbose "\"${filename}\" no longer exists: remove"
-               exekutor rm "${dstfile}"
+               remove_file_if_present "${dstfile}"
             fi
          else
             log_fluff "\"${filename}\" is a healthy symlink: keep"
@@ -256,8 +299,11 @@ etc_repair_files()
             if diff -q -b "${dstfile}" "${srcfile}" > /dev/null
             then
                log_verbose "\"${filename}\" has no user edits: replace with symlink"
-               exekutor rm "${dstfile}"
-               etc_symlink_or_copy_file "${srcfile}" "${dstdir}"
+               remove_file_if_present "${dstfile}"
+               etc_symlink_or_copy_file "${srcfile}" \
+                                        "${dstdir}" \
+                                        "${filename}" \
+                                        "${symlink}"
             else
                log_fluff "\"${filename}\" contains edits: keep"
                can_remove_etc='NO'
@@ -270,15 +316,16 @@ etc_repair_files()
    done
 
    #
-   # go through share, symlink everything that is not in etc
+   # Go through share, symlink everything that is not in etc. This is
+   # may make files that have been deleted reappear though. So you explicitly
+   # allow this with "add"
    #
-   shopt -s nullglob
-   for srcfile in "${srcdir}"/*
+   IFS=$'\n'; set -f
+   for srcfile in `find "${srcdir}" ! -type d -print` # dstdir is etc
    do
-      shopt -u nullglob
+      IFS="${DEFAULT_IFS}"; set +f
 
-      r_basename "${srcfile}"
-      filename="${RVAL}"
+      filename="${srcfile#${srcdir}/}"
       dstfile="${dstdir}/${filename}"
 
       if [ ! -e "${dstfile}" ]
@@ -286,14 +333,17 @@ etc_repair_files()
          if [ "${add}" = 'YES' ]
          then
             log_verbose "\"${filename}\" is missing: recreate"
-            etc_symlink_or_copy_file "${srcfile}" "${dstdir}" 
+            etc_symlink_or_copy_file "${srcfile}" \
+                                     "${dstdir}" \
+                                     "${filename}" \
+                                     "${symlink}"
          else
-            log_info "\"${filename}\" is not used. Use \`repair --add\` to add it."
+            log_info "\"${filename}\" is new but not used. Use \`repair --add\` to add it."
             can_remove_etc='NO'
          fi
       fi
    done
-   shopt -u nullglob
+   IFS="${DEFAULT_IFS}"; set +f
 
    if [ "${can_remove_etc}" = 'YES' ]
    then

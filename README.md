@@ -59,15 +59,14 @@ In your program:
 
 
 ```
-MULLE_BASHFUNCTIONS_LIBEXEC_DIR="`mulle-bashfunctions-env libexec-dir 2> /dev/null`"
-[ -z "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}" ] && \
-   echo "mulle-bashfunctions are not installed" >&2 && \
-   exit 1
-
+MULLE_BASHFUNCTIONS_LIBEXEC_DIR="`mulle-bashfunctions-env libexec-dir`"
 . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions.sh" || exit 1
 ```
 
 Now you can call the functions provided by the library.
+
+Or if you want to cherry-pick a `mulle-file.sh` function for example:
+
 
 #### Quick start with mulle-sde
 

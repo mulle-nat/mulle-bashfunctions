@@ -32,7 +32,8 @@
 [ ! -z "${MULLE_FILE_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
    echo "double inclusion of mulle-file.sh" >&2
 
-[ -z "${MULLE_PATH_SH}" ] && echo "mulle-path.sh must be included before mulle-file.sh" 2>&1 && exit 1
+[ -z "${MULLE_PATH_SH}" ]     && echo "mulle-path.sh must be included before mulle-file.sh" 2>&1 && exit 1
+[ -z "${MULLE_EXEKUTOR_SH}" ] && echo "mulle-exekutor.sh must be included before mulle-file.sh" 2>&1 && exit 1
 
 
 MULLE_FILE_SH="included"
@@ -204,7 +205,8 @@ _remove_file_if_present()
 
    # we don't want to test before hand if the file exists, because that's
    # slow. If we don't use the -f flag, then we might get stuck on a prompt
-   # though. We don't want an error message, so -f is also fine
+   # though. We don't want an error message, so -f is also fine. 
+   # Unfortunately, we can't find out then if file existed.
    #
    if ! exekutor rm -f "$1" 2> /dev/null
    then
@@ -218,7 +220,9 @@ _remove_file_if_present()
 
 remove_file_if_present()
 {
-   if _remove_file_if_present "$1"
+   # -e or -f does not pick out symlinks on macOS, we need the test for the
+   # fluff. So this is even super slow.
+   if [ -e "$1"  -o -L "$1" ] && _remove_file_if_present "$1"
    then
       log_fluff "Removed \"${1#${PWD}/}\" ($PWD)"
       return 0
@@ -552,6 +556,61 @@ dir_has_files()
 }
 
 
+dirs_contain_same_files()
+{
+   log_entry "dirs_contain_same_files" "$@"
+
+   local etcdir="$1"
+   local sharedir="$2"
+
+   if [ ! -d "${etcdir}" -o ! -e "${etcdir}" ]
+   then
+      internal_fail "Both directories \"${etcdir}\" and \"${sharedir}\" need to exist"
+   fi
+
+   # remove any trailing slashes
+   etcdir="${etcdir%%/}"
+   sharedir="${sharedir%%/}"
+
+   local etcfile
+   local sharefile
+   local filename 
+
+   IFS=$'\n'; set -f
+   for sharefile in `find ${sharedir}  \! -type d -print`
+   do
+      IFS="${DEFAULT_IFS}"; set +f 
+
+      filename="${sharefile#${sharedir}/}"
+      etcfile="${etcdir}/${filename}"
+
+      if ! diff -q -b "${etcfile}" "${sharefile}" > /dev/null
+      then
+         return 2
+      fi
+   done
+
+   IFS=$'\n'; set -f
+
+   for etcfile in `find ${etcdir} \! -type d -print`
+   do
+      IFS="${DEFAULT_IFS}"; set +f 
+
+      filename="${etcfile#${etcdir}/}"
+      sharefile="${sharedir}/${filename}"
+
+      if [ ! -e "${sharefile}" ]
+      then
+         return 2
+      fi
+   done
+
+   IFS="${DEFAULT_IFS}"; set +f 
+
+   return 0
+}
+
+
 # ####################################################################
 #                         Inplace sed (that works)
 # ####################################################################
@@ -613,12 +672,15 @@ inplace_sed()
 
          r_make_tmp
          tmpfile="${RVAL}"
+
          redirect_eval_exekutor "${tmpfile}" 'sed' "${args}" "'${filename}'"
          rval=$?
-
+         if [ $rval -eq 0 ]
+         then
 #         exekutor chmod "${permissions}" "${tmpfile}"
          # move gives permission errors, this keeps everything OK
-         exekutor cp "${tmpfile}" "${filename}"
+            exekutor cp "${tmpfile}" "${filename}"
+         fi
          _remove_file_if_present "${tmpfile}" # don't fluff log :)
       ;;
 

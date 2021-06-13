@@ -57,8 +57,8 @@ main()
    expect_output  "$(expanded_string '${a}')"               'abc'
    expect_output  "$(expanded_string '${b}')"               ''
    expect_output  "$(expanded_string '${b:-abc}')"          'abc'
-   expect_output  "$(expanded_string '`danger`${a}')"       '`danger`${a}'
-   expect_output  "$(expanded_string 'x$(danger)${a}y')"    'x$(danger)${a}y'
+   expect_output  "$(expanded_string '`danger`${a}')"       '`danger`abc'
+   expect_output  "$(expanded_string 'x$(danger)${a}y')"    'x$(danger)abcy'
 
    echo "All tests passed" >&2
 }
