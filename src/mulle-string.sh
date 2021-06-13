@@ -881,8 +881,8 @@ r_dirname()
 
 
 #
-# should be safe from malicious backticks and so forth, unfortunately
-# this is not smart enough to parse all valid contents properly
+# get prefix leading up to character 'c', but if 'c' is quoted deal with it
+# properly
 #
 _r_prefix_with_unquoted_string()
 {
@@ -917,7 +917,8 @@ _r_prefix_with_unquoted_string()
 
       e_prefix="${e_prefix}\\${c}"
       head="${head}${e_prefix}"
-      s="${s#${e_prefix}}"
+      # cut like this to avoid interpretation of e_prefix
+      s="${s:${#e_prefix}}"
    done
 }
 
@@ -968,7 +969,8 @@ _r_expand_string()
          prefix_closer="${RVAL}"
          if [ ${found} -ne 0 -o ${#prefix_closer} -lt ${#prefix_opener} ]
          then
-            _s="${_s#${prefix_closer}\}}"
+            _s="${_s:${#prefix_closer}}"
+            _s="${_s#\}}"
             RVAL="${head}${prefix_closer}"
             return 0
          fi
@@ -988,7 +990,7 @@ _r_expand_string()
       #
       head="${head}${prefix_opener}"   # copy verbatim and continue
 
-      _s="${_s#${prefix_opener}}"
+      _s="${_s:${#prefix_opener}}"
       _s="${_s#\$\{}"
 
       #
@@ -1007,11 +1009,13 @@ _r_expand_string()
       if [ -z "${identifier_2}" -o ${#identifier_1} -lt ${#identifier_2} ]
       then
          identifier="${identifier_1}"
-         _s="${_s#${identifier}\}}"
+         _s="${_s:${#identifier}}"
+         _s="${_s#\}}"
          anything=
       else
          identifier="${identifier_2}"
-         _s="${_s#${identifier}:-}"
+         _s="${_s:${#identifier}}"
+         _s="${_s#:-}"
          anything="${_s}"
          if [ ! -z "${anything}" ]
          then
