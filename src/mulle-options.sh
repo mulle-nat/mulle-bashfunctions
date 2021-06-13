@@ -74,7 +74,6 @@ options_setup_trace()
          MULLE_FLAG_LOG_SETTINGS='YES'
          MULLE_FLAG_LOG_FLUFF='YES'
          MULLE_FLAG_LOG_VERBOSE='YES'
-         MULLE_FLAG_VERBOSE_BUILD='YES'
 
 
          if [ "${MULLE_TRACE_POSTPONE}" != 'YES' ]
@@ -152,25 +151,71 @@ after_trace_warning()
 #
 options_technical_flags()
 {
-   case "$1" in
+   local flag="$1"
+
+   case "${flag}" in
       -n|--dry-run)
          MULLE_FLAG_EXEKUTOR_DRY_RUN='YES'
       ;;
 
       -ld|--log-debug)
          MULLE_FLAG_LOG_DEBUG='YES'
+         # propagate
+      ;;
+
+      -lD)
+         MULLE_FLAG_LOG_DEBUG='YES'
+         return # don't propagate
+      ;;
+
+      -lD*D)
+         MULLE_FLAG_LOG_DEBUG='YES'
+         flag="${flag%D}"
       ;;
 
       -le|--log-environment)
          MULLE_FLAG_LOG_ENVIRONMENT='YES'
+         # propagate
+      ;;
+
+      -lE)
+         MULLE_FLAG_LOG_ENVIRONMENT='YES'
+         return # don't propagate
+      ;;
+
+      -lE*E)
+         MULLE_FLAG_LOG_ENVIRONMENT='YES'
+         flag="${flag%E}"
       ;;
 
       -ls|--log-settings)
          MULLE_FLAG_LOG_SETTINGS='YES'
+         # propagate
+      ;;
+
+      -lS)
+         MULLE_FLAG_LOG_SETTINGS='YES'
+         return # don't propagate
+      ;;
+
+      -lS*S)
+         MULLE_FLAG_LOG_SETTINGS='YES'
+         flag="${flag%S}"
       ;;
 
       -lx|--log-exekutor|--log-execution)
          MULLE_FLAG_LOG_EXEKUTOR='YES'
+         # propagate
+      ;;
+
+      -lX)
+         MULLE_FLAG_LOG_EXEKUTOR='YES'
+         return # don't propagate
+      ;;
+
+      -lX*X)
+         MULLE_FLAG_LOG_EXEKUTOR='YES'
+         flag="${flag%X}"
       ;;
 
       -l-)
@@ -183,15 +228,16 @@ options_technical_flags()
       -t|--trace)
          MULLE_TRACE='1848'
          ps4string='${BASH_SOURCE[0]##*/}:${LINENO}'
+         return # don't propagate
       ;;
 
       -tfpwd|--trace-full-pwd)
-         before_trace_fail "$1"
+         before_trace_fail "${flag}"
          ps4string='${BASH_SOURCE[0]##*/}:${LINENO} \"\w\"'
       ;;
 
       -tp|--trace-profile)
-         before_trace_fail "$1"
+         before_trace_fail "${flag}"
 
          case "${MULLE_UNAME}" in
             '')
@@ -207,12 +253,12 @@ options_technical_flags()
       ;;
 
       -tpo|--trace-postpone)
-         before_trace_fail "$1"
+         before_trace_fail "${flag}"
          MULLE_TRACE_POSTPONE='YES'
       ;;
 
       -tpwd|--trace-pwd)
-         before_trace_fail "$1"
+         before_trace_fail "${flag}"
          ps4string='${BASH_SOURCE[0]##*/}:${LINENO} \".../\W\"'
       ;;
 
@@ -226,6 +272,12 @@ options_technical_flags()
          set +x
       ;;
 
+      -t*t)
+         MULLE_TRACE='1848'
+         ps4string='${BASH_SOURCE[0]##*/}:${LINENO}'
+         flag="${flag%t}"
+      ;;
+
       -s|--silent)
          MULLE_FLAG_LOG_TERSE='YES'
       ;;
@@ -235,19 +287,19 @@ options_technical_flags()
       ;;
 
       -v|--verbose)
-         after_trace_warning "$1"
+         after_trace_warning "${flag}"
 
          MULLE_TRACE='VERBOSE'
       ;;
 
       -vv|--very-verbose)
-         after_trace_warning "$1"
+         after_trace_warning "${flag}"
 
          MULLE_TRACE='FLUFF'
       ;;
 
       -vvv|--very-very-verbose)
-         after_trace_warning "$1"
+         after_trace_warning "${flag}"
 
          MULLE_TRACE='TRACE'
       ;;
@@ -292,9 +344,9 @@ options_technical_flags()
    #
    if [ -z "${MULLE_TECHNICAL_FLAGS}" ]
    then
-      MULLE_TECHNICAL_FLAGS="$1"
+      MULLE_TECHNICAL_FLAGS="${flag}"
    else
-      MULLE_TECHNICAL_FLAGS="${MULLE_TECHNICAL_FLAGS} $1"
+      MULLE_TECHNICAL_FLAGS="${MULLE_TECHNICAL_FLAGS} ${flag}"
    fi
 
    return 0
@@ -321,7 +373,7 @@ _options_mini_main()
 {
    while [ $# -ne 0 ]
    do
-      if options_technical_flags "$1"
+      if options_technical_flags "${flag}"
       then
          shift
          continue
