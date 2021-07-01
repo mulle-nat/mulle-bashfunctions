@@ -225,10 +225,11 @@ options_technical_flags()
          MULLE_FLAG_LOG_SETTINGS=
       ;;
 
+
       -t|--trace)
          MULLE_TRACE='1848'
          ps4string='${BASH_SOURCE[0]##*/}:${LINENO}'
-         return # don't propagate
+         # propagate
       ;;
 
       -tfpwd|--trace-full-pwd)
@@ -272,10 +273,16 @@ options_technical_flags()
          set +x
       ;;
 
-      -t*t)
+      -T)
          MULLE_TRACE='1848'
          ps4string='${BASH_SOURCE[0]##*/}:${LINENO}'
-         flag="${flag%t}"
+         return # don't propagate
+      ;;
+
+      -T*T)
+         MULLE_TRACE='1848'
+         ps4string='${BASH_SOURCE[0]##*/}:${LINENO}'
+         flag="${flag%T}"
       ;;
 
       -s|--silent)
@@ -373,7 +380,7 @@ _options_mini_main()
 {
    while [ $# -ne 0 ]
    do
-      if options_technical_flags "${flag}"
+      if options_technical_flags "$1"
       then
          shift
          continue

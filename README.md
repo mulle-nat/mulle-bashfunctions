@@ -18,8 +18,8 @@ compatible with bash v3.2, because that is the baseline available on macos.
 * Various file functions with an emphasis on safety
 * Various string functions, like escaping, case conversion, searching
 
-It's not documented, so you probably are just here, because it's a prerequisite
-for another mulle tool.
+It's not well documented, so you probably are just here, because it's a
+prerequisite for another mulle tool.
 
 Executable                | Description
 --------------------------|--------------------------------
@@ -62,10 +62,7 @@ In your program:
 MULLE_BASHFUNCTIONS_LIBEXEC_DIR="`mulle-bashfunctions-env libexec-dir`"
 . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions.sh" || exit 1
 ```
-
 Now you can call the functions provided by the library.
-
-Or if you want to cherry-pick a `mulle-file.sh` function for example:
 
 
 #### Quick start with mulle-sde
