@@ -148,6 +148,7 @@ url_parse()
    log_entry "url_parse" "$@"
 
    local url="$1"
+   local s 
 
    case "${url}" in
       *://*|/*)

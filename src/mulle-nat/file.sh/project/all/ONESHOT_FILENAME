@@ -9,13 +9,14 @@ MULLE_EXECUTABLE_VERSION="0.0.0"
 
 print_flags()
 {
-   echo "   -f          : force operation"
+   echo "   -f    : force operation"
 
    ##
-   ## ADD YOUR FLAG DESCRIPTION HERE
+   ## ADD YOUR FLAGS DESCRIPTIONS HERE
    ##
 
-   options_technical_flags_usage "       : "
+   options_technical_flags_usage \
+           "      : "
 }
 
 
@@ -27,8 +28,6 @@ usage()
    cat <<EOF >&2
 Usage:
    <|ONESHOT_NAME|> [flags]
-
-   Does nothing at the moment.
 
    ##
    ## ADD YOUR USAGE DESCRIPTION HERE
@@ -103,11 +102,10 @@ main()
 
    options_setup_trace "${MULLE_TRACE}"
 
-   log_info "Does nothing, but will soon"
-
    ##
    ## ADD YOUR CODE HERE
    ##
+   log_info "Does nothing, but will soon"
 }
 
 

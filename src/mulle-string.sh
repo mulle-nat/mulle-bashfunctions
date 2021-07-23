@@ -599,7 +599,11 @@ r_lowercase()
 r_identifier()
 {
    # works in bash 3.2
-   RVAL="${1//[^a-zA-Z0-9]/_}"
+   # may want to disambiguate mulle-scion and MulleScion with __
+   # but it looks surprising for mulle--testallocator
+   #
+   RVAL="${1//-/_}" # __
+   RVAL="${RVAL//[^a-zA-Z0-9]/_}"
    case "${RVAL}" in
       [0-9]*)
          RVAL="_${RVAL}"
@@ -759,6 +763,7 @@ r_escaped_singlequotes()
 }
 
 
+# does not add surrounding "" 
 r_escaped_doublequotes()
 {
    RVAL="${*//\\/\\\\}"
@@ -766,6 +771,7 @@ r_escaped_doublequotes()
 }
 
 
+# does not remove surrounding "" though
 r_unescaped_doublequotes()
 {
    RVAL="${*//\\\"/\"}"

@@ -226,7 +226,7 @@ _parallel_execute()
    wait_for_available_job "${_parallel_maxjobs}"
    _parallel_jobs=$(($_parallel_jobs + 1))
 
-   log_debug "Runing job #${_parallel_jobs}: $*"
+   log_debug "Running job #${_parallel_jobs}: $*"
 
    (
       local rval
@@ -273,3 +273,4 @@ parallel_execute()
 
    _parallel_end
 }
+

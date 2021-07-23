@@ -51,15 +51,19 @@ log_printf()
 }
 
 
+MULLE_LOG_ERROR_PREFIX=" error: "
+
 log_error()
 {
-   log_printf "${C_ERROR}${MULLE_EXECUTABLE_FAIL_PREFIX} error:${C_ERROR_TEXT} %b${C_RESET}\n" "$*"
+   log_printf "${C_ERROR}${MULLE_EXECUTABLE_FAIL_PREFIX}${MULLE_LOG_ERROR_PREFIX}${C_ERROR_TEXT}%b${C_RESET}\n" "$*"
 }
 
 
+MULLE_LOG_FAIL_ERROR_PREFIX=" fatal error: "
+
 log_fail()
 {
-   log_printf "${C_ERROR}${MULLE_EXECUTABLE_FAIL_PREFIX} fatal error:${C_ERROR_TEXT} %b${C_RESET}\n" "$*"
+   log_printf "${C_ERROR}${MULLE_EXECUTABLE_FAIL_PREFIX}${MULLE_LOG_FAIL_ERROR_PREFIX}${C_ERROR_TEXT}%b${C_RESET}\n" "$*"
 }
 
 
@@ -279,9 +283,12 @@ fail()
 }
 
 
+MULLE_INTERNAL_ERROR_PREFIX=" *** internal error ***:"
+
+
 internal_fail()
 {
-   log_printf "${C_ERROR}${MULLE_EXECUTABLE_FAIL_PREFIX} *** internal error ***:${C_ERROR_TEXT} %b${C_RESET}\n" "$*"
+   log_printf "${C_ERROR}${MULLE_EXECUTABLE_FAIL_PREFIX}${MULLE_INTERNAL_ERROR_PREFIX}${C_ERROR_TEXT}%b${C_RESET}\n" "$*"
    stacktrace
    exit 1
 }
