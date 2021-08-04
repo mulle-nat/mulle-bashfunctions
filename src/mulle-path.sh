@@ -70,13 +70,6 @@ r_path_depth()
 }
 
 
-path_depth()
-{
-   r_path_depth "$@"
-   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
-}
-
-
 #
 # cuts off last extension only
 #
@@ -87,12 +80,6 @@ r_extensionless_basename()
    RVAL="${RVAL%.*}"
 }
 
-
-extensionless_basename()
-{
-   r_extensionless_basename "$@"
-   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
-}
 
 
 r_path_extension()
@@ -109,23 +96,17 @@ r_path_extension()
 }
 
 
-path_extension()
+_r_canonicalize_dir_path()
 {
-   r_path_extension "$@"
-   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
-}
-
-
-_canonicalize_dir_path()
-{
+   RVAL="`
    (
-      cd "$1" 2>/dev/null &&
-      pwd -P
-   )  || return 1
+     cd "$1" 2>/dev/null &&
+     pwd -P
+   )`"
 }
 
 
-_canonicalize_file_path()
+_r_canonicalize_file_path()
 {
    local component
    local directory
@@ -135,22 +116,25 @@ _canonicalize_file_path()
    r_dirname "$1"
    directory="${RVAL}"
 
-   (
-     cd "${directory}" 2>/dev/null &&
-     echo "`pwd -P`/${component}"
-   ) || return 1
+   if ! _r_canonicalize_dir_path "${directory}"
+   then
+      return 1
+   fi
+
+   RVAL="${RVAL}/${component}"
+   return 0
 }
 
 
-canonicalize_path()
+r_canonicalize_path()
 {
    [ -z "$1" ] && internal_fail "empty path"
 
    if [ -d "$1" ]
    then
-      _canonicalize_dir_path "$1"
+      _r_canonicalize_dir_path "$1"
    else
-      _canonicalize_file_path "$1"
+      _r_canonicalize_file_path "$1"
    fi
 }
 
@@ -224,15 +208,6 @@ _r_relative_path_between()
       set -x
    fi
 }
-
-
-_relative_path_between()
-{
-   _r_relative_path_between "$@"
-
-   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
-}
-
 
 #
 # $1 is the directory/file, that we want to access relative from root
@@ -317,14 +292,6 @@ r_relative_path_between()
 }
 
 
-relative_path_between()
-{
-   r_relative_path_between "$@"
-
-   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
-}
-
-
 #
 # compute number of .. needed to return from path
 # e.g.  cd "a/b/c" -> cd ../../..
@@ -358,32 +325,13 @@ r_compute_relative()
 }
 
 
-compute_relative()
-{
-   r_compute_relative "$@"
 
-   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
-}
-
-
-# symlink helper
-#
-# this cds into a physical directory, so that .. is relative to it
-# e.g. cd a/b/c might  end up being a/c, so .. is 'a'
-# if you just go a/b/c then .. is b
-#
-cd_physical()
-{
-   cd "$1" || fail "cd_physical: \"$1\" is not reachable from \"${PWD}\""
-   cd "`pwd -P`" # resolve symlinks and go there (changes PWD)
-}
-
-
-physicalpath()
+# TODO: zsh can do this easier
+r_physicalpath()
 {
    if [ -d "$1" ]
    then
-      ( cd "$1" && pwd -P ) 2>/dev/null
+      RVAL="`( cd "$1" && pwd -P ) 2>/dev/null `"
       return $?
    fi
 
@@ -392,10 +340,28 @@ physicalpath()
 
    r_dirname "$1"
    dir="${RVAL}"
+
    r_basename "$1"
    file="${RVAL}"
 
-   filepath_concat "`physicalpath "${dir}"`" "${file}"
+   if ! r_physicalpath "${dir}"
+   then
+      RVAL=
+      return 1
+   fi
+
+   r_filepath_concat "${RVAL}" "${file}"
+}
+
+
+# this old form function is used quite a lot still
+physicalpath()
+{
+   if ! r_physicalpath "$@"
+   then
+      return 1
+   fi
+   printf "%s\n" "${RVAL}"
 }
 
 
@@ -448,14 +414,6 @@ r_absolutepath()
 }
 
 
-absolutepath()
-{
-   r_absolutepath "$@"
-
-   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
-}
-
-
 r_simplified_absolutepath()
 {
   local directory="$1"
@@ -474,14 +432,6 @@ r_simplified_absolutepath()
         r_simplified_path "${working}/${directory}"
       ;;
    esac
-}
-
-
-simplified_absolutepath()
-{
-   r_simplified_absolutepath "$@"
-
-   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
 }
 
 
@@ -506,104 +456,13 @@ r_symlink_relpath()
 }
 
 
-symlink_relpath()
-{
-   r_symlink_relpath "$@"
-
-   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
-}
-
-
-_simplify_components()
-{
-   local i
-   local result
-
-   [ -z "${MULLE_ARRAY_SH}" ] && . mulle-array.sh
-
-   result= # voodoo linux fix ?
-   IFS=$'\n'
-   set -o noglob
-   for i in "$@"
-   do
-      IFS="${DEFAULT_IFS}"
-
-      set +o noglob
-      case "${i}" in
-         # ./foo -> foo
-         ./)
-         ;;
-
-         # bar/.. -> ""
-         ../)
-            if [ -z "${result}" ]
-            then
-               result="`array_add "${result}" "../"`"
-            else
-               if [ "${result}" != "/" ]
-               then
-                  result="`array_remove_last "${result}"`"
-               fi
-               # /.. -> /
-            fi
-         ;;
-
-
-         # foo/ -> foo
-         "/")
-            if [ -z "${result}" ]
-            then
-               result="${i}"
-            fi
-         ;;
-
-         *)
-            result="`array_add "${result}" "${i}"`"
-         ;;
-      esac
-   done
-   set +o noglob
-
-   IFS="${DEFAULT_IFS}"
-
-   printf "%s\n" "${result}"
-}
-
-
-_path_from_components()
-{
-   local components
-
-   components="$1"
-
-   local i
-   local composedpath  # renamed this from path, fixes crazy bug on linux ?
-
-   IFS=$'\n'
-   set -o noglob
-   for i in $components
-   do
-      composedpath="${composedpath}${i}"
-   done
-
-   IFS="${DEFAULT_IFS}"
-   set +o noglob
-
-   if [ -z "${composedpath}" ]
-   then
-      echo "."
-   else
-      printf "%s\n" "${composedpath}" | sed 's|^\(..*\)/$|\1|'
-   fi
-}
-
 
 #
-# _simplified_path() works on paths that may or may not exist
+# _r_simplified_path() works on paths that may or may not exist
 # it makes prettier relative or absolute paths
 # you can't have | in your path though
 #
-_simplified_path()
+_r_simplified_path()
 {
    local filepath="$1"
 
@@ -619,11 +478,11 @@ _simplified_path()
    remove_empty='NO'  # remove trailing slashes
 
    IFS="/"
-   set -o noglob
+   shell_disable_glob
    for i in ${filepath}
    do
 #      log_printf "${C_FLUFF}%b${C_RESET}\n" "$i"
-      set +o noglob
+      shell_enable_glob
       case "$i" in
          \.)
            remove_empty='YES'
@@ -674,22 +533,22 @@ ${i}"
    done
 
    IFS="${DEFAULT_IFS}"
-   set +o noglob
+   shell_enable_glob
 
    if [ -z "${result}" ]
    then
-      echo "."
+      RVAL="."
       return
    fi
 
    if [ "${result}" = '|' ]
    then
-      echo "/"
+      RVAL="/"
       return
    fi
 
-   printf "%s" "${result}" | "${TR:-tr}" -d '|' | "${TR:-tr}" '\012' '/'
-   echo
+   RVAL="`tr -d '|' <<< "${result}" | tr '\012' '/'`"
+   RVAL="${RVAL%/}"
 }
 
 
@@ -714,7 +573,7 @@ r_simplified_path()
             set +x
          fi
 
-         RVAL="`_simplified_path "$@"`"
+         _r_simplified_path "$@"
 
          if [ "${MULLE_TRACE_PATHS_FLIP_X}" = 'YES' ]
          then
@@ -724,40 +583,6 @@ r_simplified_path()
 
       *)
          RVAL="$1"
-      ;;
-   esac
-}
-
-#
-# works also on filepaths that do not exist
-#
-simplified_path()
-{
-   #
-   # quick check if there is something to simplify
-   # because this isn't fast at all
-   #
-   case "${1}" in
-      ""|".")
-         echo "."
-      ;;
-
-      */|*\.\.*|*\./*|*/\.)
-         if [ "${MULLE_TRACE_PATHS_FLIP_X}" = 'YES' ]
-         then
-            set +x
-         fi
-
-         _simplified_path "$@"
-
-         if [ "${MULLE_TRACE_PATHS_FLIP_X}" = 'YES' ]
-         then
-            set -x
-         fi
-      ;;
-
-      *)
-         printf "%s\n" "$1"
       ;;
    esac
 }

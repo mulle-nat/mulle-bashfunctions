@@ -195,17 +195,17 @@ etc_setup_from_share_if_needed()
    # use per default symlinks and change to file on edit (makes it
    # easier to upgrade unedited files
    #
-   IFS=$'\n'; set -f
+   IFS=$'\n'; shell_disable_glob
    for filename in `find "${share}" ! -type d -print`
    do
-      IFS="${DEFAULT_IFS}"; set +f
+      IFS="${DEFAULT_IFS}"; shell_enable_glob
       r_basename "${filename}"
       etc_symlink_or_copy_file "${filename}" \
                                "${etc}" \
                                "${RVAL}" \
                                "${symlink}"
    done
-   IFS="${DEFAULT_IFS}"; set +f
+   IFS="${DEFAULT_IFS}"; shell_enable_glob
 }
 
 
@@ -264,10 +264,10 @@ etc_repair_files()
    # create symlinks for files that are identical in share and throw old
    # files away
    #
-   IFS=$'\n'; set -f
+   IFS=$'\n'; shell_disable_glob
    for dstfile in `find "${dstdir}" ! -type d -print` # dstdir is etc
    do
-      IFS="${DEFAULT_IFS}"; set +f
+      IFS="${DEFAULT_IFS}"; shell_enable_glob
 
       filename="${dstfile#${dstdir}/}"
       srcfile="${srcdir}/${filename}"
@@ -320,10 +320,10 @@ etc_repair_files()
    # may make files that have been deleted reappear though. So you explicitly
    # allow this with "add"
    #
-   IFS=$'\n'; set -f
+   IFS=$'\n'; shell_disable_glob
    for srcfile in `find "${srcdir}" ! -type d -print` # dstdir is etc
    do
-      IFS="${DEFAULT_IFS}"; set +f
+      IFS="${DEFAULT_IFS}"; shell_enable_glob
 
       filename="${srcfile#${srcdir}/}"
       dstfile="${dstdir}/${filename}"
@@ -343,7 +343,7 @@ etc_repair_files()
          fi
       fi
    done
-   IFS="${DEFAULT_IFS}"; set +f
+   IFS="${DEFAULT_IFS}"; shell_enable_glob
 
    if [ "${can_remove_etc}" = 'YES' ]
    then

@@ -358,7 +358,7 @@ tags_filter()
    r_escaped_grep_pattern "${version}"
    pattern="^${RVAL}$|[a-zA-Z_-]${RVAL}\$"
 
-   egrep  "${pattern}" <<< "${tags}" | head -1
+   egrep "${pattern}" <<< "${tags}" | head -1
 }
 
 

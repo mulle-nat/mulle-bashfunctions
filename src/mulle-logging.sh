@@ -247,6 +247,28 @@ log_grep_warning_error()
 # some common fail log functions
 #
 
+if [ -z "${BASH_VERSION}" ]
+then
+   # inspired by https://unix.stackexchange.com/questions/453144/functions-calling-context-in-zsh-equivalent-of-bash-caller
+   function caller()
+   {
+      local i="${1:-1}"
+
+      i=$((i+1))
+      local file=${funcfiletrace[$((i))]%:*}
+      local line line=${funcfiletrace[$((i))]##*:}
+      local func=${funcstack[$((i + 1))]}
+      if [ -z "${func}" ]
+      then
+         return 1
+      fi
+
+      printf "%s %s %s\n" "$line" "$func" "${file##*/}"
+      return 0
+   }
+fi
+
+
 stacktrace()
 {
    local i=1
@@ -262,7 +284,7 @@ stacktrace()
    while line="`caller $i`"
    do
       log_printf "${C_CYAN}%b${C_RESET}\n" "$i: #${line}"
-      ((i++))
+      i=$((i + 1))
    done
 }
 
@@ -304,16 +326,6 @@ logging_reset()
 logging_trap_install()
 {
    trap 'logging_reset ; exit 1' TERM INT
-}
-
-
-logging_trap_remove()
-{
-   local rval
-
-   rval=$?
-   trap - TERM INT
-   return $rval
 }
 
 
@@ -369,15 +381,21 @@ logging_initialize_color()
 
 _r_lowercase()
 {
+   # ksh bails on ,, during parse
    case "${BASH_VERSION}" in
-      [0123]*)
-         RVAL="`printf "$1" | tr '[:upper:]' '[:lower:]'`"
-      ;;
-
-      *)
+      [4-9]*|[1-9][0-9]*)
          RVAL="${1,,}"
+         return
       ;;
    esac
+
+   if [ ! -z "${ZSH_VERSION}" ]
+   then
+      RVAL="${1:l}"
+      return
+   fi
+
+   RVAL="`printf "$1" | tr '[:upper:]' '[:lower:]'`"
 }
 
 
@@ -390,7 +408,8 @@ logging_initialize()
 
    logging_initialize_color
 
-   MULLE_EXECUTABLE="$0"
+   # won't work with zsh
+   MULLE_EXECUTABLE="${MULLE_EXECUTABLE:-$0}"
    # MULLE_EXECUTABLE_BIN_DIR="${MULLE_EXECUTABLE%/*}"
 
    # can be convenient to overload by caller sometimes
@@ -462,10 +481,11 @@ logging_initialize()
          ;;
       esac
 
-      if [ "${MULLE_HOSTNAME:0:1}" = '.' ]
-      then
-         MULLE_HOSTNAME="_${MULLE_HOSTNAME}"
-      fi
+      case "${MULLE_HOSTNAME}" in
+         \.*)
+            MULLE_HOSTNAME="_${MULLE_HOSTNAME}"
+         ;;
+      esac
    fi
 }
 

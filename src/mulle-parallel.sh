@@ -261,15 +261,15 @@ parallel_execute()
 
    local argument
 
-   set -o noglob;  IFS=$'\n'
+   shell_disable_glob;  IFS=$'\n'
    for argument in ${arguments}
    do
-      set +o noglob; IFS="${DEFAULT_IFS}"
+      shell_enable_glob; IFS="${DEFAULT_IFS}"
 
       _parallel_execute "$@" "${argument}"
    done
 
-   set +o noglob; IFS="${DEFAULT_IFS}"
+   shell_enable_glob; IFS="${DEFAULT_IFS}"
 
    _parallel_end
 }

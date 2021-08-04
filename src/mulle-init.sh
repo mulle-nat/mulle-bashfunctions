@@ -104,15 +104,15 @@ r_prepend_path_if_relative()
 
 r_resolve_symlinks()
 {
-   local path
+   local filepath
 
    RVAL="$1"
 
-   path="`readlink "${RVAL}"`"
+   filepath="`readlink "${RVAL}"`"
    if [ $? -eq 0 ]
    then
       r_dirname "${RVAL}"
-      r_prepend_path_if_relative "${RVAL}" "${path}"
+      r_prepend_path_if_relative "${RVAL}" "${filepath}"
       r_resolve_symlinks "${RVAL}"
    fi
 }

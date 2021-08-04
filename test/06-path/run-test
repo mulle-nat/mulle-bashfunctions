@@ -2,28 +2,53 @@
 
 [ "${TRACE}" = 'YES' ] && set -x
 
+if [ ! -z "${ZSH_VERSION}" ]
+then
+   setopt sh_word_split
+fi
 
 _test_function()
 {
    local tfunction="$1"; shift
 
-   local path="$1"
+   local filepath="$1"
    local expected="$2"
 
    local absolute
 
-   absolute="`${tfunction} "${path}"`"
+   absolute="`${tfunction} "${filepath}"`"
    if [ "${absolute}" != "${expected}" ]
    then
-      printf "%s\n" "${tfunction} \"${path}\" -> \"${absolute}\". Expected: \"${expected}\"" >&2
+      printf "%s\n" "${tfunction} \"${filepath}\" -> \"${absolute}\". Expected: \"${expected}\"" >&2
       exit 1
    fi
+}
+
+
+absolutepath()
+{
+   r_absolutepath "$@"
+
+   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
 }
 
 
 _test_absolutepath()
 {
    _test_function "absolutepath" "$@"
+}
+
+
+# symlink helper
+#
+# this cds into a physical directory, so that .. is relative to it
+# e.g. cd a/b/c might  end up being a/c, so .. is 'a'
+# if you just go a/b/c then .. is b
+#
+cd_physical()
+{
+   cd "$1" || fail "cd_physical: \"$1\" is not reachable from \"${PWD}\""
+   cd "`pwd -P`" # resolve symlinks and go there (changes PWD)
 }
 
 
@@ -40,6 +65,13 @@ test_absolutepath()
       _test_absolutepath "./x" "${PWD}/./x" &&
       _test_absolutepath "../x" "${PWD}/../x"
    )
+}
+
+simplified_absolutepath()
+{
+   r_simplified_absolutepath "$@"
+
+   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
 }
 
 _test_simplified_absolutepath()
@@ -76,6 +108,7 @@ init()
 {
    MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${MULLE_BASHFUNCTIONS_LIBEXEC_DIR:-../../src}"
 
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-compatibility.sh" || exit 1
    . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-string.sh" || exit 1
    . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-path.sh" || exit 1
 }

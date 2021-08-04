@@ -1,0 +1,122 @@
+#! /usr/bin/env zsh
+
+[ "${TRACE}" = 'YES' ] && set -x
+
+if [ ! -z "${ZSH_VERSION}" ]
+then
+   setopt sh_word_split 
+fi
+   
+
+expect_rval()
+{
+   local rval="$1"
+   local expected="$2"
+
+   if [ "${rval}" != "${expected}" ]
+   then
+      echo "Got \"${rval}\". Expected: \"${expected}\"" >&2
+      stacktrace >&2
+      exit 1
+   fi
+}
+
+
+fail()
+{
+   echo "Unexpected failure" >&2
+   stacktrace >&2
+   exit 1
+}
+
+
+test_find_item()
+{
+   find_item "a,b,c" a
+   expect_rval "$?" "0"
+
+   find_item "a,b,c" b
+   expect_rval "$?" "0"
+
+   find_item "a,b,c" c
+   expect_rval "$?" "0"
+
+   find_item "a,b,c" d
+   expect_rval "$?" "1"
+
+   find_item "a,b,c" ""
+   expect_rval "$?" "1"
+
+   find_item "a,b,c" ","
+   expect_rval "$?" "1"
+}
+
+
+
+test_find_line()
+{
+   find_line "" ""
+   expect_rval "$?" "0"
+
+   find_line "a" "a"
+   expect_rval "$?" "0"
+
+   find_line "a" "b"
+   expect_rval "$?" "1"
+
+   find_line "a
+b
+c" "a"
+   expect_rval "$?" "0"
+
+   find_line "a
+b
+c" "a"
+   expect_rval "$?" "0"
+
+   find_line "a
+b
+c" "c"
+   expect_rval "$?" "0"
+
+   find_line "a
+b
+c" "d"
+   expect_rval "$?" "1"
+
+   find_line "a
+b
+c" ""
+   expect_rval "$?" "1"
+
+   find_line "a
+
+b
+c" ""
+   expect_rval "$?" "0"
+}
+
+
+
+main()
+{
+   test_find_item
+   test_find_line
+
+   echo "All tests passed" >&2
+}
+
+
+init()
+{
+   MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${MULLE_BASHFUNCTIONS_LIBEXEC_DIR:-../../src}"
+
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-compatibility.sh" || exit 1
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-string.sh" || exit 1
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-logging.sh" || exit 1
+}
+
+
+init "$@"
+main "$@"
+

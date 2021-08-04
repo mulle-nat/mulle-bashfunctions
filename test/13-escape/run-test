@@ -2,18 +2,10 @@
 
 [ "${TRACE}" = 'YES' ] && set -x
 
-
-stacktrace()
-{
-   local i=1
-   local line
-
-   while line="`caller $i`"
-   do
-      printf "${C_CYAN}%b${C_RESET}\n" "$i: #${line}"
-      ((i++))
-   done
-}
+if [ ! -z "${ZSH_VERSION}" ]
+then
+   setopt sh_word_split
+fi
 
 
 expect_output()
@@ -30,12 +22,14 @@ expect_output()
 }
 
 
-fail()
+# use for lists w/o empty elements
+comma_concat()
 {
-   echo "Unexpected failure" >&2
-   stacktrace >&2
-   exit 1
+   r_comma_concat "$@"
+
+   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
 }
+
 
 
 test_backslash()
@@ -158,7 +152,9 @@ init()
 {
    MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${MULLE_BASHFUNCTIONS_LIBEXEC_DIR:-../../src}"
 
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-compatibility.sh" || exit 1
    . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-string.sh" || exit 1
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-logging.sh" || exit 1
 }
 
 

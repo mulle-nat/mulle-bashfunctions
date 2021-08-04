@@ -60,12 +60,12 @@ r_count_lines()
 
    local line
 
-   set -o noglob; IFS=$'\n'
+   shell_disable_glob; IFS=$'\n'
    for line in ${array}
    do
       RVAL=$((RVAL + 1))
    done
-   IFS="${DEFAULT_IFS}" ; set +o noglob
+   IFS="${DEFAULT_IFS}" ; shell_enable_glob
 }
 
 
@@ -76,17 +76,17 @@ r_get_line_at_index()
 
    # for larger arrays:    sed -n "${i}pq" <<< "${array}"
 
-   set -o noglob; IFS=$'\n'
+   shell_disable_glob; IFS=$'\n'
    for RVAL in ${array}
    do
       if [ $i -eq 0 ]
       then
-         IFS="${DEFAULT_IFS}" ; set +o noglob
+         IFS="${DEFAULT_IFS}" ; shell_enable_glob
          return 0
       fi
       i=$((i - 1))
    done
-   IFS="${DEFAULT_IFS}" ; set +o noglob
+   IFS="${DEFAULT_IFS}" ; shell_enable_glob
    return 1
 }
 
@@ -106,7 +106,7 @@ r_insert_line_at_index()
    RVAL=
    rval=1
 
-   set -o noglob; IFS=$'\n'
+   shell_disable_glob; IFS=$'\n'
    for line in ${array}
    do
       if [ $i -eq 0 ]
@@ -117,7 +117,7 @@ r_insert_line_at_index()
       r_add_line "${RVAL}" "${line}"
       i=$((i - 1))
    done
-   IFS="${DEFAULT_IFS}" ; set +o noglob
+   IFS="${DEFAULT_IFS}" ; shell_enable_glob
 
    if [ $i -eq 0 ]
    then
@@ -172,7 +172,7 @@ r_lines_in_range()
 #   local index
 #   local result
 #
-#   set -o noglob; IFS=$'\n'
+#   shell_disable_glob; IFS=$'\n'
 #   index=0
 #   for line in ${array}
 #   do
@@ -192,7 +192,7 @@ r_lines_in_range()
 #      result="${RVAL}"
 #   done
 #
-#   IFS="${DEFAULT_IFS}" ; set +o noglob
+#   IFS="${DEFAULT_IFS}" ; shell_enable_glob
 #
 #   [ ${i} -ge ${index} ] && internal_fail "i $i invalid"
 #   [ ${j} -ge ${index} ] && internal_fail "j $j invalid"
@@ -252,7 +252,7 @@ _r_assoc_array_remove()
    local delim
 
    RVAL=
-   set -o noglob; IFS=$'\n'
+   shell_disable_glob; IFS=$'\n'
    for line in ${array}
    do
       case "${line}" in
@@ -265,7 +265,7 @@ _r_assoc_array_remove()
          ;;
       esac
    done
-   IFS="${DEFAULT_IFS}" ; set +o noglob
+   IFS="${DEFAULT_IFS}" ; shell_enable_glob
 }
 
 
@@ -283,7 +283,7 @@ r_assoc_array_get()
    RVAL=
    rval=1
 
-   set -o noglob; IFS=$'\n'
+   shell_disable_glob; IFS=$'\n'
    for line in ${array}
    do
       case "${line}" in
@@ -294,7 +294,7 @@ r_assoc_array_get()
          ;;
       esac
    done
-   IFS="${DEFAULT_IFS}" ; set +o noglob
+   IFS="${DEFAULT_IFS}" ; shell_enable_glob
 
    return $rval
 }
@@ -353,7 +353,7 @@ assoc_array_merge_with_array()
    local array1="$1"
    local array2="$2"
 
-   printf "%s\n" "${array2}" "${array1}" | sort -u -t'=' -k1,1
+   printf "%s%s\n" "${array2}" "${array1}" | sort -u -t'=' -k1,1
 }
 
 
@@ -367,7 +367,7 @@ assoc_array_augment_with_array()
    local array1="$1"
    local array2="$2"
 
-   printf "%s\n" "${array1}" "${array2}" | sort -u -t'=' -k1,1
+   printf "%s%s\n" "${array1}" "${array2}" | sort -u -t'=' -k1,1
 }
 
 :

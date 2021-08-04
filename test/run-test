@@ -8,18 +8,83 @@ PROJECT_DIR="$( cd "${TEST_DIR}/.." ; pwd -P)"
 MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${MULLE_BASHFUNCTIONS_LIBEXEC_DIR:-../../src}"
 export MULLE_BASHFUNCTIONS_LIBEXEC_DIR
 
+
+
+run_shell()
+{
+   local shell="$1"; shift
+   local script="$1" ; shift
+
+   local quote
+   local args
+
+   quote="'"
+   args=""
+   for arg in "$@"
+   do
+      arg="${arg//${quote}/${quote}\"${quote}\"${quote}}"
+      args="${args} '${arg}'"
+   done
+
+   local exe
+
+   if exe="`command -v "${shell}"`"
+   then
+      printf "%s\n" "------------------------------------------" >&2
+      printf "%s\n" "$i: ${shell}" >&2
+      printf "%s\n" "------------------------------------------" >&2
+
+      "${exe}" -c ". \"${script}\" ${args}" "${script}"
+   else
+      return 0  # not installed ok
+   fi
+}
+
+
 main()
 {
    local i
+
+   local OPTION_LENIENT
+
+   case "$1" in
+      -l|--lenient)
+         OPTION_LENIENT=YES
+         shift
+      ;;
+   esac
 
    for i in "${TEST_DIR}"/*
    do
       if [ -x "$i/run-test" ]
       then
-         printf "%s\n" "------------------------------------------" >&2
-         printf "%s\n" "$i:" >&2
-         printf "%s\n" "------------------------------------------" >&2
-         ( cd "$i" && ./run-test "$@" ) || exit 1
+         (
+            cd "$i"
+            if ! run_shell bash ./run-test "$@"
+            then
+               [ "${OPTION_LENIENT}" != 'YES' ] && exit 1
+            fi
+            if ! run_shell zsh ./run-test "$@"
+            then
+               [ "${OPTION_LENIENT}" != 'YES' ] && exit 1
+            fi
+#
+# Dash chokes on <<< as redirection. But I don't want to live without it
+# especialy for while read loop parsing
+#
+#            if ! run_shell dash ./run-test "$@"
+#            then
+#               [ "${OPTION_LENIENT}" != 'YES' ] && exit 1
+#            fi
+#
+# We can never do ksh because it chokes up on bashisms even if they are
+# 'if'ed away
+#
+#            if ! run_shell ksh ./run-test "$@"
+#            then
+#               [ "${OPTION_LENIENT}" != 'YES' ] && exit 1
+#            fi
+         ) || exit 1
       fi
    done
 }

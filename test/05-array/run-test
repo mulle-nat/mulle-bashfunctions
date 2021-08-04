@@ -1,7 +1,10 @@
 #! /usr/bin/env bash
 
-set -e
-
+if [ ! -z "${ZSH_VERSION}" ]
+then
+   setopt sh_word_split 
+fi
+      
 
 fail()
 {

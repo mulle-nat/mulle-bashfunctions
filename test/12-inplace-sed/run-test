@@ -1,5 +1,9 @@
 #! /usr/bin/env bash
 
+if [ ! -z "${ZSH_VERSION}" ]
+then
+   setopt sh_word_split
+fi
 
 run_test()
 {
@@ -76,7 +80,8 @@ test_inplace_sed()
 
    local tmpfile
 
-   tmpfile="`make_tmp_file`" || exit 1
+   r_make_tmp_file || exit 1
+   tmpfile="${RVAL}"
 
    cat <<EOF > "${tmpfile}"
 1
@@ -115,6 +120,7 @@ init()
 {
    MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${MULLE_BASHFUNCTIONS_LIBEXEC_DIR:-../../src}"
 
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-compatibility.sh" || exit 1
    . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions.sh" || exit 1
 }
 

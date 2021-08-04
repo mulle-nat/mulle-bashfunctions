@@ -1,5 +1,9 @@
 #! /usr/bin/env bash
 
+if [ ! -z "${ZSH_VERSION}" ]
+then
+   setopt sh_word_split
+fi
 
 run_test()
 {
@@ -14,6 +18,43 @@ run_test()
 
   :
 }
+
+
+#
+# works also on filepaths that do not exist
+#
+simplified_path()
+{
+   #
+   # quick check if there is something to simplify
+   # because this isn't fast at all
+   #
+   case "${1}" in
+      ""|".")
+         echo "."
+      ;;
+
+      */|*\.\.*|*\./*|*/\.)
+         if [ "${MULLE_TRACE_PATHS_FLIP_X}" = 'YES' ]
+         then
+            set +x
+         fi
+
+         r_simplified_path "$@"
+         printf "%s\n" "${RVAL}"
+
+         if [ "${MULLE_TRACE_PATHS_FLIP_X}" = 'YES' ]
+         then
+            set -x
+         fi
+      ;;
+
+      *)
+         printf "%s\n" "$1"
+      ;;
+   esac
+}
+
 
 
 test_simplified_path()

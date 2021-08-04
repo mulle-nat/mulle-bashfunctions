@@ -75,7 +75,6 @@ options_setup_trace()
          MULLE_FLAG_LOG_FLUFF='YES'
          MULLE_FLAG_LOG_VERBOSE='YES'
 
-
          if [ "${MULLE_TRACE_POSTPONE}" != 'YES' ]
          then
             log_trace "1848 trace (set -x) started"
@@ -238,19 +237,27 @@ options_technical_flags()
       ;;
 
       -tp|--trace-profile)
-         before_trace_fail "${flag}"
-
-         case "${MULLE_UNAME}" in
-            '')
-               internal_fail 'MULLE_UNAME must be set by now'
-            ;;
-            linux)
-               ps4string='$(date "+%s.%N (${BASH_SOURCE[0]##*/}:${LINENO})")'
-            ;;
-            *)
-               ps4string='$(date "+%s (${BASH_SOURCE[0]##*/}:${LINENO})")'
-            ;;
-         esac
+#         if [ ! -z "${ZSH_VERSION}" ]
+#         then
+#            zmodload "zsh/zprof"
+#            # can't trap global exit from within function :(
+#            MULLE_RUN_ZPROF_ON_EXIT="YES"
+#         else
+            before_trace_fail "${flag}"
+   
+            case "${MULLE_UNAME}" in
+               '')
+                  internal_fail 'MULLE_UNAME must be set by now'
+               ;;
+               linux)
+                  ps4string='$(date "+%s.%N (${BASH_SOURCE[0]##*/}:${LINENO})")'
+               ;;
+               *)
+                  ps4string='$(date "+%s (${BASH_SOURCE[0]##*/}:${LINENO})")'
+               ;;
+            esac
+#         fi
+         return # don't propagate
       ;;
 
       -tpo|--trace-postpone)
@@ -309,6 +316,27 @@ options_technical_flags()
          after_trace_warning "${flag}"
 
          MULLE_TRACE='TRACE'
+      ;;
+
+      -V)
+         after_trace_warning "${flag}"
+
+         MULLE_TRACE='VERBOSE'
+         return # don't propagate
+      ;;
+
+      -VV|--very-verbose)
+         after_trace_warning "${flag}"
+
+         MULLE_TRACE='FLUFF'
+         return # don't propagate
+      ;;
+
+      -VVV)
+         after_trace_warning "${flag}"
+
+         MULLE_TRACE='TRACE'
+         return # don't propagate
       ;;
 
       --clear-flags)

@@ -352,7 +352,6 @@ _append_tee_eval_exekutor()
 }
 
 
-
 logging_tee_exekutor()
 {
    local output="$1"; shift
@@ -371,7 +370,6 @@ logging_tee_eval_exekutor()
    eval_exekutor_print "$@" | tee -a "${teeoutput}" "${output}"
    _append_tee_eval_exekutor "${output}" "${teeoutput}" "$@"
 }
-
 
 
 #

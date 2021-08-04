@@ -202,15 +202,3 @@ r_url_get_path()
 }
 
 
-url_get_path()
-{
-   log_entry "r_url_get_path" "$@"
-
-   if r_url_get_path "$@"
-   then
-      printf "%s\n" "${RVAL}"
-   fi
-}
-
-
-

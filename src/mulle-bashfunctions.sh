@@ -35,9 +35,14 @@ if [ -z "${MULLE_BASHFUNCTIONS_SH}" ]
 then
    MULLE_BASHFUNCTIONS_SH="included"
 
+   if [ ! -z "${ZSH_VERSION}" ]
+   then
+     setopt sh_word_split
+     setopt POSIX_ARGZERO
+   fi
+
    __bashfunctions_loader()
    {
-
       if [ -z "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}" -a ! -z "$0" ]
       then
          local tmp
@@ -51,6 +56,11 @@ then
 
       [ -z "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}" ] && echo "MULLE_BASHFUNCTIONS_LIBEXEC_DIR not set" && exit 1
 
+      if [ -z "${MULLE_COMPATIBILITY_SH}" ]
+      then
+         # shellcheck source=mulle-compatibility.sh
+         . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-compatibility.sh" || return 1
+      fi
       if [ -z "${MULLE_LOGGING_SH}" ]
       then
          # shellcheck source=mulle-logging.sh

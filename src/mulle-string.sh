@@ -34,6 +34,7 @@
 
 MULLE_STRING_SH="included"
 
+[ -z "${MULLE_COMPATIBILITY_SH}" ] && echo "mulle-compatibility.sh must be included before mulle-string.sh" 2>&1 && exit 1
 
 # ####################################################################
 #                            Concatenation
@@ -180,65 +181,22 @@ r_space_concat()
 }
 
 
-colon_concat()
-{
-   r_colon_concat "$@"
-
-   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
-}
-
-
-# use for lists w/o empty elements
-comma_concat()
-{
-   r_comma_concat "$@"
-
-   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
-}
-
-
-# use for CSV
-semicolon_concat()
-{
-   r_semicolon_concat "$@"
-
-   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
-}
-
-
-# use for filepaths
-slash_concat()
-{
-   r_slash_concat "$@"
-
-   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
-}
-
-
 r_add_line()
 {
    local lines="$1"
    local line="$2"
 
-   if [ -z "${lines}" ]
+   if [ ! -z "${lines:0:1}" ]
    then
-      RVAL="${line}"
-   else
-      if [ -z "${line}" ]
+      if [ ! -z "${line:0:1}" ]
       then
-         RVAL="${lines}"
-      else
          RVAL="${lines}"$'\n'"${line}"
+      else
+         RVAL="${lines}"
       fi
+   else
+      RVAL="${line}"
    fi
-}
-
-
-add_line()
-{
-   r_add_line "$@"
-
-   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
 }
 
 
@@ -252,7 +210,7 @@ r_remove_line()
    local delim
 
    RVAL=
-   set -o noglob; IFS=$'\n'
+   shell_disable_glob; IFS=$'\n'
    for line in ${lines}
    do
       if [ "${line}" != "${search}" ]
@@ -261,7 +219,7 @@ r_remove_line()
          delim=$'\n'
       fi
    done
-   IFS="${DEFAULT_IFS}" ; set +o noglob
+   IFS="${DEFAULT_IFS}" ; shell_enable_glob
 }
 
 
@@ -275,7 +233,7 @@ r_remove_line_once()
    local delim
 
    RVAL=
-   set -o noglob; IFS=$'\n'
+   shell_disable_glob; IFS=$'\n'
    for line in ${lines}
    do
       if [ -z "${search}" -o "${line}" != "${search}" ]
@@ -286,7 +244,7 @@ r_remove_line_once()
          search="" 
       fi
    done
-   IFS="${DEFAULT_IFS}" ; set +o noglob
+   IFS="${DEFAULT_IFS}" ; shell_enable_glob
 }
 
 
@@ -303,37 +261,102 @@ find_item()
    local search="$2"
    local delim="${3:-,}"
 
-   local clear
+   shell_is_extglob_enabled || internal_fail "need extglob enabled"
 
-   shopt -q extglob
-   clear=$?
+   if [ ! -z "${ZSH_VERSION}" ]
+   then
+      case "${delim}${line}${delim}" in
+         *"${delim}${~search}${delim}"*)
+            return 0
+         ;;
+      esac
+   else
+      case "${delim}${line}${delim}" in
+         *"${delim}${search}${delim}"*)
+            return 0
+         ;;
+      esac
+   fi      
+   return 1
+}
 
-   rval=1
-   shopt -s extglob
-   case "${delim}${line}${delim}" in
-      *"${delim}${search}${delim}"*)
-         rval=0
+#
+# find_line is fairly critical for mulle-sourcetree walk, which
+# is the slowest operation and most used operation. Don't dick
+# around with this without profiling!
+#
+find_empty_line_zsh()
+{
+   local lines="$1"
+
+   case "${lines}" in 
+      *$'\n'$'\n'*)
+         return 0
       ;;
    esac
-   [ $clear -ne 0 ] && shopt -u extglob
+
+   return 1
+}
+
+# zsh:
+# this is faster than calling fgrep externally
+# this is faster than while read line <<< lines
+# this is faster than case ${lines} in 
+#f
+find_line_zsh()
+{
+   local lines="$1"
+   local search="$2"
+
+   if [ -z "${search:0:1}" ]
+   then
+      if [ -z "${lines:0:1}" ]
+      then
+         return 0
+      fi
+      find_empty_line_zsh "${lines}"
+      return $?
+   fi
+
+   local rval
+   local line
+
+   rval=1
+
+   IFS=$'\n'
+   for line in ${lines}
+   do
+      if [ "${line}" = "${search}" ]
+      then
+         rval=0
+         break
+      fi
+   done
+   IFS="${DEFAULT_IFS}"
 
    return $rval
 }
 
 
-#
+# bash:
 # this is faster than calling fgrep externally
 # this is faster than while read line <<< lines
 # this is faster than for line in lines
 #
 find_line()
 {
+   # ZSH is apparently super slow in pattern matching
+   if [ ! -z "${ZSH_VERSION}" ]
+   then
+      find_line_zsh "$@"
+      return $?
+   fi
+
    local lines="$1"
    local search="$2"
 
    local escaped_lines
    local pattern
-   local rval
 
 # ensure leading and trailing linefeed for matching and $'' escaping
    printf -v escaped_lines "%q" "
@@ -348,20 +371,26 @@ ${lines}
    # remove \n'
    pattern="${pattern%???}"
 
-   local clear
-
-   # keep extglob state
-   shopt -q extglob
-   clear=$?
+   local rval
 
    rval=1
-   shopt -s extglob
-   case "${escaped_lines}" in
-      *"\\n${pattern}\\n"*)
-         rval=0
-      ;;
-   esac
-   [ $clear -ne 0 ] && shopt -u extglob
+
+   shell_is_extglob_enabled || internal_fail "extglob must be enabled"
+
+   if [ ! -z "${ZSH_VERSION}" ]
+   then
+      case "${escaped_lines}" in
+         *"\\n${~pattern}\\n"*)
+            rval=0
+         ;;
+      esac
+   else
+      case "${escaped_lines}" in
+         *"\\n${pattern}\\n"*)
+            rval=0
+         ;;
+      esac
+   fi
 
    return $rval
 }
@@ -375,7 +404,7 @@ r_add_unique_line()
    local lines="$1"
    local line="$2"
 
-   if [ -z "${line}" -o -z "${lines}" ]
+   if [ -z "${line:0:1}" -o -z "${lines:0:1}" ]
    then
       RVAL="${lines}${line}"
       return
@@ -423,13 +452,14 @@ r_reverse_lines()
    local delim
 
    RVAL=
-   set -o noglob; IFS=$'\n'
-   for line in ${lines}
+
+   IFS=$'\n'
+   while read -r line
    do
       RVAL="${line}${delim}${RVAL}"
       delim=$'\n'
-   done
-   IFS="${DEFAULT_IFS}" ; set +o noglob
+   done <<< "${lines}"
+   IFS="${DEFAULT_IFS}"
 }
 
 
@@ -461,14 +491,6 @@ r_filepath_cleaned()
 }
 
 
-filepath_cleaned()
-{
-   r_filepath_cleaned "$@"
-
-   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
-}
-
-
 r_filepath_concat()
 {
    local i
@@ -478,10 +500,9 @@ r_filepath_concat()
 
    fallback=
 
-   set -o noglob
+   shell_disable_glob
    for i in "$@"
    do
-      set +o noglob
       sep="/"
 
       r_filepath_cleaned "${i}"
@@ -526,7 +547,7 @@ r_filepath_concat()
          esac
       fi
    done
-   set +o noglob
+   shell_enable_glob
 
    if [ ! -z "${s}" ]
    then
@@ -554,7 +575,13 @@ r_upper_firstchar()
       ;;
 
       *)
-         RVAL="${1^}"
+         if [ ! -z "${ZSH_VERSION}" ]
+         then
+            RVAL="${1:0:1}"
+            RVAL="${RVAL:u}${1:1}"
+         else
+            RVAL="${1^}"
+         fi
       ;;
    esac
 }
@@ -576,7 +603,12 @@ r_uppercase()
       ;;
 
       *)
-        RVAL="${1^^}"
+         if [ ! -z "${ZSH_VERSION}" ]
+         then
+            RVAL="${1:u}"
+         else
+            RVAL="${1^^}"
+         fi
       ;;
    esac
 }
@@ -590,7 +622,12 @@ r_lowercase()
       ;;
 
       *)
-         RVAL="${1,,}"
+         if [ ! -z "${ZSH_VERSION}" ]
+         then
+            RVAL="${1:l}"
+         else
+            RVAL="${1,,}"
+         fi
       ;;
    esac
 }
@@ -640,25 +677,29 @@ is_yes()
 # ####################################################################
 #
 
-escape_linefeeds()
-{
-   local text
+#
+# unused code
+#
 
-   text="${text//\|/\\\|}"
-   /bin/echo -n "${text}" | tr '\012' '|'
-}
-
-
-_unescape_linefeeds()
-{
-   tr '|' '\012' | sed -e 's/\\$/|/g' -e '/^$/d'
-}
-
-
-unescape_linefeeds()
-{
-   printf "%s\n" "$@" | tr '|' '\012' | sed -e 's/\\$/|/g' -e '/^$/d'
-}
+# escape_linefeeds()
+# {
+#    local text
+#
+#    text="${text//\|/\\\|}"
+#    printf "%s" "${text}" | tr '\012' '|'
+# }
+#
+#
+# _unescape_linefeeds()
+# {
+#    tr '|' '\012' | sed -e 's/\\$/|/g' -e '/^$/d'
+# }
+#
+#
+# unescape_linefeeds()
+# {
+#    printf "%s\n" "$@" | tr '|' '\012' | sed -e 's/\\$/|/g' -e '/^$/d'
+# }
 
 
 # this is heaps faster than the sed code
@@ -677,14 +718,6 @@ r_escaped_grep_pattern()
    s="${s//\|/\\|}"
 
    RVAL="$s"
-}
-
-
-escaped_grep_pattern()
-{
-   r_escaped_grep_pattern "$@"
-
-   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
 }
 
 
@@ -719,39 +752,15 @@ r_escaped_sed_replacement()
 }
 
 
-escaped_sed_pattern()
-{
-   r_escaped_sed_pattern "$@"
-
-   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
-}
-
-
 r_escaped_spaces()
 {
    RVAL="${1// /\\ }"
 }
 
 
-escaped_spaces()
-{
-   r_escaped_spaces "$@"
-
-   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
-}
-
-
 r_escaped_backslashes()
 {
    RVAL="${1//\\/\\\\}"
-}
-
-
-escaped_backslashes()
-{
-   r_escaped_backslashes "$@"
-
-   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
 }
 
 
@@ -795,23 +804,10 @@ string_has_prefix()
 }
 
 
-string_remove_prefix()
-{
-   printf "%s\n" "${1#$2}"
-}
-
-
 string_has_suffix()
 {
   [ "${1%$2}" != "$1" ]
 }
-
-
-string_remove_suffix()
-{
-   printf "%s\n" "${1%$2}"
-}
-
 
 
 # much faster than calling "basename"
@@ -1039,7 +1035,12 @@ _r_expand_string()
 
       if [ "${_expand}" = 'YES' ]
       then
-         value="${!identifier:-${default_value}}"
+         if [ ! -z "${ZSH_VERSION}" ]
+         then
+            value="${(P)identifier:-${default_value}}"
+         else
+            value="${!identifier:-${default_value}}"
+         fi
       else
          value="${default_value}"
       fi

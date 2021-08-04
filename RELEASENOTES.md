@@ -1,3 +1,11 @@
+# 4.0.0
+
+* mulle-bashfunctions is now **compatible with zsh**
+* **BREAKING** removed a lot of unused functions, specifically those with a `r_` counterpart. maybe the only ones left are ``r_physicalpath/physicalpath`.`
+* added `mulle-compatiblity.sh` as bash/zsh glue for shell differences
+* **BREAKING** extglob is not set/unset on demand anymore. All shell scripts are expected to run with **extglob enabled**
+
+
 ## 3.4.0
 
 * make remaining static log strings configurable

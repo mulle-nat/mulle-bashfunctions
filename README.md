@@ -1,10 +1,9 @@
-# 🥊 mulle-bashfunctions, a collection of bash functions
+# 🥊 mulle-bashfunctions, a collection of shell functions
 
 ![Last version](https://img.shields.io/github/tag/mulle-nat/mulle-bashfunctions.svg)
 
-
-This is a bash function library used by a lot of mulle tools. It is
-compatible with bash v3.2, because that is the baseline available on macos.
+This is a shell function library used by a lot of mulle tools. It is
+compatible with bash v3.2+ and zsh 5+. 
 
 ### Features
 
@@ -17,6 +16,7 @@ compatible with bash v3.2, because that is the baseline available on macos.
 * Support for parallel execution of multiple tasks
 * Various file functions with an emphasis on safety
 * Various string functions, like escaping, case conversion, searching
+* Has lots of tests
 
 It's not well documented, so you probably are just here, because it's a
 prerequisite for another mulle tool.
@@ -26,8 +26,8 @@ Executable                | Description
 `mulle-bashfunctions-env` | Find the location of the mulle-bashfunctions library
 
 
-Use `mulle-bashfunctions-env --version 3` to find the place of the scripts that
-provide version 3 compatibility.
+Use `mulle-bashfunctions-env --version 4` to find the place of the scripts that
+provide version 4 compatibility.
 
 
 ## Install
@@ -63,6 +63,9 @@ MULLE_BASHFUNCTIONS_LIBEXEC_DIR="`mulle-bashfunctions-env libexec-dir`"
 . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions.sh" || exit 1
 ```
 Now you can call the functions provided by the library.
+
+If you run it with zsh, you must use `setopt sh_word_split`
+then.
 
 
 #### Quick start with mulle-sde

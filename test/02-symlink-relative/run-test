@@ -1,9 +1,15 @@
 #! /usr/bin/env bash
 
+if [ ! -z "${ZSH_VERSION}" ]
+then
+   setopt sh_word_split
+fi
 
 test_symlink_relpath()
 {
-   result="`symlink_relpath "$1"  "$2"`"
+   r_symlink_relpath "$1"  "$2"
+   result="${RVAL}"
+
    if [ "${result}" != "$3" ]
    then
       fail "failed: $1 $2: \"${result}\" != \"$3\""

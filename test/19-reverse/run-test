@@ -1,12 +1,12 @@
-#! /usr/bin/env zsh
+#! /usr/bin/env bash
 
 [ "${TRACE}" = 'YES' ] && set -x
 
 if [ ! -z "${ZSH_VERSION}" ]
 then
-   setopt sh_word_split
+   setopt sh_word_split 
 fi
-
+   
 
 expect_output()
 {
@@ -30,27 +30,43 @@ fail()
 }
 
 
-
-expanded_string()
+test_reverse()
 {
-   r_expanded_string "$*"
-   echo "${RVAL}"
+   r_reverse_lines ""
+   expect_output "${RVAL}" ""
+
+   r_reverse_lines "a"
+   expect_output "${RVAL}" "a"
+
+   r_reverse_lines "a
+b"
+   expect_output "${RVAL}" "b
+a"
+
+   r_reverse_lines "a
+
+b"
+   expect_output "${RVAL}" "b
+
+a"
+
+   r_reverse_lines "
+a
+
+b
+"
+   expect_output "${RVAL}" "
+b
+
+a
+"
 }
+
 
 
 main()
 {
-   local a
-
-   a="abc";
-
-   expect_output  "$(expanded_string '')"                   ''
-   expect_output  "$(expanded_string 'a')"                  'a'
-   expect_output  "$(expanded_string '${a}')"               'abc'
-   expect_output  "$(expanded_string '${b}')"               ''
-   expect_output  "$(expanded_string '${b:-abc}')"          'abc'
-   expect_output  "$(expanded_string '`danger`${a}')"       '`danger`abc'
-   expect_output  "$(expanded_string 'x$(danger)${a}y')"    'x$(danger)abcy'
+   test_reverse
 
    echo "All tests passed" >&2
 }

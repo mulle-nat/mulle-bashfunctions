@@ -1,5 +1,11 @@
-#! /usr/bin/env bash
+#! /bin/dash
 
+[ "${TRACE}" = 'YES' ] && set -x && : "$0" "$@"
+
+if [ ! -z "${ZSH_VERSION}" ]
+then
+   setopt sh_word_split
+fi
 
 run_test()
 {
@@ -11,6 +17,15 @@ run_test()
   [ "${result}" != "${expect}" ] && fail "test:" "$@" "failed with \"${result}\", expected \"${expect}\""
   :
 }
+
+
+compute_relative()
+{
+   r_compute_relative "$@"
+
+   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
+}
+
 
 
 test_compute_relative()
@@ -29,6 +44,14 @@ test_compute_relative()
 
   run_test ".."          compute_relative "foo"
   run_test "../.."       compute_relative "foo/bar"
+}
+
+
+relative_path_between()
+{
+   r_relative_path_between "$@"
+
+   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
 }
 
 

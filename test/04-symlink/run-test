@@ -1,5 +1,9 @@
-#! /usr/bin/env bash
+#! /usr/bin/env zsh
 
+if [ ! -z "${ZSH_VERSION}" ]
+then
+   setopt sh_word_split
+fi
 
 run_test_1()
 {
@@ -21,7 +25,8 @@ run_test_1()
    result="`echo "x" | ./deep/bin/sed2 's/x/y/g'`" || exit 1
    [ "${result}" = "y" ] || exit 1
 
-   linkpath="`symlink_relpath "${SED}" "$PWD"`"
+   r_symlink_relpath "${SED}" "$PWD"
+   linkpath="${RVAL}"
 
    log_fluff "${linkpath} absolute"
    create_symlink "${linkpath}" "deep/bin/sed3" 'NO'

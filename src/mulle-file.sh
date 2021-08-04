@@ -101,15 +101,6 @@ r_mkdir_parent_if_missing()
 }
 
 
-mkdir_parent_if_missing()
-{
-   if r_mkdir_parent_if_missing "$@"
-   then
-      printf "%s\n" "${RVAL}"
-   fi
-}
-
-
 dir_is_empty()
 {
    [ -z "$1" ] && internal_fail "empty path"
@@ -152,30 +143,30 @@ rmdir_if_empty()
 
 _create_file_if_missing()
 {
-   local path="$1" ; shift
+   local filepath="$1" ; shift
 
-   [ -z "${path}" ] && internal_fail "empty path"
+   [ -z "${filepath}" ] && internal_fail "empty path"
 
-   if [ -f "${path}" ]
+   if [ -f "${filepath}" ]
    then
       return
    fi
 
    local directory
 
-   r_dirname "${path}"
+   r_dirname "${filepath}"
    directory="${RVAL}"
    if [ ! -z "${directory}" ]
    then
       mkdir_if_missing "${directory}"
    fi
 
-   log_fluff "Creating \"${path}\""
+   log_fluff "Creating \"${filepath}\""
    if [ ! -z "$*" ]
    then
-      redirect_exekutor "${path}" printf "%s\n" "$*" || fail "failed to create \"{path}\""
+      redirect_exekutor "${filepath}" printf "%s\n" "$*" || fail "failed to create \"{filepath}\""
    else
-      exekutor touch "${path}"  || fail "failed to create \"${path}\""
+      exekutor touch "${filepath}"  || fail "failed to create \"${filepath}\""
    fi
 }
 
@@ -183,13 +174,13 @@ _create_file_if_missing()
 merge_line_into_file()
 {
   local line="$1"
-  local path="$2"
+  local filepath="$2"
 
-  if fgrep -s -q -x "${line}" "${path}" 2> /dev/null
+  if fgrep -s -q -x "${line}" "${filepath}" 2> /dev/null
   then
      return
   fi
-  redirect_append_exekutor "${path}" printf "%s\n" "${line}"
+  redirect_append_exekutor "${filepath}" printf "%s\n" "${line}"
 }
 
 
@@ -354,19 +345,14 @@ r_make_tmp()
 }
 
 
-make_tmp_file()
+r_make_tmp_file()
 {
-   r_make_tmp "$1"
-
-   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
+   r_make_tmp "$1" "f"
 }
 
-
-make_tmp_directory()
+r_make_tmp_directory()
 {
-   r_make_tmp "$1" "-d"
-
-   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
+   r_make_tmp "$1" "d"
 }
 
 
@@ -375,21 +361,13 @@ make_tmp_directory()
 # ####################################################################
 #
 
-# resolve actual file pointed to by multiple symlinks
-resolve_symlinks()
-{
-   r_resolve_symlinks "$@"
-   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
-}
-
-
 r_resolve_all_path_symlinks()
 {
-   local path="$1"
+   local filepath="$1"
 
    local resolved
 
-   r_resolve_symlinks "${path}"
+   r_resolve_symlinks "${filepath}"
    resolved="${RVAL}"
 
    local filename
@@ -418,12 +396,12 @@ r_resolve_all_path_symlinks()
 # canonicalizes existing paths
 # fails for files / directories that do not exist
 #
-realpath()
+r_realpath()
 {
-   [ -e "$1" ] || fail "only use realpath on existing files ($1)"
+   [ -e "$1" ] || fail "only use r_realpath on existing files ($1)"
 
    r_resolve_symlinks "$1"
-   canonicalize_path "${RVAL}"
+   r_canonicalize_path "${RVAL}"
 }
 
 #
@@ -440,7 +418,8 @@ create_symlink()
    [ ! -z "${absolute}" ] || fail "absolute must be YES or NO"
 
    r_absolutepath "${url}"
-   url="`realpath "${RVAL}"`"  # resolve symlinks
+   r_realpath "${RVAL}"
+   url="${RVAL}"        # resolve symlinks
 
    # need to do this otherwise the symlink fails
 
@@ -452,7 +431,8 @@ create_symlink()
    directory="${RVAL}"
 
    mkdir_if_missing "${directory}"
-   directory="`realpath "${directory}"`"  # resolve symlinks
+   r_realpath "${directory}"
+   directory="${RVAL}"  # resolve symlinks
 
    #
    # relative paths look nicer, but could fail in more complicated
@@ -576,10 +556,10 @@ dirs_contain_same_files()
    local sharefile
    local filename 
 
-   IFS=$'\n'; set -f
+   IFS=$'\n'; shell_disable_glob
    for sharefile in `find ${sharedir}  \! -type d -print`
    do
-      IFS="${DEFAULT_IFS}"; set +f 
+      IFS="${DEFAULT_IFS}"; shell_enable_glob
 
       filename="${sharefile#${sharedir}/}"
       etcfile="${etcdir}/${filename}"
@@ -590,11 +570,11 @@ dirs_contain_same_files()
       fi
    done
 
-   IFS=$'\n'; set -f
+   IFS=$'\n'; shell_disable_glob
 
    for etcfile in `find ${etcdir} \! -type d -print`
    do
-      IFS="${DEFAULT_IFS}"; set +f 
+      IFS="${DEFAULT_IFS}"; shell_enable_glob
 
       filename="${etcfile#${etcdir}/}"
       sharefile="${sharedir}/${filename}"
@@ -605,7 +585,7 @@ dirs_contain_same_files()
       fi
    done
 
-   IFS="${DEFAULT_IFS}"; set +f 
+   IFS="${DEFAULT_IFS}"; shell_enable_glob
 
    return 0
 }

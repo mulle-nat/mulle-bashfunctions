@@ -56,9 +56,9 @@ _installer_prepend_path_if_relative()
 installer_resolve_symlinks()
 {
    local dir_context
-   local path
+   local exepath
 
-   path="`readlink "$1"`"
+   exepath="`readlink "$1"`"
    if [ $? -eq 0 ]
    then
       dir_context=`dirname -- "$1"`
@@ -135,6 +135,7 @@ installer_sed_mangle_escape_slashes()
 
 main()
 {
+   local executable="$1" ; shift
    local prefix
    local mode
 
@@ -158,7 +159,7 @@ main()
    local libexec
    local share
 
-   cd "`dirname -- "$0"`"
+   cd "`dirname -- "${executable}"`"
    cd ..
 
    if [ ! -x mulle-bashfunctions-env ]
@@ -203,5 +204,5 @@ main()
    cp -Rav src/mulle-nat/file.sh "${envshare}/"
 }
 
-main "$@"
+main "$0" "$@"
 

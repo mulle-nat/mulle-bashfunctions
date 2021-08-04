@@ -140,14 +140,6 @@ r_tweaked_de_camel_case()
 }
 
 
-tweaked_de_camel_case()
-{
-   r_tweaked_de_camel_case "$@"
-
-   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
-}
-
-
 #
 # make ID_FOO_R from idFooR
 #
