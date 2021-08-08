@@ -1,0 +1,99 @@
+#! /usr/bin/env bash
+
+[ "${TRACE}" = 'YES' ] && set -x
+
+if [ ! -z "${ZSH_VERSION}" ]
+then
+   setopt sh_word_split
+fi
+
+
+expect_output()
+{
+   local output="$1"
+   local expected="$2"
+
+   if [ "${output}" != "${expected}" ]
+   then
+      echo "Got \"${output}\". Expected: \"${expected}\"" >&2
+      stacktrace >&2
+      exit 1
+   fi
+}
+
+
+just_true()
+{
+   return 0
+}
+
+just_false()
+{
+   return 1
+}
+
+
+run_parallel()
+{
+   local _parallel_statusfile
+   local _parallel_maxjobs
+   local _parallel_jobs
+   local _parallel_fails
+
+   _parallel_begin
+
+   local cmd
+
+   for cmd in "$@"
+   do
+      _parallel_execute "${cmd}"
+   done
+
+   _parallel_end
+}
+
+
+test_parallel()
+{
+   run_parallel just_true
+   expect_output "$?" "0"
+
+   run_parallel just_false
+   expect_output "$?" "1"
+
+   run_parallel just_true just_true just_true just_true just_true
+   expect_output "$?" "0"
+
+   run_parallel just_true just_true just_false just_true just_true
+   expect_output "$?" "1"
+}
+
+
+main()
+{
+   _options_mini_main "$@" && set -x
+
+   test_parallel
+
+   echo "All tests passed" >&2
+}
+
+
+init()
+{
+   MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${MULLE_BASHFUNCTIONS_LIBEXEC_DIR:-../../src}"
+
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-compatibility.sh" || exit 1
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-string.sh" || exit 1
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-logging.sh" || exit 1
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-exekutor.sh" || exit 1
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-path.sh" || exit 1
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-file.sh" || exit 1
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-options.sh" || exit 1
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-parallel.sh" || exit 1
+}
+
+
+init "$@"
+main "$@"
+

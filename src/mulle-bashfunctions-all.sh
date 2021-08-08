@@ -4348,3 +4348,1356 @@ inplace_sed()
 
 
 :
+#! /usr/bin/env bash
+#
+#   Copyright (c) 2016 Nat! - Mulle kybernetiK
+#   All rights reserved.
+#
+#   Redistribution and use in source and binary forms, with or without
+#   modification, are permitted provided that the following conditions are met:
+#
+#   Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+#   Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+#   Neither the name of Mulle kybernetiK nor the names of its contributors
+#   may be used to endorse or promote products derived from this software
+#   without specific prior written permission.
+#
+#   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+#   AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+#   IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+#   ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+#   LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+#   CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+#   SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+#   INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+#   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+#   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+#   POSSIBILITY OF SUCH DAMAGE.
+#
+[ "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' -a ! -z "${MULLE_ARRAY_SH}" ] && \
+   echo "double inclusion of mulle-array.sh" >&2
+
+[ -z "${MULLE_LOGGING_SH}" ] && echo "mulle-logging.sh must be included before mulle-array.sh" 2>&1 && exit 1
+
+MULLE_ARRAY_SH="included"
+
+
+array_value_check()
+{
+   local value="$1"
+
+   case "${value}" in
+      *$'\n'*)
+         internal_fail "\"${value}\" has unescaped linefeeds"
+      ;;
+   esac
+}
+
+
+r_get_line_at_index()
+{
+   local array="$1"
+   local i="${2:-0}"
+
+   # for larger arrays:    sed -n "${i}pq" <<< "${array}"
+
+   shell_disable_glob; IFS=$'\n'
+   for RVAL in ${array}
+   do
+      if [ $i -eq 0 ]
+      then
+         IFS="${DEFAULT_IFS}" ; shell_enable_glob
+         return 0
+      fi
+      i=$((i - 1))
+   done
+   IFS="${DEFAULT_IFS}" ; shell_enable_glob
+   return 1
+}
+
+
+r_insert_line_at_index()
+{
+   local array="$1"
+   local i="$2"
+   local value="$3"
+
+   array_value_check "${value}"
+
+   local line
+   local added='NO'
+   local rval
+
+   RVAL=
+   rval=1
+
+   shell_disable_glob; IFS=$'\n'
+   for line in ${array}
+   do
+      if [ $i -eq 0 ]
+      then
+         r_add_line "${RVAL}" "${value}"
+         rval=0
+      fi
+      r_add_line "${RVAL}" "${line}"
+      i=$((i - 1))
+   done
+   IFS="${DEFAULT_IFS}" ; shell_enable_glob
+
+   if [ $i -eq 0 ]
+   then
+      r_add_line "${RVAL}" "${value}"
+      rval=0
+   fi
+
+   return $rval
+}
+
+
+
+r_lines_in_range()
+{
+   local array="$1"
+   local i="$2"
+   local n="$3"
+
+   # this is not really faster for smaller arrays
+   declare -a bash_array
+   declare -a res_array
+
+   IFS=$'\n' read -r -d '' -a bash_array <<< "${array}"
+
+   local j
+   local sentinel
+
+   sentinel=$((i + n))
+
+   j=0
+   while [ $i -lt ${sentinel} ]
+   do
+      res_array[${j}]="${bash_array[${i}]}"
+      i=$((i + 1))
+      j=$((j + 1))
+   done
+
+   RVAL="${res_array[*]}"
+}
+
+
+#r_replace_lines_in_range()
+#{
+#   local array="$1"
+#   local i="$2"
+#   local j="$3"
+#   local replacement="$4"
+#
+#   [ ${i} -gt ${j} ] && internal_fail "i greater than j"
+#
+#   local line
+#   local index
+#   local result
+#
+#   shell_disable_glob; IFS=$'\n'
+#   index=0
+#   for line in ${array}
+#   do
+#      if [ ${index} -ge ${i} -a ${index} -le ${j} ]
+#      then
+#         if [ ${index} -eq ${i} ]
+#         then
+#            r_add_line "${result}" "${replacement}"
+#            result="${RVAL}"
+#         fi
+#         continue
+#      fi
+#
+#      index=$((index + 1))
+#
+#      r_add_line "${result}" "${line}"
+#      result="${RVAL}"
+#   done
+#
+#   IFS="${DEFAULT_IFS}" ; shell_enable_glob
+#
+#   [ ${i} -ge ${index} ] && internal_fail "i $i invalid"
+#   [ ${j} -ge ${index} ] && internal_fail "j $j invalid"
+#
+#   RVAL="${result}"
+#}
+
+
+#
+# assoc array contents can contain any characters except newline
+# assoc array keys should be identifiers
+#
+assoc_array_key_check()
+{
+   local key="$1"
+
+   [ -z "${key}" ] && internal_fail "key is empty"
+
+   local identifier
+
+   r_identifier "${key}"
+   identifier="${RVAL}"
+
+   [ "${identifier}" != "${key}" -a "${identifier}" != "_${key}" ] && internal_fail "\"${key}\" has non-identifier characters"
+}
+
+
+assoc_array_value_check()
+{
+   array_value_check "$@"
+}
+
+
+_r_assoc_array_add()
+{
+   local array="$1"
+   local key="$2"
+   local value="$3"
+
+   assoc_array_key_check "${key}"
+   assoc_array_value_check "${value}"
+
+# DEBUG code
+#   key="`_assoc_array_key_check "$2"`"
+#   value="`array_value_check "$3"`"
+
+   r_add_line "${array}" "${key}=${value}"
+}
+
+
+_r_assoc_array_remove()
+{
+   local array="$1"
+   local key="$2"
+
+   local line
+   local delim
+
+   RVAL=
+   shell_disable_glob; IFS=$'\n'
+   for line in ${array}
+   do
+      case "${line}" in
+         "${key}="*)
+         ;;
+
+         *)
+            RVAL="${line}${delim}${RVAL}"
+            delim=$'\n'
+         ;;
+      esac
+   done
+   IFS="${DEFAULT_IFS}" ; shell_enable_glob
+}
+
+
+r_assoc_array_get()
+{
+   local array="$1"
+   local key="$2"
+
+# DEBUG code
+#   key="`_assoc_array_key_check "${key}"`"
+
+   local line
+   local rval
+
+   RVAL=
+   rval=1
+
+   shell_disable_glob; IFS=$'\n'
+   for line in ${array}
+   do
+      case "${line}" in
+         "${key}="*)
+            RVAL="${line#*=}"
+            rval=0
+            break
+         ;;
+      esac
+   done
+   IFS="${DEFAULT_IFS}" ; shell_enable_glob
+
+   return $rval
+}
+
+
+assoc_array_all_keys()
+{
+   local array="$1"
+
+   sed -n 's/^\([^=]*\)=.*$/\1/p' <<< "${array}"
+}
+
+
+assoc_array_all_values()
+{
+   local array="$1"
+
+   sed -n 's/^[^=]*=\(.*\)$/\1/p' <<< "${array}"
+}
+
+
+r_assoc_array_set()
+{
+   local array="$1"
+   local key="$2"
+   local value="$3"
+
+   if [ -z "${value}" ]
+   then
+      _r_assoc_array_remove "${array}" "${key}"
+      return
+   fi
+
+   local old_value
+
+   r_assoc_array_get "${array}" "${key}"
+   old_value="${RVAL}"
+
+   if [ ! -z "${old_value}" ]
+   then
+      _r_assoc_array_remove "${array}" "${key}"
+      array="${RVAL}"
+   fi
+
+   _r_assoc_array_add "${array}" "${key}" "${value}"
+}
+
+
+#
+# merge second array into first array
+# meaning if key in second array exists it overwrites
+# the value in the first array
+#
+assoc_array_merge_with_array()
+{
+   local array1="$1"
+   local array2="$2"
+
+   printf "%s%s\n" "${array2}" "${array1}" | sort -u -t'=' -k1,1
+}
+
+
+#
+# add second array into first array
+# meaning only keys in second array that don't exists in the
+# first are added
+#
+assoc_array_augment_with_array()
+{
+   local array1="$1"
+   local array2="$2"
+
+   printf "%s%s\n" "${array1}" "${array2}" | sort -u -t'=' -k1,1
+}
+
+:
+
+#! /usr/bin/env bash
+#
+#   Copyright (c) 2015 Nat! - Mulle kybernetiK
+#   All rights reserved.
+#
+#   Redistribution and use in source and binary forms, with or without
+#   modification, are permitted provided that the following conditions are met:
+#
+#   Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+#   Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+#   Neither the name of Mulle kybernetiK nor the names of its contributors
+#   may be used to endorse or promote products derived from this software
+#   without specific prior written permission.
+#
+#   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+#   AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+#   IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+#   ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+#   LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+#   CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+#   SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+#   INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+#   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+#   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+#   POSSIBILITY OF SUCH DAMAGE.
+#
+[ ! -z "${MULLE_CASE_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
+   echo "double inclusion of mulle-case.sh" >&2
+
+MULLE_CASE_SH="included"
+
+#
+# This is a camel case to underscore converter that keeps capitalized
+# letters together. It contains a stupid hack for ObjC because it was just
+# too hard to figure that one out.
+#
+# Ex. MulleObjCBaseFoundation -> Mulle_ObjC_Base_Foundation
+#     FBTroll -> FBTroll
+#     FBTrollFB -> FBTroll_FB
+#
+#     MulleEOFoundation -> Mulle_EO_Foundation
+#     MulleEOClassDescription Mulle_EO_Class_Description
+#
+_r_tweaked_de_camel_case()
+{
+   local s="$1"
+
+   local output
+   local state
+   local collect
+
+   local c
+   local d
+
+   s="${s//ObjC/Objc}"
+
+   state='start'
+   while [ ! -z "${s}" ]
+   do
+      d="${c}"
+      c="${s:0:1}"
+      s="${s:1}"
+
+      case "${state}" in
+         'start')
+            case "${c}" in
+               [A-Z])
+                  state="upper";
+                  collect="${collect}${c}"
+                  continue
+               ;;
+
+               *)
+                  state="lower"
+               ;;
+            esac
+         ;;
+
+         'upper')
+            case "${c}" in
+               [A-Z])
+                  collect="${collect}${c}"
+                  continue
+               ;;
+
+               *)
+                  if [ ! -z "${output}" -a ! -z "${collect}" ]
+                  then
+                     if [ ! -z "${collect:1}" ]
+                     then
+                        output="${output}_${collect%?}_${collect#${collect%?}}"
+                     else
+                        output="${output}_${collect}"
+                     fi
+                  else
+                     output="${output}${collect}"
+                  fi
+                  collect=""
+                  state="lower"
+               ;;
+            esac
+         ;;
+
+         'lower')
+            case "${c}" in
+               [A-Z])
+                  output="${output}${collect}"
+                  collect="${c}"
+                  state="upper"
+                  continue
+               ;;
+            esac
+         ;;
+      esac
+
+      output="${output}${c}"
+   done
+
+   if [ ! -z "${output}" -a ! -z "${collect}" ]
+   then
+      output="${output}_${collect}"
+   else
+      output="${output}${collect}"
+   fi
+
+   RVAL="${output}"
+}
+
+
+r_tweaked_de_camel_case()
+{
+   # need this for [A-B] to be case sensitive, dont'ask
+   # https://stackoverflow.com/questions/10695029/why-isnt-the-case-statement-case-sensitive-when-nocasematch-is-off
+   LC_ALL=C _r_tweaked_de_camel_case "$@"
+}
+
+
+#
+# make ID_FOO_R from idFooR
+#
+r_de_camel_case_upcase_identifier()
+{
+   r_tweaked_de_camel_case "$1"
+   r_identifier "${RVAL}"
+   r_uppercase "${RVAL}"
+
+   # ensure it's a shell identifier
+   case "${RVAL}" in
+      [A-Za-z_]*)
+      ;;
+
+      *)
+         RVAL="_${RVAL}"
+      ;;
+   esac
+}
+#! /usr/bin/env bash
+#
+#   Copyright (c) 2018 Nat! - Mulle kybernetiK
+#   All rights reserved.
+#
+#   Redistribution and use in source and binary forms, with or without
+#   modification, are permitted provided that the following conditions are met:
+#
+#   Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+#   Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+#   Neither the name of Mulle kybernetiK nor the names of its contributors
+#   may be used to endorse or promote products derived from this software
+#   without specific prior written permission.
+#
+#   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+#   AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+#   IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+#   ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+#   LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+#   CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+#   SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+#   INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+#   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+#   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+#   POSSIBILITY OF SUCH DAMAGE.
+#
+MULLE_PARALLEL_SH="included"
+
+[ -z "${MULLE_FILE_SH}" ] && echo "mulle-file.sh must be included before mulle-parallel.sh" 2>&1 && exit 1
+
+
+r_get_core_count()
+{
+   if [ -z "${MULLE_CORES}" ]
+   then
+      # Linux (absolute path for restricted environments)
+      MULLE_CORES="`/usr/bin/nproc 2> /dev/null`"
+      if [ -z "${MULLE_CORES}" ]
+      then
+         # Apple (absolute path for restricted environments)
+         MULLE_CORES="`/usr/sbin/sysctl -n hw.ncpu 2> /dev/null`"
+      fi
+
+      if [ -z "${MULLE_CORES}" ]
+      then
+         MULLE_CORES=4
+         log_verbose "Unknown core count, setting it to 4 as default"
+      fi
+   fi
+   RVAL=${MULLE_CORES}
+}
+
+
+# local _parallel_maxaverage
+r_convenient_max_load_average()
+{
+   local cores="$1"
+
+   if [ -z "${cores}" ]
+   then
+      r_get_core_count
+      cores="${RVAL}"
+   fi
+
+   case "${MULLE_UNAME}" in
+      linux)
+         RVAL=$((cores * 6))
+      ;;
+
+      *)
+         RVAL=$((cores * 2))
+      ;;
+   esac
+}
+
+
+wait_for_available_job()
+{
+   log_entry "wait_for_available_job" "$@"
+
+   local maxjobs="${1:-8}"
+
+   local running
+   local count
+
+   while :
+   do
+      running=($(jobs -pr))  #  http://mywiki.wooledge.org/BashFAQ/004
+      count=${#running[@]}
+
+      if [ ${count} -le ${maxjobs} ]
+      then
+         log_debug "Currently only ${count} jobs run, spawn another"
+         break
+      fi
+      log_debug "Waiting on jobs to finish (${#running[@]})"
+      sleep 0.001s # 1000Hz
+   done
+}
+
+
+# just the floored load integer (i.e. 0.89 -> 0)
+get_current_load_average()
+{
+   case "${MULLE_UNAME}" in
+      freebsd|darwin)
+         sysctl -n vm.loadavg | sed -n -e 's/.*{[ ]*\([0-9]*\).*/\1/p'
+      ;;
+
+      *)
+         uptime | sed -n -e 's/.*average[s]*:[ ]*\([0-9]*\).*/\1/p'
+      ;;
+   esac
+}
+
+
+#
+# figure out how much cores we can use given current system load
+#
+r_available_core_count()
+{
+   log_entry "r_available_core_count" "$@"
+
+   local maxaverage="$1"
+
+   local cores
+
+   r_get_core_count
+   cores="${RVAL}"
+
+   if [ -z "${maxavg}" ]
+   then
+      r_convenient_max_load_average "${cores}"
+      maxaverage="${RVAL}"
+   fi
+
+   local loadavg
+   local available
+
+   loadavg="`get_current_load_average`"
+   available="$(( cores - loadavg ))"
+   if [ ${available} -lt 1 ]
+   then
+      available="1"
+   fi
+
+   RVAL="${available}"
+}
+
+
+wait_for_load_average()
+{
+   log_entry "wait_for_load_average" "$@"
+
+   local maxaverage="${1:-8}"
+
+   local loadavg
+
+   while :
+   do
+      loadavg="`get_current_load_average`"
+      if [ "${loadavg:-0}" -le ${maxaverage} ]
+      then
+         break
+      fi
+      log_debug "Waiting on load average to come down"
+
+      sleep 0.001s # 1000Hz
+   done
+}
+
+
+#
+# local _parallel_statusfile
+# local _parallel_maxjobs
+# local _parallel_jobs
+# local _parallel_fails
+#
+_parallel_begin()
+{
+   log_entry "_parallel_begin" "$@"
+
+   _parallel_maxjobs="$1"
+
+   _parallel_jobs=0
+   _parallel_fails=0
+
+   r_make_tmp "mulle-parallel" || exit 1
+   _parallel_statusfile="${RVAL}"
+
+   if [ -z "${_parallel_maxjobs}" ]
+   then
+      _parallel_maxjobs="${MULLE_PARALLEL_MAX_JOBS}"
+      if [ -z "${_parallel_maxjobs}" ]
+      then
+         r_get_core_count
+         _parallel_maxjobs="${RVAL}"
+      fi
+   fi
+}
+
+
+_parallel_end()
+{
+   log_entry "_parallel_end" "$@"
+
+   wait
+
+   _parallel_fails="`rexekutor wc -l "${_parallel_statusfile}" | awk '{ printf $1 }'`"
+   if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
+   then
+      log_trace2 "_parallel_jobs : ${_parallel_jobs}"
+      log_trace2 "_parallel_fails: ${_parallel_fails}"
+      log_trace2 "${_parallel_statusfile} : `cat "${_parallel_statusfile}"`"
+   fi
+
+   exekutor rm "${_parallel_statusfile}"
+
+   [ "${_parallel_fails}" -eq 0 ]
+}
+
+
+
+_parallel_status()
+{
+   log_entry "_parallel_status" "$@"
+
+   local rval="$1"; shift
+
+   [ -z "${_parallel_statusfile}" ] && internal_fail "_parallel_statusfile must be defined"
+
+   # only append to status file if error
+   if [ $rval -ne 0 ]
+   then
+      log_warning "warning: $* failed with $rval"
+      redirect_append_exekutor "${_parallel_statusfile}" printf "%s\n" "${rval};$*"
+   else
+      log_debug "Finished job #${_parallel_jobs}: $*"
+   fi
+}
+
+
+_parallel_execute()
+{
+   log_entry "_parallel_execute" "$@"
+
+   wait_for_available_job "${_parallel_maxjobs}"
+   _parallel_jobs=$(($_parallel_jobs + 1))
+
+   log_debug "Running job #${_parallel_jobs}: $*"
+
+   (
+      local rval
+
+      exekutor "$@"
+      _parallel_status $? "$@"
+   ) &
+}
+
+
+# intention of this is to act like a form of xargs
+parallel_execute()
+{
+   log_entry "parallel_execute" "$@"
+
+   local arguments="$1"; shift
+
+   local _parallel_statusfile
+   local _parallel_maxjobs
+   local _parallel_jobs
+   local _parallel_fails
+
+   [ $# -eq 0 ] && internal_fail "missing commandline"
+
+   _parallel_begin
+
+   local argument
+
+   shell_disable_glob;  IFS=$'\n'
+   for argument in ${arguments}
+   do
+      shell_enable_glob; IFS="${DEFAULT_IFS}"
+
+      _parallel_execute "$@" "${argument}"
+   done
+
+   shell_enable_glob; IFS="${DEFAULT_IFS}"
+
+   _parallel_end
+}
+
+#! /usr/bin/env bash
+#
+#   Copyright (c) 2017 Nat! - Mulle kybernetiK
+#   All rights reserved.
+#
+#   Redistribution and use in source and binary forms, with or without
+#   modification, are permitted provided that the following conditions are met:
+#
+#   Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+#   Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+#   Neither the name of Mulle kybernetiK nor the names of its contributors
+#   may be used to endorse or promote products derived from this software
+#   without specific prior written permission.
+#
+#   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+#   AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+#   IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+#   ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+#   LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+#   CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+#   SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+#   INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+#   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+#   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+#   POSSIBILITY OF SUCH DAMAGE.
+#
+[ ! -z "${MULLE_VERSION_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
+   echo "double inclusion of mulle-version.sh" >&2
+
+MULLE_VERSION_SH="included"
+
+
+r_get_version_major()
+{
+   RVAL="${1%%\.*}"
+}
+
+
+r_get_version_minor()
+{
+   RVAL="${1#*\.}"
+   if [ "${RVAL}" = "$1" ]
+   then
+      RVAL=0
+   else
+      RVAL="${RVAL%%\.*}"
+   fi
+}
+
+# make sure 1.8 returns 0
+r_get_version_patch()
+{
+   local prev
+
+   prev="${1#*\.}"
+   RVAL="${prev#*\.}"
+   if [ "${RVAL}" = "${prev}" ]
+   then
+      RVAL=0
+   else
+      RVAL="${RVAL%%\.*}"
+   fi
+}
+
+
+#
+# version must be <= min_major.min_minor
+#
+check_version()
+{
+   local version="$1"
+   local min_major="$2"
+   local min_minor="$3"
+
+   if [ -z "${version}" ]
+   then
+      return 1
+   fi
+
+   local major
+   local minor
+
+   r_get_version_major "${version}"
+   major="${RVAL}"
+
+   if [ "${major}" -lt "${min_major}" ]
+   then
+      return 0
+   fi
+
+   if [ "${major}" -ne "${min_major}" ]
+   then
+      return 1
+   fi
+
+   r_get_version_minor "${version}"
+   minor="${RVAL}"
+
+   [ "${minor}" -le "${min_minor}" ]
+}
+
+
+#
+# Gimme major, minor, patch
+# version is like ((major << 20) | (minor << 8) | (patch))
+#
+_r_version_value()
+{
+   RVAL="$((${1:-0} * 1048576 + ${2:-0} * 256 + ${3:-0}))"
+}
+
+
+#
+# Gimme "${major}.${minor}.${patch}"
+#
+r_version_value()
+{
+   local major
+   local minor
+   local patch
+
+   r_get_version_major "$1"
+   major="${RVAL}"
+   r_get_version_minor "$1"
+   minor="${RVAL}"
+   r_get_version_patch "$1"
+   patch="${RVAL}"
+
+   _r_version_value "${major}" "${minor}" "${patch}"
+}
+
+
+r_version_value_distance()
+{
+   RVAL="$(($2 - $1))"
+}
+
+
+r_version_distance()
+{
+   local value1
+   local value2
+
+   r_version_value "$1"
+   value1="${RVAL}"
+   r_version_value "$2"
+   value2="${RVAL}"
+
+   r_version_value_distance "${value1}" "${value2}"
+}
+
+
+# pass in the result of `version_distance found requested
+#
+# When do we fail ? Assume we have version 2.3.4.
+#   Fail for requests for different major
+#   Fail for request for any version > 2.3.4
+#
+is_compatible_version_value_distance()
+{
+   # major check
+   if [ "$1" -ge 1048576 -o "$1" -le -1048575 ]
+   then
+      return 1
+   fi
+
+   if [ "$1" -gt 4096 ]
+   then
+      return 1
+   fi
+
+   [ "$1" -le 0 ]
+}
+
+
+is_compatible_version()
+{
+   r_version_distance "$1" "$2"
+   is_compatible_version_value_distance "${RVAL}"
+}
+
+:
+#! /usr/bin/env bash
+#
+#   Copyright (c) 2021 Nat! - Mulle kybernetiK
+#   All rights reserved.
+#
+#   Redistribution and use in source and binary forms, with or without
+#   modification, are permitted provided that the following conditions are met:
+#
+#   Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+#   Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+#   Neither the name of Mulle kybernetiK nor the names of its contributors
+#   may be used to endorse or promote products derived from this software
+#   without specific prior written permission.
+#
+#   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+#   AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+#   IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+#   ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+#   LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+#   CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+#   SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+#   INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+#   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+#   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+#   POSSIBILITY OF SUCH DAMAGE.
+#
+[ ! -z "${MULLE_ETC_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
+   echo "double inclusion of mulle-etc.sh" >&2
+
+MULLE_ETC_SH="included"
+
+
+# functions to maintain .mulle/etc and .mulle/share folders
+# share folders are periodically updated by upgrades and etc folders
+# contain user edits. The unchanged files are symlinked, so that only the
+# etc folder is used, but the unchanged contents are still upgradable
+#
+etc_prepare_for_write_of_file()
+{
+   log_entry "etc_prepare_for_write_of_file" "$@"
+
+   local filename="$1"
+
+   if [ -L "${filename}" ]
+   then
+      exekutor rm "${filename}"
+   fi
+}
+
+
+etc_make_file_from_symlinked_file()
+{
+   log_entry "etc_make_file_from_symlinked_file" "$@"
+
+   local dstfile="$1"
+
+   if [ ! -L "${dstfile}" ]
+   then
+      return 1
+   fi
+
+   local flags
+
+   if [ "${MULLE_FLAG_LOG_FLUFF}" = 'YES' ]
+   then
+      flags="-v"
+   fi
+
+   local targetfile
+
+   targetfile="`readlink "${dstfile}"`"
+   exekutor rm "${dstfile}"
+
+   local directory
+   local filename
+
+   r_dirname "${dstfile}"
+   directory="${RVAL}"
+   r_basename "${dstfile}"
+   filename="${RVAL}"
+   (
+      cd "${directory}" || exit 1
+
+      if [ ! -f "${targetfile}" ]
+      then
+         log_fluff "Stale link encountered"
+         return 0
+      fi
+
+      exekutor cp ${flags} "${targetfile}" "${filename}" || exit 1
+      exekutor chmod ug+w "${filename}"
+   ) || fail "Could not copy \"${targetfile}\" to \"${dstfile}\""
+}
+
+
+etc_symlink_or_copy_file()
+{
+   log_entry "etc_symlink_or_copy_file" "$@"
+
+   local srcfile="$1"
+   local dstdir="$2"
+   local filename="$3"
+   local symlink="$4"
+
+   [ -f "${srcfile}" ] || internal_fail "\"${srcfile}\" does not exist or is not a file"
+   [ -d "${dstdir}" ]  || internal_fail "\"${dstdir}\" does not exist or is not a directory"
+
+   local dstfile
+
+   if [ -z "${filename}" ]
+   then
+   	r_basename "${srcfile}"
+   	filename="${RVAL}"
+	fi
+
+   r_filepath_concat "${dstdir}" "${filename}"
+   dstfile="${RVAL}"
+
+   if [ -e "${dstfile}" ]
+   then
+      fail "\"${dstfile}\" already exists"
+   fi
+
+   r_mkdir_parent_if_missing "${dstfile}"
+
+   local flags
+
+   if [ "${MULLE_FLAG_LOG_FLUFF}" = 'YES' ]
+   then
+      flags="-v"
+   fi
+
+   if [ -z "${symlink}" ]
+   then
+      case "${MULLE_UNAME}" in
+         mingw)
+            symlink="NO"
+         ;;
+
+         *)
+            symlink="YES"
+         ;;
+      esac
+   fi
+
+   if [ "${symlink}" = 'YES' ]
+   then
+      local linkrel
+
+      r_relative_path_between "${srcfile}" "${dstdir}"
+      linkrel="${RVAL}"
+
+      exekutor ln -s ${flags} "${linkrel}" "${dstfile}"
+      return $?
+   fi
+
+   exekutor cp ${flags} "${srcfile}" "${dstfile}" &&
+   exekutor chmod ug+w "${dstfile}"
+}
+
+
+etc_setup_from_share_if_needed()
+{
+   log_entry "etc_setup_from_share_if_needed" "$@"
+
+   local etc="$1"
+   local share="$2"
+   local symlink="$3"
+
+   if [ -d "${etc}" ]
+   then
+      log_fluff "etc folder already setup"
+      return
+   fi
+
+   # always create etc now
+   mkdir_if_missing "${etc}"
+
+   local flags
+
+   if [ "${MULLE_FLAG_LOG_FLUFF}" = 'YES' ]
+   then
+      flags="-v"
+   fi
+
+   local filename
+   local base
+
+   #
+   # use per default symlinks and change to file on edit (makes it
+   # easier to upgrade unedited files
+   #
+   IFS=$'\n'; shell_disable_glob
+   for filename in `find "${share}" ! -type d -print`
+   do
+      IFS="${DEFAULT_IFS}"; shell_enable_glob
+      r_basename "${filename}"
+      etc_symlink_or_copy_file "${filename}" \
+                               "${etc}" \
+                               "${RVAL}" \
+                               "${symlink}"
+   done
+   IFS="${DEFAULT_IFS}"; shell_enable_glob
+}
+
+
+etc_remove_if_possible()
+{
+   log_entry "etc_remove_if_possible" "$@"
+
+   local etc="$1"
+   local share="$2"
+
+   if [ ! -d "${etc}" ]
+   then
+      return
+   fi
+
+   if dirs_contain_same_files "${etc}" "${share}"
+   then
+      rmdir_safer "${etc}"
+   fi
+}
+
+
+#
+# walk through etc symlinks, cull those that point to knowwhere
+# replace files with symlinks, whose content is identical to share
+#
+etc_repair_files()
+{
+   log_entry "etc_repair_files" "$@"
+
+   local srcdir="$1" # share
+   local dstdir="$2" # etc
+
+   local glob="$3"
+   local add="$4"
+   local symlink="$5"
+
+   if [ ! -d "${dstdir}" ]
+   then
+      log_verbose "Nothing to repair, as \"${dstdir}\" does not exist yet"
+      return
+   fi
+
+   local filename
+   local dstfile
+   local srcfile
+   local can_remove_etc
+
+   can_remove_etc='YES'
+
+   dstdir="${dstdir%%/}"
+   srcdir="${srcdir%%/}"
+
+   #
+   # go through etc, throw out symlinks that point to nowhere
+   # create symlinks for files that are identical in share and throw old
+   # files away
+   #
+   IFS=$'\n'; shell_disable_glob
+   for dstfile in `find "${dstdir}" ! -type d -print` # dstdir is etc
+   do
+      IFS="${DEFAULT_IFS}"; shell_enable_glob
+
+      filename="${dstfile#${dstdir}/}"
+      srcfile="${srcdir}/${filename}"
+
+      if [ -L "${dstfile}" ]
+      then
+         if ! ( cd "${dstdir}" && [ -f "`readlink "${filename}"`" ] )
+         then
+            # hack for patternfile only works for flat structure probably
+            globtest="${glob}${filename#${glob}}"
+            if [ ! -z "${glob}" ] && [ -f "${srcdir}"/${globtest} ]
+            then
+               log_verbose "\"${filename}\" moved to ${globtest}: relink"
+               remove_file_if_present "${dstfile}"
+               etc_symlink_or_copy_file "${srcdir}/"${globtest} \
+                                        "${dstdir}" \
+                                        "" \
+                                        "${symlink}"
+            else
+               log_verbose "\"${filename}\" no longer exists: remove"
+               remove_file_if_present "${dstfile}"
+            fi
+         else
+            log_fluff "\"${filename}\" is a healthy symlink: keep"
+         fi
+      else
+         if [ -f "${srcfile}" ]
+         then
+            if diff -q -b "${dstfile}" "${srcfile}" > /dev/null
+            then
+               log_verbose "\"${filename}\" has no user edits: replace with symlink"
+               remove_file_if_present "${dstfile}"
+               etc_symlink_or_copy_file "${srcfile}" \
+                                        "${dstdir}" \
+                                        "${filename}" \
+                                        "${symlink}"
+            else
+               log_fluff "\"${filename}\" contains edits: keep"
+               can_remove_etc='NO'
+            fi
+         else
+            log_fluff "\"${filename}\" is an addition: keep"
+            can_remove_etc='NO'
+         fi
+      fi
+   done
+
+   #
+   # Go through share, symlink everything that is not in etc. This is
+   # may make files that have been deleted reappear though. So you explicitly
+   # allow this with "add"
+   #
+   IFS=$'\n'; shell_disable_glob
+   for srcfile in `find "${srcdir}" ! -type d -print` # dstdir is etc
+   do
+      IFS="${DEFAULT_IFS}"; shell_enable_glob
+
+      filename="${srcfile#${srcdir}/}"
+      dstfile="${dstdir}/${filename}"
+
+      if [ ! -e "${dstfile}" ]
+      then
+         if [ "${add}" = 'YES' ]
+         then
+            log_verbose "\"${filename}\" is missing: recreate"
+            etc_symlink_or_copy_file "${srcfile}" \
+                                     "${dstdir}" \
+                                     "${filename}" \
+                                     "${symlink}"
+         else
+            log_info "\"${filename}\" is new but not used. Use \`repair --add\` to add it."
+            can_remove_etc='NO'
+         fi
+      fi
+   done
+   IFS="${DEFAULT_IFS}"; shell_enable_glob
+
+   if [ "${can_remove_etc}" = 'YES' ]
+   then
+      log_info "\"${dstdir#${MULLE_USER_PWD}/}\" contains no user changes so use \"share\" again"
+      rmdir_safer "${dstdir}"
+      rmdir_if_empty "${srcdir}"
+   fi
+}
+

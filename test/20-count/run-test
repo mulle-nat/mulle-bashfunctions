@@ -1,0 +1,64 @@
+#! /usr/bin/env bash
+
+[ "${TRACE}" = 'YES' ] && set -x
+
+if [ ! -z "${ZSH_VERSION}" ]
+then
+   setopt sh_word_split
+fi
+
+
+
+expect_output()
+{
+   local output="$1"
+   local expected="$2"
+
+   if [ "${output}" != "${expected}" ]
+   then
+      echo "Got \"${output}\". Expected: \"${expected}\"" >&2
+      stacktrace >&2
+      exit 1
+   fi
+}
+
+
+
+test_count()
+{
+   r_count_lines "a"
+   expect_output "${RVAL}" "1"
+
+   r_count_lines "a"$'\n'"b"
+   expect_output "${RVAL}" "2"
+
+   r_count_lines "a"$'\n'"b"$'\n'
+   expect_output "${RVAL}" "2"
+
+# EMPTY STRING
+   r_count_lines ""
+   expect_output "${RVAL}" "0"
+}
+
+
+main()
+{
+   test_count
+
+   echo "All tests passed" >&2
+}
+
+
+init()
+{
+   MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${MULLE_BASHFUNCTIONS_LIBEXEC_DIR:-../../src}"
+
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-compatibility.sh" || exit 1
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-string.sh" || exit 1
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-logging.sh" || exit 1
+}
+
+
+init "$@"
+main "$@"
+

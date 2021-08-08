@@ -463,7 +463,7 @@ _init()
    # nice for tests
    if [ -z "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}" ]
    then
-      r_get_libexec_dir "$0" \
+      r_get_libexec_dir "${MULLE_EXECUTABLE}" \
                         "mulle-bashfunctions/${MULLE_BASHFUNCTIONS_VERSION}" \
                         "mulle-bashfunctions.sh"
 
@@ -493,6 +493,7 @@ _init()
       esac
    fi
 
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-compatibility.sh" || exit 1
    . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-logging.sh" || exit 1
    . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-version.sh" || exit 1
 
@@ -502,6 +503,8 @@ _init()
    main "$@"
 }
 
+
+MULLE_EXECUTABLE="${MULLE_EXECUTABLE:-${BASH_SOURCE[0]:-${(%):-%x}}}"
 
 _init "$@"
 

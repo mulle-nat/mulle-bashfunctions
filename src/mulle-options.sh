@@ -51,9 +51,15 @@ options_dump_env()
    log_trace "LS  :${C_TRACE2} `ls -a1F`"
 }
 
-
+# caller should do set +x if 0
 options_setup_trace()
 {
+
+   if [ "${MULLE_FLAG_LOG_ENVIRONMENT}" = YES ]
+   then
+      options_dump_env
+   fi
+
    case "${1}" in
       VERBOSE)
          MULLE_FLAG_LOG_VERBOSE='YES'
@@ -77,17 +83,16 @@ options_setup_trace()
 
          if [ "${MULLE_TRACE_POSTPONE}" != 'YES' ]
          then
-            log_trace "1848 trace (set -x) started"
-            set -x
+            # log_trace "1848 trace (set -x) started"
+            # set -x # lol fcking zsh turns this off at function end
+            #        # unsetopt localoptions does not help
             PS4="+ ${ps4string} + "
          fi
+         return 0
       ;;
    esac
 
-   if [ "${MULLE_FLAG_LOG_ENVIRONMENT}" = YES ]
-   then
-      options_dump_env
-   fi
+   return 2
 }
 
 
@@ -227,13 +232,23 @@ options_technical_flags()
 
       -t|--trace)
          MULLE_TRACE='1848'
-         ps4string='${BASH_SOURCE[0]##*/}:${LINENO}'
+         if [ ! -z "${ZSH_VERSION}" ]
+         then
+            ps4string='%1x:%I' # TODO: fix for zsh
+         else
+            ps4string='${BASH_SOURCE[0]##*/}:${LINENO}'
+         fi
          # propagate
       ;;
 
       -tfpwd|--trace-full-pwd)
          before_trace_fail "${flag}"
-         ps4string='${BASH_SOURCE[0]##*/}:${LINENO} \"\w\"'
+         if [ ! -z "${ZSH_VERSION}" ]
+         then
+            ps4string='%1x:%I \"\w\"'
+         else
+            ps4string='${BASH_SOURCE[0]##*/}:${LINENO} \"\w\"'
+         fi
       ;;
 
       -tp|--trace-profile)
@@ -250,10 +265,20 @@ options_technical_flags()
                   internal_fail 'MULLE_UNAME must be set by now'
                ;;
                linux)
-                  ps4string='$(date "+%s.%N (${BASH_SOURCE[0]##*/}:${LINENO})")'
+                  if [ ! -z "${ZSH_VERSION}" ]
+                  then
+                     ps4string='$(date "+%s.%N (%1x:%I)")'
+                  else
+                     ps4string='$(date "+%s.%N (${BASH_SOURCE[0]##*/}:${LINENO})")'
+                  fi
                ;;
                *)
-                  ps4string='$(date "+%s (${BASH_SOURCE[0]##*/}:${LINENO})")'
+                  if [ ! -z "${ZSH_VERSION}" ]
+                  then
+                     ps4string='$(date "+%s (%1x:%I)")'
+                  else
+                     ps4string='$(date "+%s (${BASH_SOURCE[0]##*/}:${LINENO})")'
+                  fi
                ;;
             esac
 #         fi
@@ -267,7 +292,12 @@ options_technical_flags()
 
       -tpwd|--trace-pwd)
          before_trace_fail "${flag}"
-         ps4string='${BASH_SOURCE[0]##*/}:${LINENO} \".../\W\"'
+         if [ ! -z "${ZSH_VERSION}" ]
+         then
+            ps4string='%1x:%I \".../\W\"'
+         else
+            ps4string='${BASH_SOURCE[0]##*/}:${LINENO} \".../\W\"'
+         fi
       ;;
 
       -tx|--trace-immediately)
@@ -282,13 +312,23 @@ options_technical_flags()
 
       -T)
          MULLE_TRACE='1848'
-         ps4string='${BASH_SOURCE[0]##*/}:${LINENO}'
+         if [ ! -z "${ZSH_VERSION}" ]
+         then
+            ps4string='%1x:%I'
+         else
+            ps4string='${BASH_SOURCE[0]##*/}:${LINENO}'
+         fi
          return # don't propagate
       ;;
 
       -T*T)
          MULLE_TRACE='1848'
-         ps4string='${BASH_SOURCE[0]##*/}:${LINENO}'
+         if [ ! -z "${ZSH_VERSION}" ]
+         then
+            ps4string='%1x:%I'
+         else
+            ps4string='${BASH_SOURCE[0]##*/}:${LINENO}'
+         fi
          flag="${flag%T}"
       ;;
 
@@ -403,7 +443,7 @@ options_unpostpone_trace()
 
 #
 # this has very limited use, i only use it in some tests
-#
+# caller should do set +x if 0
 _options_mini_main()
 {
    while [ $# -ne 0 ]

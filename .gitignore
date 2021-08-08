@@ -12,3 +12,10 @@ build/
 mulle-project/publisher-info.sh
 
 src/mulle-nat/
+var/
+research/
+CMakeCache.txt
+CMakeFiles/
+CPackConfig.cmake
+CPackSourceConfig.cmake
+cmake_install.cmake

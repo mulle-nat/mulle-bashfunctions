@@ -177,7 +177,7 @@ r_get_libexec_dir()
    if [ ! -f "${RVAL}/${matchfile}" ]
    then
       unset RVAL
-      printf "%s\n" "$0 fatal error: Could not find \"${subdir}\" libexec ($PWD)" >&2
+      printf "%s\n" "$0 fatal error: Could not find \"${subdir}\" libexec (${PWD#${MULLE_USER_PWD}/})" >&2
       exit 1
    fi
 }

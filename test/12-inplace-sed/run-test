@@ -108,7 +108,7 @@ EOF
 
 main()
 {
-   _options_mini_main "$@"
+   _options_mini_main "$@" && set -x
 
   test_inplace_sed
 

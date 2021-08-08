@@ -49,26 +49,6 @@ array_value_check()
 }
 
 
-#
-# more specialized lines code, that's not even used anywhere I think
-#
-r_count_lines()
-{
-   local array="$1"
-
-   RVAL=0
-
-   local line
-
-   shell_disable_glob; IFS=$'\n'
-   for line in ${array}
-   do
-      RVAL=$((RVAL + 1))
-   done
-   IFS="${DEFAULT_IFS}" ; shell_enable_glob
-}
-
-
 r_get_line_at_index()
 {
    local array="$1"

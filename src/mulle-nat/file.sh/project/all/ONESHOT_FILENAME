@@ -163,7 +163,7 @@ main()
       shift
    done
 
-   options_setup_trace "${MULLE_TRACE}"
+   options_setup_trace "${MULLE_TRACE}" && set -x
 
    ##
    ## ADD YOUR CODE HERE
@@ -211,9 +211,7 @@ _init()
       fi
    fi
 
-   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions.sh" "minimal" &&
-   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-path.sh" &&
-   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-file.sh" ||
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions.sh" ||
       fail "failed to load bashfunctions from ${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}"
 
    #  set -e # more pain then gain in the end
@@ -225,6 +223,10 @@ _init()
    call_main "${<|ONESHOT_UPCASE_IDENTIFIER|>_FLAGS}" "$@"
 }
 
+#
+# set MULLE_EXECUTABLE here unless set already
+#
+MULLE_EXECUTABLE="${MULLE_EXECUTABLE:-${BASH_SOURCE[0]:-${(%):-%x}}}"
 
 _init "$@" # will call main indirectly via call_main
 

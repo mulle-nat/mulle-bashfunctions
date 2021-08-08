@@ -31,6 +31,8 @@
 #
 MULLE_PARALLEL_SH="included"
 
+[ -z "${MULLE_FILE_SH}" ] && echo "mulle-file.sh must be included before mulle-parallel.sh" 2>&1 && exit 1
+
 
 r_get_core_count()
 {
@@ -193,8 +195,12 @@ _parallel_begin()
 
    if [ -z "${_parallel_maxjobs}" ]
    then
-      r_get_core_count
-      _parallel_maxjobs="${RVAL}"
+      _parallel_maxjobs="${MULLE_PARALLEL_MAX_JOBS}"
+      if [ -z "${_parallel_maxjobs}" ]
+      then
+         r_get_core_count
+         _parallel_maxjobs="${RVAL}"
+      fi
    fi
 }
 
@@ -215,7 +221,25 @@ _parallel_end()
 
    exekutor rm "${_parallel_statusfile}"
 
-   [ -z "${_parallel_fails}" ]
+   [ "${_parallel_fails}" -eq 0 ]
+}
+
+
+
+_parallel_status()
+{
+   log_entry "_parallel_status" "$@"
+
+   local rval="$1"; shift
+
+   [ -z "${_parallel_statusfile}" ] && internal_fail "_parallel_statusfile must be defined"
+
+   # only append to status file if error
+   if [ $rval -ne 0 ]
+   then
+      log_warning "warning: $* failed with $rval"
+      redirect_append_exekutor "${_parallel_statusfile}" printf "%s\n" "${rval};$*"
+   fi
 }
 
 
@@ -232,18 +256,12 @@ _parallel_execute()
       local rval
 
       exekutor "$@"
-      rval=$?
-
-      # only append to status file if error
-      if [ $rval -ne 0 ]
-      then
-         log_warning "warning: $* failed with $rval"
-         redirect_append_exekutor "${_parallel_statusfile}" printf "%s\n" "${rval};$*"
-      fi
+      _parallel_status $? "$@"
    ) &
 }
 
 
+# intention of this is to act like a form of xargs
 parallel_execute()
 {
    log_entry "parallel_execute" "$@"

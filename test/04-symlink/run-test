@@ -45,7 +45,7 @@ run_test_1()
 
 main()
 {
-   _options_mini_main "$@"
+   _options_mini_main "$@" && set -x
 
    rm -rf deep 2> /dev/null
 

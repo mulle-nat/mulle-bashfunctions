@@ -174,7 +174,7 @@ run_test_7()
 
 main()
 {
-   _options_mini_main "$@"
+   _options_mini_main "$@" && set -x
 
    rm -rf deep 2> /dev/null
 

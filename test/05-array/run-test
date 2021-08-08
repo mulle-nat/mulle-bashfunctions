@@ -107,7 +107,7 @@ test_assoc_array()
 
 main()
 {
-   _options_mini_main "$@"
+   _options_mini_main "$@" && set -x
 
    test_array
    test_assoc_array

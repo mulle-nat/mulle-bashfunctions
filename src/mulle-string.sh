@@ -248,6 +248,24 @@ r_remove_line_once()
 }
 
 
+#
+# more specialized lines code, that's not even used anywhere I think
+#
+r_count_lines()
+{
+   local array="$1"
+
+   RVAL=0
+
+   local line
+
+   shell_disable_glob; IFS=$'\n'
+   for line in ${array}
+   do
+      RVAL=$((RVAL + 1))
+   done
+   IFS="${DEFAULT_IFS}" ; shell_enable_glob
+}
 
 #
 # can't have linefeeds as delimiter

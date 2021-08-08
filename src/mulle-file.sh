@@ -52,7 +52,7 @@ mkdir_if_missing()
       return 0
    fi
 
-   log_fluff "Creating directory \"$1\" ($PWD)"
+   log_fluff "Creating directory \"$1\" (${PWD#${MULLE_USER_PWD}/})"
 
    local rval
 
@@ -88,16 +88,23 @@ r_mkdir_parent_if_missing()
 
    r_dirname "${dstdir}"
    case "${RVAL}" in
-      ""|"\.")
+      ""|\.)
       ;;
 
       *)
          mkdir_if_missing "${RVAL}"
-         return 0
+         return $?
       ;;
    esac
 
    return 1
+}
+
+
+# need this still for mulle-objc-lista
+mkdir_parent_if_missing()
+{
+   r_mkdir_parent_if_missing "$@"
 }
 
 
@@ -215,7 +222,7 @@ remove_file_if_present()
    # fluff. So this is even super slow.
    if [ -e "$1"  -o -L "$1" ] && _remove_file_if_present "$1"
    then
-      log_fluff "Removed \"${1#${PWD}/}\" ($PWD)"
+      log_fluff "Removed \"${1#${PWD}/}\" (${PWD#${MULLE_USER_PWD}/})"
       return 0
    fi
    return 1
@@ -286,7 +293,7 @@ _r_make_tmp_in_dir_uuidgen()
          fluke=$((fluke + 1 ))
          if [ "${fluke}" -lt 3 ]
          then
-            fail "Could not (eve repeatedly) create \"${RVAL}\" (${filetype:-f})"
+            fail "Could not (even repeatedly) create \"${RVAL}\" (${filetype:-f})"
          fi
       fi
    done
@@ -413,8 +420,7 @@ create_symlink()
    local stashdir="$2"  # stashdir of this clone (absolute or relative to $PWD)
    local absolute="$3"
 
-
-   [ -e "${url}" ]        || fail "${C_RESET}${C_BOLD}${url}${C_ERROR} does not exist ($PWD)"
+   [ -e "${url}" ]        || fail "${C_RESET}${C_BOLD}${url}${C_ERROR} does not exist (${PWD#${MULLE_USER_PWD}/})"
    [ ! -z "${absolute}" ] || fail "absolute must be YES or NO"
 
    r_absolutepath "${url}"

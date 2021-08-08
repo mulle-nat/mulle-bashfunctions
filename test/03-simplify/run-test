@@ -176,7 +176,7 @@ test_simplified_path2()
 
 main()
 {
-   _options_mini_main "$@"
+   _options_mini_main "$@" && set -x
 
   test_simplified_path
   test_simplified_path2

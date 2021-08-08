@@ -1,4 +1,4 @@
-#! /bin/dash
+#! /usr/bin/env bash
 
 [ "${TRACE}" = 'YES' ] && set -x && : "$0" "$@"
 
@@ -92,7 +92,7 @@ test_relative_path_between()
 
 main()
 {
-   _options_mini_main "$@"
+   _options_mini_main "$@" && set -x
 
    test_compute_relative
    test_relative_path_between

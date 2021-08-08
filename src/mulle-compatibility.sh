@@ -175,7 +175,7 @@ shell_is_function()
    if [ ! -z "${ZSH_VERSION}" ]
    then
       case "`type "$1" `" in
-         *function)
+         *function*)
             return 0
          ;;
       esac
