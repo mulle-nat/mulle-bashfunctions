@@ -195,17 +195,20 @@ etc_setup_from_share_if_needed()
    # use per default symlinks and change to file on edit (makes it
    # easier to upgrade unedited files
    #
-   IFS=$'\n'; shell_disable_glob
-   for filename in `find "${share}" ! -type d -print`
-   do
+   if [ -d "${share}" ] # sometimes it's not there, but find complains
+   then
+      IFS=$'\n'; shell_disable_glob
+      for filename in `find "${share}" ! -type d -print`
+      do
+         IFS="${DEFAULT_IFS}"; shell_enable_glob
+         r_basename "${filename}"
+         etc_symlink_or_copy_file "${filename}" \
+                                  "${etc}" \
+                                  "${RVAL}" \
+                                  "${symlink}"
+      done
       IFS="${DEFAULT_IFS}"; shell_enable_glob
-      r_basename "${filename}"
-      etc_symlink_or_copy_file "${filename}" \
-                               "${etc}" \
-                               "${RVAL}" \
-                               "${symlink}"
-   done
-   IFS="${DEFAULT_IFS}"; shell_enable_glob
+   fi
 }
 
 

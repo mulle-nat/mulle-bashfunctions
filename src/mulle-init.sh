@@ -193,18 +193,17 @@ call_main()
       return $?
    fi
 
-   local quote
    local arg
+   local args 
+   local sep 
 
-   quote="'"
    args=""
    for arg in "$@"
    do
-      arg="${arg//${quote}/${quote}\"${quote}\"${quote}}"
-      args="${args} '${arg}'"
+      printf -v args "%s%s%q" "${args}" "${sep}" "${arg}"
+      sep=" "
    done
 
-   unset quote
    unset arg
 
    eval main "${flags}" "${args}"

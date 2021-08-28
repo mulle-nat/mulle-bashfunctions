@@ -130,9 +130,9 @@ rmdir_safer()
 
    if [ -d "$1" ]
    then
-      assert_sane_path "$1"
-      exekutor chmod -R ugo+wX "$1" >&2 || fail "Failed to make $1 writable"
-      exekutor rm -rf "$1"  >&2 || fail "failed to remove $1"
+      r_assert_sane_path "$1"
+      exekutor chmod -R ugo+wX "${RVAL}" >&2 || fail "Failed to make \"${RVAL}\" writable"
+      exekutor rm -rf "${RVAL}"  >&2 || fail "failed to remove \"${RVAL}\""
    fi
 }
 

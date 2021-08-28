@@ -225,7 +225,6 @@ _parallel_end()
 }
 
 
-
 _parallel_status()
 {
    log_entry "_parallel_status" "$@"

@@ -500,8 +500,10 @@ _r_simplified_path()
 
            if [ ! -z "${last}" -a "${last}" != ".." ]
            then
-              result="$(sed '$d' <<< "${result}")"
-              last="$(sed -n '$p' <<< "${result}")"
+              r_remove_last_line "${result}"
+              result="${RVAL}"
+              r_get_last_line "${result}"
+              last="${RVAL}"
               continue
            fi
          ;;
@@ -523,13 +525,9 @@ _r_simplified_path()
       remove_empty='YES'
 
       last="${i}"
-      if [ -z "${result}" ]
-      then
-         result="${i}"
-      else
-         result="${result}
-${i}"
-      fi
+
+      r_add_line "${result}" "${i}"
+      result="${RVAL}"
    done
 
    IFS="${DEFAULT_IFS}"
@@ -610,7 +608,7 @@ assert_sane_subdir_path()
 }
 
 
-assert_sane_path()
+r_assert_sane_path()
 {
    r_simplified_path "$1"
 
@@ -630,8 +628,7 @@ assert_sane_path()
          r_path_depth "${filepath}"
          if [ "${RVAL}" -le 2 ]
          then
-            log_error "refuse suspicious path \"$1\""
-            exit 1
+            fail "Refuse suspicious path \"$1\""
          fi
          RVAL="${filepath}"
       ;;

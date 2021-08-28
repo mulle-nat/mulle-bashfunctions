@@ -1,12 +1,6 @@
-#! /usr/bin/env bash
+#! /usr/bin/env zsh
 
 [ "${TRACE}" = 'YES' ] && set -x
-
-if [ ! -z "${ZSH_VERSION}" ]
-then
-   setopt sh_word_split
-fi
-
 
 expect_output()
 {
@@ -73,6 +67,22 @@ test_doublequote()
 
    r_escaped_doublequotes '"\\"'
    expect_output "${RVAL}" '\"\\\\\"'
+}
+
+
+test_singlequote()
+{
+   local output
+
+# EMPTY STRING
+   r_escaped_singlequotes ''
+   expect_output "${RVAL}" ""
+
+   r_escaped_singlequotes 'a'
+   expect_output "${RVAL}" 'a'
+
+   r_escaped_singlequotes "'"
+   expect_output "${RVAL}" \'\"\'\"\'
 }
 
 
@@ -143,6 +153,7 @@ main()
 {
    test_backslash
    test_doublequote
+   test_singlequote
 
    echo "All tests passed" >&2
 }

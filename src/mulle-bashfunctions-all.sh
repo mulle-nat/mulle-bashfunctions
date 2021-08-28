@@ -1223,7 +1223,7 @@ logging_tee_exekutor()
    local output="$1"; shift
    local teeoutput="$1"; shift
 
-   exekutor_print "$@" | tee -a "${teeoutput}" "${output}"
+   eval_exekutor_print "$@" >> "${output}"
    _append_tee_exekutor "${output}" "${teeoutput}" "$@"
 }
 
@@ -1233,7 +1233,7 @@ logging_tee_eval_exekutor()
    local output="$1"; shift
    local teeoutput="$1"; shift
 
-   eval_exekutor_print "$@" | tee -a "${teeoutput}" "${output}"
+   eval_exekutor_print "$@" >> "${output}"
    _append_tee_eval_exekutor "${output}" "${teeoutput}" "$@"
 }
 
@@ -1510,23 +1510,15 @@ r_remove_line_once()
 }
 
 
-#
-# more specialized lines code, that's not even used anywhere I think
-#
-r_count_lines()
+r_get_last_line()
 {
-   local array="$1"
+  RVAL="$(sed -n '$p' <<< "$1")" # get last line
+}
 
-   RVAL=0
 
-   local line
-
-   shell_disable_glob; IFS=$'\n'
-   for line in ${array}
-   do
-      RVAL=$((RVAL + 1))
-   done
-   IFS="${DEFAULT_IFS}" ; shell_enable_glob
+r_remove_last_line()
+{
+   RVAL="$(sed '$d' <<< "$1")"  # remove last line
 }
 
 #
@@ -1676,6 +1668,23 @@ ${lines}
 }
 
 
+r_count_lines()
+{
+   local array="$1"
+
+   RVAL=0
+
+   local line
+
+   shell_disable_glob; IFS=$'\n'
+   for line in ${array}
+   do
+      RVAL=$((RVAL + 1))
+   done
+   IFS="${DEFAULT_IFS}" ; shell_enable_glob
+}
+
+
 #
 # this removes any previous occurrence, its very costly
 #
@@ -1767,7 +1776,10 @@ r_filepath_cleaned()
       RVAL="${RVAL//\/\///}"
    done
 
-   [ -z "${RVAL}" ] && RVAL="${1:0:1}"
+   if [ -z "${RVAL}" ] 
+   then
+      RVAL="${1:0:1}"
+   fi
 }
 
 
@@ -2044,11 +2056,16 @@ r_escaped_backslashes()
 }
 
 
+# it's assumed you want to put contents into
+# singlequotes e.g.
+#   r_escaped_singlequotes "say 'hello'"
+#   x='${RVAL}'
 r_escaped_singlequotes()
 {
-   local quote="'"
+   local quote
 
-   RVAL="${*//${quote}/${quote}\"${quote}\"${quote}}"
+   quote="'"
+   RVAL="${1//${quote}/${quote}\"${quote}\"${quote}}"
 }
 
 
@@ -2544,18 +2561,17 @@ call_main()
       return $?
    fi
 
-   local quote
    local arg
+   local args 
+   local sep 
 
-   quote="'"
    args=""
    for arg in "$@"
    do
-      arg="${arg//${quote}/${quote}\"${quote}\"${quote}}"
-      args="${args} '${arg}'"
+      printf -v args "%s%s%q" "${args}" "${sep}" "${arg}"
+      sep=" "
    done
 
-   unset quote
    unset arg
 
    eval main "${flags}" "${args}"
@@ -2865,7 +2881,6 @@ options_technical_flags()
       -tx|--trace-immediately)
          set -x
       ;;
-
 
       -t-)
          MULLE_TRACE=
@@ -3526,8 +3541,10 @@ _r_simplified_path()
 
            if [ ! -z "${last}" -a "${last}" != ".." ]
            then
-              result="$(sed '$d' <<< "${result}")"
-              last="$(sed -n '$p' <<< "${result}")"
+              r_remove_last_line "${result}"
+              result="${RVAL}"
+              r_get_last_line "${result}"
+              last="${RVAL}"
               continue
            fi
          ;;
@@ -3549,13 +3566,9 @@ _r_simplified_path()
       remove_empty='YES'
 
       last="${i}"
-      if [ -z "${result}" ]
-      then
-         result="${i}"
-      else
-         result="${result}
-${i}"
-      fi
+
+      r_add_line "${result}" "${i}"
+      result="${RVAL}"
    done
 
    IFS="${DEFAULT_IFS}"
@@ -3636,7 +3649,7 @@ assert_sane_subdir_path()
 }
 
 
-assert_sane_path()
+r_assert_sane_path()
 {
    r_simplified_path "$1"
 
@@ -3656,8 +3669,7 @@ assert_sane_path()
          r_path_depth "${filepath}"
          if [ "${RVAL}" -le 2 ]
          then
-            log_error "refuse suspicious path \"$1\""
-            exit 1
+            fail "Refuse suspicious path \"$1\""
          fi
          RVAL="${filepath}"
       ;;
@@ -3797,9 +3809,9 @@ rmdir_safer()
 
    if [ -d "$1" ]
    then
-      assert_sane_path "$1"
-      exekutor chmod -R ugo+wX "$1" >&2 || fail "Failed to make $1 writable"
-      exekutor rm -rf "$1"  >&2 || fail "failed to remove $1"
+      r_assert_sane_path "$1"
+      exekutor chmod -R ugo+wX "${RVAL}" >&2 || fail "Failed to make \"${RVAL}\" writable"
+      exekutor rm -rf "${RVAL}"  >&2 || fail "failed to remove \"${RVAL}\""
    fi
 }
 
@@ -5090,7 +5102,6 @@ _parallel_end()
 }
 
 
-
 _parallel_status()
 {
    log_entry "_parallel_status" "$@"
@@ -5104,8 +5115,6 @@ _parallel_status()
    then
       log_warning "warning: $* failed with $rval"
       redirect_append_exekutor "${_parallel_statusfile}" printf "%s\n" "${rval};$*"
-   else
-      log_debug "Finished job #${_parallel_jobs}: $*"
    fi
 }
 
@@ -5543,17 +5552,20 @@ etc_setup_from_share_if_needed()
    # use per default symlinks and change to file on edit (makes it
    # easier to upgrade unedited files
    #
-   IFS=$'\n'; shell_disable_glob
-   for filename in `find "${share}" ! -type d -print`
-   do
+   if [ -d "${share}" ] # sometimes it's not there, but find complains
+   then
+      IFS=$'\n'; shell_disable_glob
+      for filename in `find "${share}" ! -type d -print`
+      do
+         IFS="${DEFAULT_IFS}"; shell_enable_glob
+         r_basename "${filename}"
+         etc_symlink_or_copy_file "${filename}" \
+                                  "${etc}" \
+                                  "${RVAL}" \
+                                  "${symlink}"
+      done
       IFS="${DEFAULT_IFS}"; shell_enable_glob
-      r_basename "${filename}"
-      etc_symlink_or_copy_file "${filename}" \
-                               "${etc}" \
-                               "${RVAL}" \
-                               "${symlink}"
-   done
-   IFS="${DEFAULT_IFS}"; shell_enable_glob
+   fi
 }
 
 

@@ -352,22 +352,31 @@ _append_tee_eval_exekutor()
 }
 
 
+#
+# output is supposed to be the logfile and teeoutput the console
+#
 logging_tee_exekutor()
 {
    local output="$1"; shift
    local teeoutput="$1"; shift
 
-   exekutor_print "$@" | tee -a "${teeoutput}" "${output}"
+   exekutor_print "$@" >> "${output}"
    _append_tee_exekutor "${output}" "${teeoutput}" "$@"
 }
 
 
+#
+# output is supposed to be the logfile and teeoutput the console
+#
 logging_tee_eval_exekutor()
 {
    local output="$1"; shift
    local teeoutput="$1"; shift
 
-   eval_exekutor_print "$@" | tee -a "${teeoutput}" "${output}"
+   #
+   # MEMO: why is output here right ? I thought it would be teeoutput ?
+   #
+   eval_exekutor_print "$@" >> "${output}"
    _append_tee_eval_exekutor "${output}" "${teeoutput}" "$@"
 }
 

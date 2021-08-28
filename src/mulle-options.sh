@@ -304,7 +304,6 @@ options_technical_flags()
          set -x
       ;;
 
-
       -t-)
          MULLE_TRACE=
          set +x
