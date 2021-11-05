@@ -34,6 +34,19 @@ MULLE_PARALLEL_SH="included"
 [ -z "${MULLE_FILE_SH}" ] && echo "mulle-file.sh must be included before mulle-parallel.sh" 2>&1 && exit 1
 
 
+very_short_sleep()
+{
+   case "${MULLE_UNAME}" in 
+      darwin)
+         sleep 0.001 #s # 1000Hz  
+      ;;
+
+      *)
+         sleep 0.001s #s # 1000Hz  
+      ;;
+   esac
+}  
+
 r_get_core_count()
 {
    if [ -z "${MULLE_CORES}" ]
@@ -99,7 +112,7 @@ wait_for_available_job()
          break
       fi
       log_debug "Waiting on jobs to finish (${#running[@]})"
-      sleep 0.001s # 1000Hz
+      very_short_sleep
    done
 }
 
@@ -170,7 +183,7 @@ wait_for_load_average()
       fi
       log_debug "Waiting on load average to come down"
 
-      sleep 0.001s # 1000Hz
+      very_short_sleep
    done
 }
 
@@ -254,7 +267,7 @@ _parallel_execute()
    (
       local rval
 
-      exekutor "$@"
+      ( exekutor "$@" ) # run in subshell to capture exit code
       _parallel_status $? "$@"
    ) &
 }
