@@ -43,7 +43,7 @@ shell_enable_pipefail()
 
 shell_disable_pipefail()
 {
-   set +o extglob
+   set +o pipefail
 }
 
 
@@ -185,6 +185,7 @@ shell_is_function()
    [ "`type -t "$1"`" = "function" ]
    return $?
 }
+
 
 #
 # extglob is enabled by default now. I see no real downside

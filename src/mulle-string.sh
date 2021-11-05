@@ -140,8 +140,8 @@ r_comma_concat()
 r_semicolon_concat()
 {
    r_concat "$1" "$2" ";"
-   r_remove_suffix "${RVAL}" ";"
 }
+
 
 # use for filepaths
 r_slash_concat()

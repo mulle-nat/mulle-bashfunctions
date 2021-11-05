@@ -93,7 +93,7 @@ eval_exekutor_print()
 
    while [ $# -ne 0 ]
    do
-      printf "%s" " `echo \"$1\"`"
+      printf "%s" " `echo \"$1\"`"  # what was the point of that ?
       shift
    done
    printf '\n'
@@ -176,7 +176,7 @@ eval_exekutor()
    eval "$@"
    MULLE_EXEKUTOR_RVAL=$?
 
-   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-2}" ] && stacktrace
+   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-18}" ] && stacktrace
 
    return ${MULLE_EXEKUTOR_RVAL}
 }
@@ -193,7 +193,7 @@ eval_rexekutor()
    eval "$@"
    MULLE_EXEKUTOR_RVAL=$?
 
-   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-2}" ] && stacktrace
+   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-18}" ] && stacktrace
 
    return ${MULLE_EXEKUTOR_RVAL}
 }
@@ -212,7 +212,7 @@ _eval_exekutor()
 
    MULLE_EXEKUTOR_RVAL=$?
 
-   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-2}" ] && stacktrace
+   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-18}" ] && stacktrace
 
    return ${MULLE_EXEKUTOR_RVAL}
 }
@@ -234,7 +234,7 @@ redirect_exekutor()
 
    MULLE_EXEKUTOR_RVAL=$?
 
-   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-2}" ] && stacktrace
+   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-18}" ] && stacktrace
 
    return ${MULLE_EXEKUTOR_RVAL}
 }
@@ -256,7 +256,7 @@ redirect_eval_exekutor()
 
    MULLE_EXEKUTOR_RVAL=$?
 
-   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-2}" ] && stacktrace
+   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-18}" ] && stacktrace
 
    return ${MULLE_EXEKUTOR_RVAL}
 }
@@ -278,7 +278,7 @@ redirect_append_exekutor()
 
    MULLE_EXEKUTOR_RVAL=$?
 
-   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-2}" ] && stacktrace
+   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-18}" ] && stacktrace
 
    return ${MULLE_EXEKUTOR_RVAL}
 }
@@ -300,7 +300,7 @@ _redirect_append_eval_exekutor()
 
    MULLE_EXEKUTOR_RVAL=$?
 
-   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-2}" ] && stacktrace
+   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-18}" ] && stacktrace
 
    return ${MULLE_EXEKUTOR_RVAL}
 }
@@ -323,7 +323,7 @@ _append_tee_exekutor()
 
    MULLE_EXEKUTOR_RVAL=${PIPESTATUS[0]}
 
-   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-2}" ] && stacktrace
+   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-18}" ] && stacktrace
 
    return ${MULLE_EXEKUTOR_RVAL}
 }
@@ -346,7 +346,7 @@ _append_tee_eval_exekutor()
 
    MULLE_EXEKUTOR_RVAL=${PIPESTATUS[0]}
 
-   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-2}" ] && stacktrace
+   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-18}" ] && stacktrace
 
    return ${MULLE_EXEKUTOR_RVAL}
 }
@@ -360,7 +360,13 @@ logging_tee_exekutor()
    local output="$1"; shift
    local teeoutput="$1"; shift
 
+   # if we are tracing, we don't want to see this twice
+   if [ "${MULLE_FLAG_LOG_EXEKUTOR}" != 'YES' ]
+   then
+      exekutor_print "$@" >> "${teeoutput}"
+   fi
    exekutor_print "$@" >> "${output}"
+
    _append_tee_exekutor "${output}" "${teeoutput}" "$@"
 }
 
@@ -373,9 +379,11 @@ logging_tee_eval_exekutor()
    local output="$1"; shift
    local teeoutput="$1"; shift
 
-   #
-   # MEMO: why is output here right ? I thought it would be teeoutput ?
-   #
+   # if we are tracing, we don't want to see this twice
+   if [ "${MULLE_FLAG_LOG_EXEKUTOR}" != 'YES' ]
+   then
+      eval_exekutor_print "$@" >> "${teeoutput}"
+   fi
    eval_exekutor_print "$@" >> "${output}"
    _append_tee_eval_exekutor "${output}" "${teeoutput}" "$@"
 }
@@ -388,7 +396,10 @@ logging_redirekt_exekutor()
 {
    local output="$1"; shift
 
-   exekutor_print "$@" > "${output}"
+   if [ "${MULLE_FLAG_LOG_EXEKUTOR}" != 'YES' ]
+   then
+      exekutor_print "$@" >> "${output}"
+   fi
    redirect_append_exekutor "${output}" "$@"
 }
 
@@ -397,9 +408,51 @@ logging_redirect_eval_exekutor()
 {
    local output="$1"; shift
 
-   eval_exekutor_print "$@" > "${output}"
+   if [ "${MULLE_FLAG_LOG_EXEKUTOR}" != 'YES' ]
+   then
+      eval_exekutor_print "$@" >> "${output}"
+   fi
    _redirect_append_eval_exekutor "${output}" "$@"
 }
 
+
+#
+# prefer mulle-column as it colorifies
+#        column if installed (as its a BSD tool, its often missing)
+#        cat as a fallback to get anything
+#
+rexecute_column_table_or_cat()
+{
+   local separator="$1"; shift
+
+   local cmd
+   local column_cmds="mulle-column column cat"
+
+   if [ -z "${COLUMN}" ]
+   then
+      for cmd in ${column_cmds}
+      do
+         if COLUMN="`command -v "${cmd}" `"
+         then
+            break
+         fi
+      done
+   fi
+
+   if [ -z "${COLUMN}" ]
+   then
+      fail "No matching executable for any of ${column_cmds// /,} found"
+   fi
+
+   case "${COLUMN}" in
+      *column)
+         rexekutor "${COLUMN}" '-t' '-s' "${separator:-;}" "$@"
+      ;;
+
+      *)
+         rexekutor "${COLUMN}" "$@"
+      ;;
+   esac
+}
 
 :

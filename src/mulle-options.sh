@@ -364,7 +364,7 @@ options_technical_flags()
          return # don't propagate
       ;;
 
-      -VV|--very-verbose)
+      -VV)
          after_trace_warning "${flag}"
 
          MULLE_TRACE='FLUFF'

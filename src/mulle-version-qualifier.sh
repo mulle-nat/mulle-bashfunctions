@@ -147,7 +147,6 @@ r_versions_qualify_s()
    local versions="$1"
 
    local operator
-   local value
    local version
 
    _s="${_s#"${_s%%[![:space:]]*}"}" # remove leading whitespace characters
@@ -216,8 +215,6 @@ r_versions_qualify_i()
    local versions="$1"
    local result="$2"
 
-   local tmp
-
    _s="${_s#"${_s%%[![:space:]]*}"}" # remove leading whitespace characters
    case "${_s}" in
       [Aa][Nn][Dd]*)
@@ -247,7 +244,7 @@ r_versions_qualify_i()
       ;;
    esac
 
-   fail "Unexpected expression at ${_s} of versions qualifier \"${qualifier}\""
+   fail "Unexpected expression at ${_s} of versions qualifier \"${_qualifier}\""
 }
 
 
@@ -317,6 +314,7 @@ versions_filter()
    fi
 
    local _s
+   local _closer
 
    # used to traverse the string
    _s="${filter}"

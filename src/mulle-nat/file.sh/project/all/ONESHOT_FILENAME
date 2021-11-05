@@ -122,8 +122,10 @@ main()
    local MULLE_TRACE_POSTPONE='NO'
 
    #
-   # simple flag handling
+   # simple option/flag handling
    #
+   local OPTION_VALUE
+
    while [ $# -ne 0 ]
    do
       if options_technical_flags "$1"
@@ -139,6 +141,13 @@ main()
 
          -h*|--help|help)
             usage
+         ;;
+
+         --value)
+            [ $# -eq 1 ] && match_list_usage "missing argument to $1"
+            shift
+
+            OPTION_VALUE="$1"
          ;;
 
          --version)

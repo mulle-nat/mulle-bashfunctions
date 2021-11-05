@@ -493,8 +493,11 @@ _init()
       esac
    fi
 
+   # shellcheck source=src/mulle-compatibility.sh
    . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-compatibility.sh" || exit 1
+   # shellcheck source=src/mulle-logging.sh
    . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-logging.sh" || exit 1
+   # shellcheck source=src/mulle-version.sh
    . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-version.sh" || exit 1
 
    shell_enable_pipefail
