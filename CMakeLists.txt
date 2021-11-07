@@ -19,6 +19,7 @@ set( NONE_SCRIPTS
 "src/mulle-bashloader.sh"
 "src/mulle-compatibility.sh"
 )
+string( REPLACE ";" " " NONE_SCRIPTS_STR "${NONE_SCRIPTS}")
 
 
 set( MINIMAL_SCRIPTS
@@ -29,12 +30,14 @@ ${NONE_SCRIPTS}
 "src/mulle-init.sh"
 "src/mulle-options.sh"
 )
+string( REPLACE ";" " " MINIMAL_SCRIPTS_STR "${MINIMAL_SCRIPTS}")
 
 set( DEFAULT_SCRIPTS
 ${MINIMAL_SCRIPTS}
 "src/mulle-path.sh"
 "src/mulle-file.sh"
 )
+string( REPLACE ";" " " DEFAULT_SCRIPTS_STR "${DEFAULT_SCRIPTS}")
 
 set( ALL_SCRIPTS
 ${DEFAULT_SCRIPTS}
@@ -44,6 +47,7 @@ ${DEFAULT_SCRIPTS}
 "src/mulle-version.sh"
 "src/mulle-etc.sh"
 )
+string( REPLACE ";" " " ALL_SCRIPTS_STR "${ALL_SCRIPTS}")
 
 
 set( EMBED_SCRIPTS
@@ -63,30 +67,32 @@ set( EMBED_SCRIPTS
 "src/mulle-etc.sh"
 )
 
-execute_process( COMMAND egrep -h -v "^#|^\ *#" ${EMBED_SCRIPTS}
+string( REPLACE ";" " " EMBED_SCRIPTS_STR "${EMBED_SCRIPTS}")
+
+execute_process( COMMAND bash -c "cat src/embed-header.sh ; egrep -h -v \"^#|^\ *#\" ${EMBED_SCRIPTS_STR}; cat src/embed-footer.sh"
                  WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
                  OUTPUT_FILE "src/mulle-bashfunctions-embed.sh")
 
 # probably more of a fun thing:
 # embed using eval `base64 <<< "<data>" | gzip -d -c`
-execute_process( COMMAND bash "-c" "gzip -c -9 \"src/mulle-bashfunctions-embed.sh\" | base64 -b 79 -o \"src/mulle-bashfunctions-embed.gz.base64\"" 
+execute_process( COMMAND bash "-c" "gzip -c -9 \"src/mulle-bashfunctions-embed.sh\" | base64 -b 79 -o \"src/mulle-bashfunctions-embed.sh.gz.base64\"" 
                  WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
                  INPUT_FILE "src/mulle-bashfunctions-embed.sh"
                  OUTPUT_FILE "src/mulle-bashfunctions-embed.sh.gz.base64")
 
-execute_process( COMMAND cat ${NONE_SCRIPTS}
+execute_process( COMMAND bash -c "cat src/header.sh ; egrep -h -v \"^#|^\ *#\" ${NONE_SCRIPTS_STR}"
                  WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
                  OUTPUT_FILE "src/mulle-bashfunctions-none.sh")
 
-execute_process( COMMAND cat ${DEFAULT_SCRIPTS}
+execute_process( COMMAND bash -c "cat src/header.sh ; egrep -h -v \"^#|^\ *#\" ${DEFAULT_SCRIPTS_STR}"
                  WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
                  OUTPUT_FILE "src/mulle-bashfunctions.sh")
 
-execute_process( COMMAND cat ${MINIMAL_SCRIPTS}
+execute_process( COMMAND bash -c "cat src/header.sh ; egrep -h -v \"^#|^\ *#\" ${MINIMAL_SCRIPTS_STR}"
                  WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
                  OUTPUT_FILE "src/mulle-bashfunctions-minimal.sh")
 
-execute_process( COMMAND cat ${ALL_SCRIPTS}
+execute_process( COMMAND bash -c "cat src/header.sh ; egrep -h -v \"^#|^\ *#\" ${ALL_SCRIPTS_STR}"
                  WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
                  OUTPUT_FILE "src/mulle-bashfunctions-all.sh")
 

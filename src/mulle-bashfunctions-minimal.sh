@@ -1,6 +1,5 @@
-#! /usr/bin/env bash
 #
-#   Copyright (c) 2018-2021 Nat! - Mulle kybernetiK
+#   Copyright (c) 2015-2021 Nat! - Mulle kybernetiK
 #   All rights reserved.
 #
 #   Redistribution and use in source and binary forms, with or without
@@ -27,10 +26,8 @@
 #   INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
 #   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-#   POSSIBILITY OF SUCH DAMAGE.
 #
 
-# double inclusion of this file is OK!
 if [ -z "${MULLE_BASHGLOBAL_SH}" ]
 then
    MULLE_BASHGLOBAL_SH="included"
@@ -43,14 +40,8 @@ then
      setopt POSIX_ARGZERO
    fi
 
-   # this generally should be set by the main script
-   # and not here, but if it isn't set then set it
    if [ -z "${MULLE_EXECUTABLE}" ]
    then
-      # this actually works fairly well... We want to handle a lot of weird
-      # situations, like only this file being sourced in. The main file being
-      # sourced in or executed. Should run with zsh and bash...
-      #
       MULLE_EXECUTABLE="${BASH_SOURCE[0]:-${(%):-%x}}"
       case "${MULLE_EXECUTABLE##*/}" in 
          mulle-bash*.sh)
@@ -66,18 +57,12 @@ then
       ;;
    esac
 
-   # MULLE_EXECUTABLE_BIN_DIR="${MULLE_EXECUTABLE%/*}"
 
-   # can be convenient to overload by caller sometimes
    if [ -z "${MULLE_EXECUTABLE_NAME}" ]
    then
       MULLE_EXECUTABLE_NAME="${MULLE_EXECUTABLE##*/}"
    fi
 
-   #
-   # this is useful for shortening filenames for output
-   # like printf "%s\n" "${filename#${MULLE_USER_PWD}/}"
-   #
    if [ -z "${MULLE_USER_PWD}" ]
    then
       MULLE_USER_PWD="${PWD}"
@@ -90,9 +75,6 @@ then
    MULLE_EXECUTABLE_FAIL_PREFIX="${MULLE_EXECUTABLE_NAME}"
    MULLE_EXECUTABLE_PID="$$"
 
-   #
-   # need this for scripts also
-   #
    if [ -z "${MULLE_UNAME}" ]
    then
       case "${BASH_VERSION}" in
@@ -115,8 +97,6 @@ then
 
       if [ "${MULLE_UNAME}" = "linux" ]
       then
-         # check for WSL (Windows) we want this to be Windows then
-         # abuse DEFAULT_IFS as tmp variable to lessen global var pollution
          read -r DEFAULT_IFS < /proc/sys/kernel/osrelease
          case "${DEFAULT_IFS}" in
             *-Microsoft)
@@ -128,13 +108,6 @@ then
    fi
 
 
-   #
-   # Tip: you can change the hostname to "travis-ci" via Travis settings
-   #      Set MULLE_HOSTNAME to "travis-ci" there. Then you can load travis
-   #      specific settings using host domain environment variables.
-   #
-   #      mulle-env environment --hostname-travis-ci set FOO "VfL Bochum"
-   #
    if [ -z "${MULLE_HOSTNAME}" ]
    then
       case "${MULLE_UNAME}" in
@@ -154,8 +127,6 @@ then
       esac
    fi
 
-   # acquire some sort of username, its not super important
-   # just be consistent
    if [ -z "${MULLE_USERNAME}" ]
    then
       MULLE_USERNAME="${MULLE_USERNAME:-${USERNAME}}" # mingw
@@ -165,46 +136,13 @@ then
       MULLE_USERNAME="${MULLE_USERNAME:-cptnemo}"
    fi
 fi
-#! /usr/bin/env bash
-#
-#   Copyright (c) 2018 Nat! - Mulle kybernetiK
-#   All rights reserved.
-#
-#   Redistribution and use in source and binary forms, with or without
-#   modification, are permitted provided that the following conditions are met:
-#
-#   Redistributions of source code must retain the above copyright notice, this
-#   list of conditions and the following disclaimer.
-#
-#   Redistributions in binary form must reproduce the above copyright notice,
-#   this list of conditions and the following disclaimer in the documentation
-#   and/or other materials provided with the distribution.
-#
-#   Neither the name of Mulle kybernetiK nor the names of its contributors
-#   may be used to endorse or promote products derived from this software
-#   without specific prior written permission.
-#
-#   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-#   AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-#   IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-#   ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
-#   LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-#   CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-#   SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-#   INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-#   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-#   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-#   POSSIBILITY OF SUCH DAMAGE.
-#
 
-# double inclusion of this file is OK!
 if [ -z "${MULLE_BASHLOADER_SH}" ]
 then
    MULLE_BASHLOADER_SH="included"
 
    __bashfunctions_loader()
    {
-      # not sure about this
       if [ -z "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}" -a ! -z "$0" ]
       then
          local tmp
@@ -221,7 +159,6 @@ then
 
       if [ -z "${MULLE_COMPATIBILITY_SH}" ]
       then
-         # shellcheck source=mulle-compatibility.sh
          . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-compatibility.sh" || return 1
       fi
 
@@ -232,35 +169,26 @@ then
          ""|*)
             if [ -z "${MULLE_LOGGING_SH}" ]
             then
-               # shellcheck source=mulle-logging.sh
                . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-logging.sh"  || return 1
             fi
             if [ -z "${MULLE_EXEKUTOR_SH}" ]
             then
-               # shellcheck source=mulle-exekutor.sh
                . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-exekutor.sh" || return 1
             fi
             if [ -z "${MULLE_STRING_SH}" ]
             then
-               # shellcheck source=mulle-string.sh
                . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-string.sh"   || return 1
             fi
             if [ -z "${MULLE_INIT_SH}" ]
             then
-               # shellcheck source=mulle-init.sh
                . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-init.sh"     || return 1
             fi
             if [ -z "${MULLE_OPTIONS_SH}" ]
             then
-               # shellcheck source=mulle-options.sh
                . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-options.sh"  || return 1
             fi
          ;;
       esac
-      #
-      # These are not so often used, so increase speed. One
-      # can turn them off using "minimal". '' is the default
-      #
       case "$1" in
          'none'|'minimal')
          ;;
@@ -268,12 +196,10 @@ then
          ""|*)
             if [ -z "${MULLE_PATH_SH}" ]
             then
-               # shellcheck source=mulle-path.sh
                . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-path.sh" || return 1
             fi
             if [ -z "${MULLE_FILE_SH}" ]
             then
-               # shellcheck source=mulle-file.sh
                . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-file.sh" || return 1
             fi
          ;;
@@ -283,27 +209,22 @@ then
          'all')
             if [ -z "${MULLE_ARRAY_SH}" ]
             then
-               # shellcheck source=mulle-array.sh
                . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-array.sh"    || return 1
             fi
             if [ -z "${MULLE_CASE_SH}" ]
             then
-               # shellcheck source=mulle-case.sh
                . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-case.sh"     || return 1
             fi
             if [ -z "${MULLE_ETC_SH}" ]
             then
-               # shellcheck source=mulle-etc.sh
                . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-etc.sh"      || return 1
             fi
             if [ -z "${MULLE_PARALLEL_SH}" ]
             then
-               # shellcheck source=mulle-parallel.sh
                . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-parallel.sh" || return 1
             fi
             if [ -z "${MULLE_VERSION_SH}" ]
             then
-               # shellcheck source=mulle-version.sh
                . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-version.sh"  || return 1
             fi
       esac
@@ -311,37 +232,6 @@ then
 
    __bashfunctions_loader "$@" || exit 1
 fi
-#! /usr/bin/env bash
-#
-#   Copyright (c) 2021 Nat! - Mulle kybernetiK
-#   All rights reserved.
-#
-#   Redistribution and use in source and binary forms, with or without
-#   modification, are permitted provided that the following conditions are met:
-#
-#   Redistributions of source code must retain the above copyright notice, this
-#   list of conditions and the following disclaimer.
-#
-#   Redistributions in binary form must reproduce the above copyright notice,
-#   this list of conditions and the following disclaimer in the documentation
-#   and/or other materials provided with the distribution.
-#
-#   Neither the name of Mulle kybernetiK nor the names of its contributors
-#   may be used to endorse or promote products derived from this software
-#   without specific prior written permission.
-#
-#   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-#   AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-#   IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-#   ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
-#   LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-#   CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-#   SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-#   INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-#   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-#   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-#   POSSIBILITY OF SUCH DAMAGE.
-#
 [ ! -z "${MULLE_COMPATIBILITY_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
    echo "double inclusion of mulle-compatibility.sh" >&2
 
@@ -500,44 +390,8 @@ shell_is_function()
 }
 
 
-#
-# extglob is enabled by default now. I see no real downside
-# noglob would be another good default for scripting, but that's possibly
-# a bit too surprising
-#
 shell_enable_extglob
 
-#! /usr/bin/env bash
-#
-#   Copyright (c) 2015 Nat! - Mulle kybernetiK
-#   All rights reserved.
-#
-#   Redistribution and use in source and binary forms, with or without
-#   modification, are permitted provided that the following conditions are met:
-#
-#   Redistributions of source code must retain the above copyright notice, this
-#   list of conditions and the following disclaimer.
-#
-#   Redistributions in binary form must reproduce the above copyright notice,
-#   this list of conditions and the following disclaimer in the documentation
-#   and/or other materials provided with the distribution.
-#
-#   Neither the name of Mulle kybernetiK nor the names of its contributors
-#   may be used to endorse or promote products derived from this software
-#   without specific prior written permission.
-#
-#   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-#   AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-#   IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-#   ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
-#   LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-#   CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-#   SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-#   INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-#   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-#   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-#   POSSIBILITY OF SUCH DAMAGE.
-#
 [ ! -z "${MULLE_LOGGING_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
    echo "double inclusion of mulle-logging.sh" >&2
 
@@ -548,8 +402,6 @@ log_printf()
 {
    local format="$1" ; shift
 
-# convenient place to check something that shouldn't happen
-#   [ "$__FAIL__" != 'YES' -a ! -w /tmp/vfl/.mulle/etc/sourcetree/config -a -e /tmp/vfl/.mulle/etc/sourcetree/config ] && __FAIL__="YES" && internal_fail "fail"
 
    if [ -z "${MULLE_EXEKUTOR_LOG_DEVICE}" ]
    then
@@ -576,10 +428,6 @@ log_fail()
 }
 
 
-#
-# don't prefix with warning: just let the colors speak
-# errors are errors though
-#
 log_warning()
 {
    if [ "${MULLE_FLAG_LOG_TERSE}" != 'YES' ]
@@ -613,13 +461,11 @@ log_fluff()
    then
       log_printf "${C_FLUFF}%b${C_RESET}\n" "$*"
    else
-      # fluff should be shown when debug is on but not fluff
       log_debug "$@"
    fi
 }
 
 
-# setting is like fluff but different color scheme
 log_setting()
 {
    if [ "${MULLE_FLAG_LOG_FLUFF}" = 'YES' ]
@@ -629,7 +475,6 @@ log_setting()
 }
 
 
-# for debugging, not for user. same as fluff
 log_debug()
 {
    if [ "${MULLE_FLAG_LOG_DEBUG}" != 'YES' ]
@@ -703,19 +548,10 @@ log_trace2()
 }
 
 
-#
-# some common fail log functions
-# caller failed on me in some bizarre fashion once
-# 8: #762 /home/src/srcM/MulleEOF/MulleEOUtil/.mulle/var/.env/bin/mulle-sourcetree mulle-sourcetree
-# 9: #
-# 10: #
-# 11: #
-# 12: #
 
 
 if [ -z "${BASH_VERSION}" ]
 then
-   # inspired by https://unix.stackexchange.com/questions/453144/functions-calling-context-in-zsh-equivalent-of-bash-caller
    function caller()
    {
       local i="${1:-1}"
@@ -741,7 +577,6 @@ stacktrace()
    local line
    local max
 
-   # don't stack trace when tracing
    case "$-" in
       *x*)
          return
@@ -785,7 +620,6 @@ internal_fail()
 }
 
 
-# Escape sequence and resets, should use tput here instead of ANSI
 logging_reset()
 {
    printf "${C_RESET}" >&2
@@ -800,12 +634,7 @@ logging_trap_install()
 
 logging_initialize_color()
 {
-   # https://stackoverflow.com/questions/4842424/list-of-ansi-color-escape-sequences
-   # https://www.systutorials.com/241795/how-to-judge-whether-its-stderr-is-redirected-to-a-file-in-a-bash-script-on-linux/
-   # do not colorize when /dev/stderr is redirected
-   # https://no-color.org/
 
-   # fix for Xcode
    case "${TERM}" in
       dumb)
          MULLE_NO_COLOR=YES
@@ -816,7 +645,6 @@ logging_initialize_color()
    then
       C_RESET="\033[0m"
 
-      # Useable Foreground colours, for black/white white/black
       C_RED="\033[0;31m"     C_GREEN="\033[0;32m"
       C_BLUE="\033[0;34m"    C_MAGENTA="\033[0;35m"
       C_CYAN="\033[0;36m"
@@ -850,7 +678,6 @@ logging_initialize_color()
 
 _r_lowercase()
 {
-   # ksh bails on ,, during parse
    case "${BASH_VERSION}" in
       [4-9]*|[1-9][0-9]*)
          RVAL="${1,,}"
@@ -876,37 +703,6 @@ logging_initialize()
 logging_initialize "$@"
 
 :
-#! /usr/bin/env bash
-#
-#   Copyright (c) 2017 Nat! - Mulle kybernetiK
-#   All rights reserved.
-#
-#   Redistribution and use in source and binary forms, with or without
-#   modification, are permitted provided that the following conditions are met:
-#
-#   Redistributions of source code must retain the above copyright notice, this
-#   list of conditions and the following disclaimer.
-#
-#   Redistributions in binary form must reproduce the above copyright notice,
-#   this list of conditions and the following disclaimer in the documentation
-#   and/or other materials provided with the distribution.
-#
-#   Neither the name of Mulle kybernetiK nor the names of its contributors
-#   may be used to endorse or promote products derived from this software
-#   without specific prior written permission.
-#
-#   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-#   AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-#   IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-#   ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
-#   LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-#   CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-#   SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-#   INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-#   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-#   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-#   POSSIBILITY OF SUCH DAMAGE.
-#
 [ ! -z "${MULLE_EXEKUTOR_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
    echo "double inclusion of mulle-exekutor.sh" >&2
 
@@ -916,9 +712,6 @@ logging_initialize "$@"
 MULLE_EXEKUTOR_SH="included"
 
 
-# ####################################################################
-#                          Execution
-# ####################################################################
 exekutor_print_arrow()
 {
    local arrow
@@ -938,7 +731,6 @@ exekutor_print_arrow()
 }
 
 
-# keep output down to 240 byte per line
 exekutor_print()
 {
    exekutor_print_arrow
@@ -1028,9 +820,6 @@ exekutor()
 }
 
 
-#
-# the rexekutor promises only to read and is therefore harmless
-#
 rexekutor()
 {
    exekutor_trace "exekutor_print" "$@"
@@ -1060,10 +849,6 @@ eval_exekutor()
 }
 
 
-#
-# declared as harmless (read only)
-# old name reval_exekutor didnt make much sense
-#
 eval_rexekutor()
 {
    exekutor_trace "eval_exekutor_print" "$@"
@@ -1098,7 +883,6 @@ _eval_exekutor()
 
 redirect_exekutor()
 {
-   # funny not found problem ? the base directory of output is missing!a
    local output="$1"; shift
 
    exekutor_trace_output "exekutor_print" '>' "${output}" "$@"
@@ -1120,7 +904,6 @@ redirect_exekutor()
 
 redirect_eval_exekutor()
 {
-   # funny not found problem ? the base directory of output is missing!a
    local output="$1"; shift
 
    exekutor_trace_output "eval_exekutor_print" '>' "${output}" "$@"
@@ -1142,7 +925,6 @@ redirect_eval_exekutor()
 
 redirect_append_exekutor()
 {
-   # funny not found problem ? the base directory of output is missing!a
    local output="$1"; shift
 
    exekutor_trace_output "exekutor_print" '>>' "${output}" "$@"
@@ -1164,7 +946,6 @@ redirect_append_exekutor()
 
 _redirect_append_eval_exekutor()
 {
-   # You have a funny "not found" problem ? the base directory of output is missing!
    local output="$1"; shift
 
    exekutor_trace_output "eval_exekutor_print" '>>' "${output}" "$@"
@@ -1186,7 +967,6 @@ _redirect_append_eval_exekutor()
 
 _append_tee_exekutor()
 {
-   # You have a funny "not found" problem ? the base directory of output is missing!
    local output="$1"; shift
    local teeoutput="$1"; shift
 
@@ -1209,7 +989,6 @@ _append_tee_exekutor()
 
 _append_tee_eval_exekutor()
 {
-   # You have a funny "not found" problem ? the base directory of output is missing!
    local output="$1"; shift
    local teeoutput="$1"; shift
 
@@ -1230,15 +1009,11 @@ _append_tee_eval_exekutor()
 }
 
 
-#
-# output is supposed to be the logfile and teeoutput the console
-#
 logging_tee_exekutor()
 {
    local output="$1"; shift
    local teeoutput="$1"; shift
 
-   # if we are tracing, we don't want to see this twice
    if [ "${MULLE_FLAG_LOG_EXEKUTOR}" != 'YES' ]
    then
       exekutor_print "$@" >> "${teeoutput}"
@@ -1249,15 +1024,11 @@ logging_tee_exekutor()
 }
 
 
-#
-# output is supposed to be the logfile and teeoutput the console
-#
 logging_tee_eval_exekutor()
 {
    local output="$1"; shift
    local teeoutput="$1"; shift
 
-   # if we are tracing, we don't want to see this twice
    if [ "${MULLE_FLAG_LOG_EXEKUTOR}" != 'YES' ]
    then
       eval_exekutor_print "$@" >> "${teeoutput}"
@@ -1267,9 +1038,6 @@ logging_tee_eval_exekutor()
 }
 
 
-#
-# output eval trace also into logfile
-#
 logging_redirekt_exekutor()
 {
    local output="$1"; shift
@@ -1294,11 +1062,6 @@ logging_redirect_eval_exekutor()
 }
 
 
-#
-# prefer mulle-column as it colorifies
-#        column if installed (as its a BSD tool, its often missing)
-#        cat as a fallback to get anything
-#
 rexecute_column_table_or_cat()
 {
    local separator="$1"; shift
@@ -1334,37 +1097,6 @@ rexecute_column_table_or_cat()
 }
 
 :
-#! /usr/bin/env bash
-#
-#   Copyright (c) 2017 Nat! - Mulle kybernetiK
-#   All rights reserved.
-#
-#   Redistribution and use in source and binary forms, with or without
-#   modification, are permitted provided that the following conditions are met:
-#
-#   Redistributions of source code must retain the above copyright notice, this
-#   list of conditions and the following disclaimer.
-#
-#   Redistributions in binary form must reproduce the above copyright notice,
-#   this list of conditions and the following disclaimer in the documentation
-#   and/or other materials provided with the distribution.
-#
-#   Neither the name of Mulle kybernetiK nor the names of its contributors
-#   may be used to endorse or promote products derived from this software
-#   without specific prior written permission.
-#
-#   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-#   AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-#   IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-#   ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
-#   LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-#   CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-#   SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-#   INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-#   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-#   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-#   POSSIBILITY OF SUCH DAMAGE.
-#
 [ ! -z "${MULLE_STRING_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
    echo "double inclusion of mulle-string.sh" >&2
 
@@ -1373,12 +1105,7 @@ MULLE_STRING_SH="included"
 [ -z "${MULLE_BASHGLOBAL_SH}" ]    && echo "mulle-bashglobal.sh must be included before mulle-file.sh" 2>&1 && exit 1
 [ -z "${MULLE_COMPATIBILITY_SH}" ] && echo "mulle-compatibility.sh must be included before mulle-string.sh" 2>&1 && exit 1
 
-# ####################################################################
-#                            Concatenation
-# ####################################################################
-#
 
-# no separator
 r_append()
 {
    RVAL="${1}${2}"
@@ -1410,7 +1137,6 @@ concat()
 }
 
 
-# https://stackoverflow.com/questions/369758/how-to-trim-whitespace-from-a-bash-variable
 r_trim_whitespace()
 {
    RVAL="$*"
@@ -1419,9 +1145,6 @@ r_trim_whitespace()
 }
 
 
-#
-# works for a "common" set of separators
-#
 r_remove_ugly()
 {
    local s="$1"
@@ -1454,40 +1177,31 @@ r_remove_ugly()
    done
 }
 
-#
-# this is "cross-platform" because the paths on MINGW are converted to
-# '/' already
-#
 
-# use for PATHs
 r_colon_concat()
 {
    r_concat "$1" "$2" ":"
    r_remove_ugly "${RVAL}" ":"
 }
 
-# use for lists w/o empty elements
 r_comma_concat()
 {
    r_concat "$1" "$2" ","
    r_remove_ugly "${RVAL}" ","
 }
 
-# use for CSV
 r_semicolon_concat()
 {
    r_concat "$1" "$2" ";"
 }
 
 
-# use for filepaths
 r_slash_concat()
 {
    r_concat "$1" "$2" "/"
    r_remove_duplicate "${RVAL}" "/"
 }
 
-# remove a value from a list
 r_list_remove()
 {
    local sep="${3:- }"
@@ -1510,8 +1224,6 @@ r_comma_remove()
 }
 
 
-# use for building sentences, where space is a separator and
-# not indenting or styling
 r_space_concat()
 {
    concat_no_double_separator "$1" "$2" | string_remove_ugly_separators
@@ -1596,12 +1308,6 @@ r_remove_last_line()
    RVAL="$(sed '$d' <<< "$1")"  # remove last line
 }
 
-#
-# can't have linefeeds as delimiter
-# e.g. find_item "a,b,c" b -> 0
-#      find_item "a,b,c" d -> 1
-#      find_item "a,b,c" "," -> 1
-#
 find_item()
 {
    local line="$1"
@@ -1627,11 +1333,6 @@ find_item()
    return 1
 }
 
-#
-# find_line is fairly critical for mulle-sourcetree walk, which
-# is the slowest operation and most used operation. Don't dick
-# around with this without profiling!
-#
 find_empty_line_zsh()
 {
    local lines="$1"
@@ -1645,11 +1346,6 @@ find_empty_line_zsh()
    return 1
 }
 
-# zsh:
-# this is faster than calling fgrep externally
-# this is faster than while read line <<< lines
-# this is faster than case ${lines} in 
-#f
 find_line_zsh()
 {
    local lines="$1"
@@ -1685,14 +1381,8 @@ find_line_zsh()
 }
 
 
-# bash:
-# this is faster than calling fgrep externally
-# this is faster than while read line <<< lines
-# this is faster than for line in lines
-#
 find_line()
 {
-   # ZSH is apparently super slow in pattern matching
    if [ ! -z "${ZSH_VERSION}" ]
    then
       find_line_zsh "$@"
@@ -1705,17 +1395,13 @@ find_line()
    local escaped_lines
    local pattern
 
-# ensure leading and trailing linefeed for matching and $'' escaping
    printf -v escaped_lines "%q" "
 ${lines}
 "
 
-# add a linefeed here to get also $'' escaping
    printf -v pattern "%q" "${search}
 "
-   # remove $'
    pattern="${pattern:2}"
-   # remove \n'
    pattern="${pattern%???}"
 
    local rval
@@ -1760,9 +1446,6 @@ r_count_lines()
 }
 
 
-#
-# this removes any previous occurrence, its very costly
-#
 r_add_unique_line()
 {
    local lines="$1"
@@ -1804,10 +1487,6 @@ remove_duplicate_lines_stdin()
 }
 
 
-#
-# for very many lines use
-# `sed -n '1!G;h;$p' <<< "${lines}"`"
-#
 r_reverse_lines()
 {
    local lines="$1"
@@ -1827,11 +1506,6 @@ r_reverse_lines()
 }
 
 
-#
-# makes somewhat prettier filenames, removing superflous "."
-# and trailing '/'
-# DO NOT USE ON URLs
-#
 r_filepath_cleaned()
 {
    RVAL="$1"
@@ -1842,8 +1516,6 @@ r_filepath_cleaned()
 
    old=''
 
-   # remove excess //, also inside components
-   # remove excess /./, also inside components
    while [ "${RVAL}" != "${old}" ]
    do
       old="${RVAL}"
@@ -2002,10 +1674,6 @@ r_lowercase()
 
 r_identifier()
 {
-   # works in bash 3.2
-   # may want to disambiguate mulle-scion and MulleScion with __
-   # but it looks surprising for mulle--testallocator
-   #
    RVAL="${1//-/_}" # __
    RVAL="${RVAL//[^a-zA-Z0-9]/_}"
    case "${RVAL}" in
@@ -2016,10 +1684,6 @@ r_identifier()
 }
 
 
-# ####################################################################
-#                            Strings
-# ####################################################################
-#
 is_yes()
 {
    local s
@@ -2039,37 +1703,10 @@ is_yes()
 }
 
 
-# ####################################################################
-#                            Escaping
-# ####################################################################
-#
-
-#
-# unused code
-#
-
-# escape_linefeeds()
-# {
-#    local text
-#
-#    text="${text//\|/\\\|}"
-#    printf "%s" "${text}" | tr '\012' '|'
-# }
-#
-#
-# _unescape_linefeeds()
-# {
-#    tr '|' '\012' | sed -e 's/\\$/|/g' -e '/^$/d'
-# }
-#
-#
-# unescape_linefeeds()
-# {
-#    printf "%s\n" "$@" | tr '|' '\012' | sed -e 's/\\$/|/g' -e '/^$/d'
-# }
 
 
-# this is heaps faster than the sed code
+
+
 r_escaped_grep_pattern()
 {
    local s="$1"
@@ -2088,7 +1725,6 @@ r_escaped_grep_pattern()
 }
 
 
-# assumed that / is used like in sed -e 's/x/y/'
 r_escaped_sed_pattern()
 {
    local s="$1"
@@ -2106,7 +1742,6 @@ r_escaped_sed_pattern()
 }
 
 
-# assumed that / is used like in sed -e 's/x/y/'
 r_escaped_sed_replacement()
 {
    local s="$1"
@@ -2131,10 +1766,6 @@ r_escaped_backslashes()
 }
 
 
-# it's assumed you want to put contents into
-# singlequotes e.g.
-#   r_escaped_singlequotes "say 'hello'"
-#   x='${RVAL}'
 r_escaped_singlequotes()
 {
    local quote
@@ -2144,7 +1775,6 @@ r_escaped_singlequotes()
 }
 
 
-# does not add surrounding "" 
 r_escaped_doublequotes()
 {
    RVAL="${*//\\/\\\\}"
@@ -2152,7 +1782,6 @@ r_escaped_doublequotes()
 }
 
 
-# does not remove surrounding "" though
 r_unescaped_doublequotes()
 {
    RVAL="${*//\\\"/\"}"
@@ -2166,10 +1795,6 @@ r_escaped_shell_string()
 }
 
 
-# ####################################################################
-#                          Prefix / Suffix
-# ####################################################################
-#
 string_has_prefix()
 {
   [ "${1#$2}" != "$1" ]
@@ -2182,7 +1807,6 @@ string_has_suffix()
 }
 
 
-# much faster than calling "basename"
 r_basename()
 {
    local filename="$1"
@@ -2230,7 +1854,6 @@ r_dirname()
       break
    done
 
-   # need to escape filename here as it may contain wildcards
    printf -v last '%q' "${filename##*/}"
    RVAL="${filename%${last}}"
 
@@ -2254,10 +1877,6 @@ r_dirname()
 }
 
 
-#
-# get prefix leading up to character 'c', but if 'c' is quoted deal with it
-# properly
-#
 _r_prefix_with_unquoted_string()
 {
    local s="$1"
@@ -2291,16 +1910,11 @@ _r_prefix_with_unquoted_string()
 
       e_prefix="${e_prefix}\\${c}"
       head="${head}${e_prefix}"
-      # cut like this to avoid interpretation of e_prefix
       s="${s:${#e_prefix}}"
    done
 }
 
 
-#
-# should be safe from malicious backticks and so forth, unfortunately
-# this is not smart enough to parse all valid contents properly
-#
 _r_expand_string()
 {
    local prefix_opener
@@ -2314,18 +1928,12 @@ _r_expand_string()
    local head
    local found
 
-   # ex: "a${b:-c${d:-e}}g"
    while [ ${#_s} -ne 0 ]
    do
-      # look for ${
       _r_prefix_with_unquoted_string "${_s}" '${'
       found=$?
       prefix_opener="${RVAL}" # can be empty
 
-      #
-      # if there is an } before hand, then we stop execution
-      # but we consume that. If there is none at all we bail
-      #
       if ! _r_prefix_with_unquoted_string "${_s}" '}'
       then
          if [ ${found} -eq 0 ]
@@ -2335,10 +1943,6 @@ _r_expand_string()
             return 1
          fi
 
-         #
-         # if we don't have an opener ${ or it comes after us we
-         # are done
-         #
       else
          prefix_closer="${RVAL}"
          if [ ${found} -ne 0 -o ${#prefix_closer} -lt ${#prefix_opener} ]
@@ -2350,27 +1954,17 @@ _r_expand_string()
          fi
       fi
 
-      #
-      # No ${ here, then we are done
-      #
       if [ ${found} -ne 0 ]
       then
          RVAL="${head}${_s}"
          return 0
       fi
 
-      #
-      # the middle is what we evaluate, that'_s whats left in '_s'
-      #
       head="${head}${prefix_opener}"   # copy verbatim and continue
 
       _s="${_s:${#prefix_opener}}"
       _s="${_s#\$\{}"
 
-      #
-      # identifier_1 : ${identifier}
-      # identifier_2 : ${identifier:-anything}
-      #
       anything=
       identifier_1="${_s%%\}*}"     # this can't fail
       identifier_2="${_s%%:-*}"
@@ -2401,7 +1995,6 @@ _r_expand_string()
          fi
       fi
 
-      # idiot protection
       r_identifier "${identifier}"
       identifier="${RVAL}"
 
@@ -2441,37 +2034,6 @@ r_expanded_string()
 }
 
 :
-#! /usr/bin/env bash
-#
-#   Copyright (c) 2017 Nat! - Mulle kybernetiK
-#   All rights reserved.
-#
-#   Redistribution and use in source and binary forms, with or without
-#   modification, are permitted provided that the following conditions are met:
-#
-#   Redistributions of source code must retain the above copyright notice, this
-#   list of conditions and the following disclaimer.
-#
-#   Redistributions in binary form must reproduce the above copyright notice,
-#   this list of conditions and the following disclaimer in the documentation
-#   and/or other materials provided with the distribution.
-#
-#   Neither the name of Mulle kybernetiK nor the names of its contributors
-#   may be used to endorse or promote products derived from this software
-#   without specific prior written permission.
-#
-#   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-#   AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-#   IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-#   ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
-#   LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-#   CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-#   SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-#   INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-#   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-#   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-#   POSSIBILITY OF SUCH DAMAGE.
-#
 [ ! -z "${MULLE_INIT_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
    echo "double inclusion of mulle-init.sh" >&2
 
@@ -2481,7 +2043,6 @@ r_expanded_string()
 MULLE_INIT_SH="included"
 
 
-# export into RVAL global
 r_dirname()
 {
    RVAL="$1"
@@ -2526,11 +2087,6 @@ r_dirname()
 }
 
 
-#
-# stolen from:
-# http://stackoverflow.com/questions/1055671/how-can-i-get-the-behavior-of-gnus-readlink-f-on-a-mac
-# ----
-#
 r_prepend_path_if_relative()
 {
    case "$2" in
@@ -2561,13 +2117,6 @@ r_resolve_symlinks()
 }
 
 
-#
-# executablepath: will be $0
-# subdir: will be mulle-bashfunctions/${VERSION}
-# matchfile: the file to match agains
-#
-# Written this way, so it can get reused
-#
 r_get_libexec_dir()
 {
    local executablepath="$1"
@@ -2596,7 +2145,6 @@ r_get_libexec_dir()
    prefix="${RVAL}"
 
 
-   # now setup the global variable
 
    RVAL="${prefix}/libexec/${subdir}"
    if [ ! -f "${RVAL}/${matchfile}" ]
@@ -2651,37 +2199,6 @@ call_main()
 
    eval main "${flags}" "${args}"
 }
-#! /usr/bin/env bash
-#
-#   Copyright (c) 2017 Nat! - Mulle kybernetiK
-#   All rights reserved.
-#
-#   Redistribution and use in source and binary forms, with or without
-#   modification, are permitted provided that the following conditions are met:
-#
-#   Redistributions of source code must retain the above copyright notice, this
-#   list of conditions and the following disclaimer.
-#
-#   Redistributions in binary form must reproduce the above copyright notice,
-#   this list of conditions and the following disclaimer in the documentation
-#   and/or other materials provided with the distribution.
-#
-#   Neither the name of Mulle kybernetiK nor the names of its contributors
-#   may be used to endorse or promote products derived from this software
-#   without specific prior written permission.
-#
-#   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-#   AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-#   IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-#   ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
-#   LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-#   CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-#   SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-#   INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-#   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-#   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-#   POSSIBILITY OF SUCH DAMAGE.
-#
 [ ! -z "${MULLE_OPTIONS_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
    echo "double inclusion of mulle-options.sh" >&2
 
@@ -2690,12 +2207,7 @@ call_main()
 MULLE_OPTIONS_SH="included"
 
 
-## core option parsing
-# not used by mulle-bootstrap itself at the moment
 
-#
-# variables called flag. because they are indirectly set by flags
-#
 options_dump_env()
 {
    log_trace "ARGS:${C_TRACE2} ${MULLE_ARGUMENTS}"
@@ -2704,7 +2216,6 @@ options_dump_env()
    log_trace "LS  :${C_TRACE2} `ls -a1F`"
 }
 
-# caller should do set +x if 0
 options_setup_trace()
 {
 
@@ -2736,9 +2247,6 @@ options_setup_trace()
 
          if [ "${MULLE_TRACE_POSTPONE}" != 'YES' ]
          then
-            # log_trace "1848 trace (set -x) started"
-            # set -x # lol fcking zsh turns this off at function end
-            #        # unsetopt localoptions does not help
             PS4="+ ${ps4string} + "
          fi
          return 0
@@ -2798,14 +2306,6 @@ after_trace_warning()
 }
 
 
-#
-# local MULLE_FLAG_EXEKUTOR_DRY_RUN
-# local MULLE_FLAG_LOG_DEBUG
-# local MULLE_FLAG_LOG_EXEKUTOR
-# local MULLE_FLAG_LOG_TERSE
-# local MULLE_FLAG_LOG_ENVIRONMENT
-# local MULLE_TRACE
-#
 options_technical_flags()
 {
    local flag="$1"
@@ -2817,7 +2317,6 @@ options_technical_flags()
 
       -ld|--log-debug)
          MULLE_FLAG_LOG_DEBUG='YES'
-         # propagate
       ;;
 
       -lD)
@@ -2832,7 +2331,6 @@ options_technical_flags()
 
       -le|--log-environment)
          MULLE_FLAG_LOG_ENVIRONMENT='YES'
-         # propagate
       ;;
 
       -lE)
@@ -2847,7 +2345,6 @@ options_technical_flags()
 
       -ls|--log-settings)
          MULLE_FLAG_LOG_SETTINGS='YES'
-         # propagate
       ;;
 
       -lS)
@@ -2862,7 +2359,6 @@ options_technical_flags()
 
       -lx|--log-exekutor|--log-execution)
          MULLE_FLAG_LOG_EXEKUTOR='YES'
-         # propagate
       ;;
 
       -lX)
@@ -2891,7 +2387,6 @@ options_technical_flags()
          else
             ps4string='${BASH_SOURCE[0]##*/}:${LINENO}'
          fi
-         # propagate
       ;;
 
       -tfpwd|--trace-full-pwd)
@@ -2905,12 +2400,6 @@ options_technical_flags()
       ;;
 
       -tp|--trace-profile)
-#         if [ ! -z "${ZSH_VERSION}" ]
-#         then
-#            zmodload "zsh/zprof"
-#            # can't trap global exit from within function :(
-#            MULLE_RUN_ZPROF_ON_EXIT="YES"
-#         else
             before_trace_fail "${flag}"
    
             case "${MULLE_UNAME}" in
@@ -2934,7 +2423,6 @@ options_technical_flags()
                   fi
                ;;
             esac
-#         fi
          return # don't propagate
       ;;
 
@@ -3062,13 +2550,6 @@ options_technical_flags()
       ;;
    esac
 
-   #
-   # collect technical options so interested parties can forward them to
-   # other mulle tools. In tools they are called flags, and this will be
-   # renamed too, eventually. If you don't want to forward the technical
-   # flags to other mulle-bashfunction programs - sometimes- use
-   # --clear-flags after all the other flags.
-   #
    if [ -z "${MULLE_TECHNICAL_FLAGS}" ]
    then
       MULLE_TECHNICAL_FLAGS="${flag}"
@@ -3080,7 +2561,6 @@ options_technical_flags()
 }
 
 
-## option parsing common
 
 
 options_unpostpone_trace()
@@ -3093,9 +2573,6 @@ options_unpostpone_trace()
 }
 
 
-#
-# this has very limited use, i only use it in some tests
-# caller should do set +x if 0
 _options_mini_main()
 {
    while [ $# -ne 0 ]
