@@ -63,10 +63,10 @@ r_path_depth()
          r_dirname "${name}"
          name="${RVAL}"
 
-         depth=$(($depth + 1))
+         depth=$((depth + 1))
       done
    fi
-   RVAL="$depth"
+   RVAL="${depth}"
 }
 
 

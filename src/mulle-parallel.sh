@@ -125,6 +125,10 @@ get_current_load_average()
          sysctl -n vm.loadavg | sed -n -e 's/.*{[ ]*\([0-9]*\).*/\1/p'
       ;;
 
+      mingw)
+         echo "7"  # no way to know
+      ;;
+
       *)
          uptime | sed -n -e 's/.*average[s]*:[ ]*\([0-9]*\).*/\1/p'
       ;;
@@ -146,7 +150,7 @@ r_available_core_count()
    r_get_core_count
    cores="${RVAL}"
 
-   if [ -z "${maxavg}" ]
+   if [ -z "${maxaverage}" ]
    then
       r_convenient_max_load_average "${cores}"
       maxaverage="${RVAL}"
