@@ -1,7 +1,6 @@
 cmake_minimum_required (VERSION 3.13)
 
-# use C, because otherwise a CXX compiler is required
-project( mulle-bashfunctions C)
+project( mulle-bashfunctions NONE)
 
 
 #
@@ -16,9 +15,11 @@ project( mulle-bashfunctions C)
 # EOF
 #
 set( NONE_SCRIPTS
+"src/mulle-bashglobal.sh"
 "src/mulle-bashloader.sh"
 "src/mulle-compatibility.sh"
 )
+
 
 set( MINIMAL_SCRIPTS
 ${NONE_SCRIPTS}
@@ -43,6 +44,35 @@ ${DEFAULT_SCRIPTS}
 "src/mulle-version.sh"
 "src/mulle-etc.sh"
 )
+
+
+set( EMBED_SCRIPTS
+"src/mulle-bashglobal.sh"
+"src/mulle-compatibility.sh"
+"src/mulle-logging.sh"
+"src/mulle-exekutor.sh"
+"src/mulle-string.sh"
+"src/mulle-init.sh"
+"src/mulle-options.sh"
+"src/mulle-path.sh"
+"src/mulle-file.sh"
+"src/mulle-array.sh"
+"src/mulle-case.sh"
+"src/mulle-parallel.sh"
+"src/mulle-version.sh"
+"src/mulle-etc.sh"
+)
+
+execute_process( COMMAND egrep -h -v "^#|^\ *#" ${EMBED_SCRIPTS}
+                 WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+                 OUTPUT_FILE "src/mulle-bashfunctions-embed.sh")
+
+# probably more of a fun thing:
+# embed using eval `base64 <<< "<data>" | gzip -d -c`
+execute_process( COMMAND bash "-c" "gzip -c -9 \"src/mulle-bashfunctions-embed.sh\" | base64 -b 79 -o \"src/mulle-bashfunctions-embed.gz.base64\"" 
+                 WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+                 INPUT_FILE "src/mulle-bashfunctions-embed.sh"
+                 OUTPUT_FILE "src/mulle-bashfunctions-embed.sh.gz.base64")
 
 execute_process( COMMAND cat ${NONE_SCRIPTS}
                  WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"

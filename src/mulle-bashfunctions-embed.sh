@@ -1,36 +1,4 @@
-#! /usr/bin/env bash
-#
-#   Copyright (c) 2018-2021 Nat! - Mulle kybernetiK
-#   All rights reserved.
-#
-#   Redistribution and use in source and binary forms, with or without
-#   modification, are permitted provided that the following conditions are met:
-#
-#   Redistributions of source code must retain the above copyright notice, this
-#   list of conditions and the following disclaimer.
-#
-#   Redistributions in binary form must reproduce the above copyright notice,
-#   this list of conditions and the following disclaimer in the documentation
-#   and/or other materials provided with the distribution.
-#
-#   Neither the name of Mulle kybernetiK nor the names of its contributors
-#   may be used to endorse or promote products derived from this software
-#   without specific prior written permission.
-#
-#   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-#   AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-#   IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-#   ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
-#   LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-#   CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-#   SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-#   INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-#   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-#   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-#   POSSIBILITY OF SUCH DAMAGE.
-#
 
-# double inclusion of this file is OK!
 if [ -z "${MULLE_BASHGLOBAL_SH}" ]
 then
    MULLE_BASHGLOBAL_SH="included"
@@ -43,14 +11,8 @@ then
      setopt POSIX_ARGZERO
    fi
 
-   # this generally should be set by the main script
-   # and not here, but if it isn't set then set it
    if [ -z "${MULLE_EXECUTABLE}" ]
    then
-      # this actually works fairly well... We want to handle a lot of weird
-      # situations, like only this file being sourced in. The main file being
-      # sourced in or executed. Should run with zsh and bash...
-      #
       MULLE_EXECUTABLE="${BASH_SOURCE[0]:-${(%):-%x}}"
       case "${MULLE_EXECUTABLE##*/}" in 
          mulle-bash*.sh)
@@ -66,18 +28,12 @@ then
       ;;
    esac
 
-   # MULLE_EXECUTABLE_BIN_DIR="${MULLE_EXECUTABLE%/*}"
 
-   # can be convenient to overload by caller sometimes
    if [ -z "${MULLE_EXECUTABLE_NAME}" ]
    then
       MULLE_EXECUTABLE_NAME="${MULLE_EXECUTABLE##*/}"
    fi
 
-   #
-   # this is useful for shortening filenames for output
-   # like printf "%s\n" "${filename#${MULLE_USER_PWD}/}"
-   #
    if [ -z "${MULLE_USER_PWD}" ]
    then
       MULLE_USER_PWD="${PWD}"
@@ -90,9 +46,6 @@ then
    MULLE_EXECUTABLE_FAIL_PREFIX="${MULLE_EXECUTABLE_NAME}"
    MULLE_EXECUTABLE_PID="$$"
 
-   #
-   # need this for scripts also
-   #
    if [ -z "${MULLE_UNAME}" ]
    then
       case "${BASH_VERSION}" in
@@ -115,8 +68,6 @@ then
 
       if [ "${MULLE_UNAME}" = "linux" ]
       then
-         # check for WSL (Windows) we want this to be Windows then
-         # abuse DEFAULT_IFS as tmp variable to lessen global var pollution
          read -r DEFAULT_IFS < /proc/sys/kernel/osrelease
          case "${DEFAULT_IFS}" in
             *-Microsoft)
@@ -128,13 +79,6 @@ then
    fi
 
 
-   #
-   # Tip: you can change the hostname to "travis-ci" via Travis settings
-   #      Set MULLE_HOSTNAME to "travis-ci" there. Then you can load travis
-   #      specific settings using host domain environment variables.
-   #
-   #      mulle-env environment --hostname-travis-ci set FOO "VfL Bochum"
-   #
    if [ -z "${MULLE_HOSTNAME}" ]
    then
       case "${MULLE_UNAME}" in
@@ -154,8 +98,6 @@ then
       esac
    fi
 
-   # acquire some sort of username, its not super important
-   # just be consistent
    if [ -z "${MULLE_USERNAME}" ]
    then
       MULLE_USERNAME="${MULLE_USERNAME:-${USERNAME}}" # mingw
@@ -165,183 +107,6 @@ then
       MULLE_USERNAME="${MULLE_USERNAME:-cptnemo}"
    fi
 fi
-#! /usr/bin/env bash
-#
-#   Copyright (c) 2018 Nat! - Mulle kybernetiK
-#   All rights reserved.
-#
-#   Redistribution and use in source and binary forms, with or without
-#   modification, are permitted provided that the following conditions are met:
-#
-#   Redistributions of source code must retain the above copyright notice, this
-#   list of conditions and the following disclaimer.
-#
-#   Redistributions in binary form must reproduce the above copyright notice,
-#   this list of conditions and the following disclaimer in the documentation
-#   and/or other materials provided with the distribution.
-#
-#   Neither the name of Mulle kybernetiK nor the names of its contributors
-#   may be used to endorse or promote products derived from this software
-#   without specific prior written permission.
-#
-#   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-#   AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-#   IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-#   ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
-#   LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-#   CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-#   SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-#   INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-#   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-#   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-#   POSSIBILITY OF SUCH DAMAGE.
-#
-
-# double inclusion of this file is OK!
-if [ -z "${MULLE_BASHLOADER_SH}" ]
-then
-   MULLE_BASHLOADER_SH="included"
-
-   __bashfunctions_loader()
-   {
-      # not sure about this
-      if [ -z "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}" -a ! -z "$0" ]
-      then
-         local tmp
-
-         tmp="${0%/*}"
-         if [  -f "${tmp}/mulle-bashfunctions.sh" ]
-         then
-            MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${tmp}"
-         fi
-      fi
-
-      [ -z "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}" ] \
-         && echo "MULLE_BASHFUNCTIONS_LIBEXEC_DIR not set" && exit 1
-
-      if [ -z "${MULLE_COMPATIBILITY_SH}" ]
-      then
-         # shellcheck source=mulle-compatibility.sh
-         . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-compatibility.sh" || return 1
-      fi
-
-      case "$1" in
-         'none')
-         ;;
-
-         ""|*)
-            if [ -z "${MULLE_LOGGING_SH}" ]
-            then
-               # shellcheck source=mulle-logging.sh
-               . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-logging.sh"  || return 1
-            fi
-            if [ -z "${MULLE_EXEKUTOR_SH}" ]
-            then
-               # shellcheck source=mulle-exekutor.sh
-               . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-exekutor.sh" || return 1
-            fi
-            if [ -z "${MULLE_STRING_SH}" ]
-            then
-               # shellcheck source=mulle-string.sh
-               . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-string.sh"   || return 1
-            fi
-            if [ -z "${MULLE_INIT_SH}" ]
-            then
-               # shellcheck source=mulle-init.sh
-               . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-init.sh"     || return 1
-            fi
-            if [ -z "${MULLE_OPTIONS_SH}" ]
-            then
-               # shellcheck source=mulle-options.sh
-               . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-options.sh"  || return 1
-            fi
-         ;;
-      esac
-      #
-      # These are not so often used, so increase speed. One
-      # can turn them off using "minimal". '' is the default
-      #
-      case "$1" in
-         'none'|'minimal')
-         ;;
-
-         ""|*)
-            if [ -z "${MULLE_PATH_SH}" ]
-            then
-               # shellcheck source=mulle-path.sh
-               . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-path.sh" || return 1
-            fi
-            if [ -z "${MULLE_FILE_SH}" ]
-            then
-               # shellcheck source=mulle-file.sh
-               . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-file.sh" || return 1
-            fi
-         ;;
-      esac
-
-      case "$1" in
-         'all')
-            if [ -z "${MULLE_ARRAY_SH}" ]
-            then
-               # shellcheck source=mulle-array.sh
-               . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-array.sh"    || return 1
-            fi
-            if [ -z "${MULLE_CASE_SH}" ]
-            then
-               # shellcheck source=mulle-case.sh
-               . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-case.sh"     || return 1
-            fi
-            if [ -z "${MULLE_ETC_SH}" ]
-            then
-               # shellcheck source=mulle-etc.sh
-               . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-etc.sh"      || return 1
-            fi
-            if [ -z "${MULLE_PARALLEL_SH}" ]
-            then
-               # shellcheck source=mulle-parallel.sh
-               . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-parallel.sh" || return 1
-            fi
-            if [ -z "${MULLE_VERSION_SH}" ]
-            then
-               # shellcheck source=mulle-version.sh
-               . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-version.sh"  || return 1
-            fi
-      esac
-   }
-
-   __bashfunctions_loader "$@" || exit 1
-fi
-#! /usr/bin/env bash
-#
-#   Copyright (c) 2021 Nat! - Mulle kybernetiK
-#   All rights reserved.
-#
-#   Redistribution and use in source and binary forms, with or without
-#   modification, are permitted provided that the following conditions are met:
-#
-#   Redistributions of source code must retain the above copyright notice, this
-#   list of conditions and the following disclaimer.
-#
-#   Redistributions in binary form must reproduce the above copyright notice,
-#   this list of conditions and the following disclaimer in the documentation
-#   and/or other materials provided with the distribution.
-#
-#   Neither the name of Mulle kybernetiK nor the names of its contributors
-#   may be used to endorse or promote products derived from this software
-#   without specific prior written permission.
-#
-#   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-#   AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-#   IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-#   ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
-#   LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-#   CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-#   SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-#   INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-#   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-#   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-#   POSSIBILITY OF SUCH DAMAGE.
-#
 [ ! -z "${MULLE_COMPATIBILITY_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
    echo "double inclusion of mulle-compatibility.sh" >&2
 
@@ -500,44 +265,8 @@ shell_is_function()
 }
 
 
-#
-# extglob is enabled by default now. I see no real downside
-# noglob would be another good default for scripting, but that's possibly
-# a bit too surprising
-#
 shell_enable_extglob
 
-#! /usr/bin/env bash
-#
-#   Copyright (c) 2015 Nat! - Mulle kybernetiK
-#   All rights reserved.
-#
-#   Redistribution and use in source and binary forms, with or without
-#   modification, are permitted provided that the following conditions are met:
-#
-#   Redistributions of source code must retain the above copyright notice, this
-#   list of conditions and the following disclaimer.
-#
-#   Redistributions in binary form must reproduce the above copyright notice,
-#   this list of conditions and the following disclaimer in the documentation
-#   and/or other materials provided with the distribution.
-#
-#   Neither the name of Mulle kybernetiK nor the names of its contributors
-#   may be used to endorse or promote products derived from this software
-#   without specific prior written permission.
-#
-#   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-#   AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-#   IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-#   ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
-#   LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-#   CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-#   SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-#   INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-#   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-#   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-#   POSSIBILITY OF SUCH DAMAGE.
-#
 [ ! -z "${MULLE_LOGGING_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
    echo "double inclusion of mulle-logging.sh" >&2
 
@@ -548,8 +277,6 @@ log_printf()
 {
    local format="$1" ; shift
 
-# convenient place to check something that shouldn't happen
-#   [ "$__FAIL__" != 'YES' -a ! -w /tmp/vfl/.mulle/etc/sourcetree/config -a -e /tmp/vfl/.mulle/etc/sourcetree/config ] && __FAIL__="YES" && internal_fail "fail"
 
    if [ -z "${MULLE_EXEKUTOR_LOG_DEVICE}" ]
    then
@@ -576,10 +303,6 @@ log_fail()
 }
 
 
-#
-# don't prefix with warning: just let the colors speak
-# errors are errors though
-#
 log_warning()
 {
    if [ "${MULLE_FLAG_LOG_TERSE}" != 'YES' ]
@@ -613,13 +336,11 @@ log_fluff()
    then
       log_printf "${C_FLUFF}%b${C_RESET}\n" "$*"
    else
-      # fluff should be shown when debug is on but not fluff
       log_debug "$@"
    fi
 }
 
 
-# setting is like fluff but different color scheme
 log_setting()
 {
    if [ "${MULLE_FLAG_LOG_FLUFF}" = 'YES' ]
@@ -629,7 +350,6 @@ log_setting()
 }
 
 
-# for debugging, not for user. same as fluff
 log_debug()
 {
    if [ "${MULLE_FLAG_LOG_DEBUG}" != 'YES' ]
@@ -703,19 +423,10 @@ log_trace2()
 }
 
 
-#
-# some common fail log functions
-# caller failed on me in some bizarre fashion once
-# 8: #762 /home/src/srcM/MulleEOF/MulleEOUtil/.mulle/var/.env/bin/mulle-sourcetree mulle-sourcetree
-# 9: #
-# 10: #
-# 11: #
-# 12: #
 
 
 if [ -z "${BASH_VERSION}" ]
 then
-   # inspired by https://unix.stackexchange.com/questions/453144/functions-calling-context-in-zsh-equivalent-of-bash-caller
    function caller()
    {
       local i="${1:-1}"
@@ -741,7 +452,6 @@ stacktrace()
    local line
    local max
 
-   # don't stack trace when tracing
    case "$-" in
       *x*)
          return
@@ -785,7 +495,6 @@ internal_fail()
 }
 
 
-# Escape sequence and resets, should use tput here instead of ANSI
 logging_reset()
 {
    printf "${C_RESET}" >&2
@@ -800,12 +509,7 @@ logging_trap_install()
 
 logging_initialize_color()
 {
-   # https://stackoverflow.com/questions/4842424/list-of-ansi-color-escape-sequences
-   # https://www.systutorials.com/241795/how-to-judge-whether-its-stderr-is-redirected-to-a-file-in-a-bash-script-on-linux/
-   # do not colorize when /dev/stderr is redirected
-   # https://no-color.org/
 
-   # fix for Xcode
    case "${TERM}" in
       dumb)
          MULLE_NO_COLOR=YES
@@ -816,7 +520,6 @@ logging_initialize_color()
    then
       C_RESET="\033[0m"
 
-      # Useable Foreground colours, for black/white white/black
       C_RED="\033[0;31m"     C_GREEN="\033[0;32m"
       C_BLUE="\033[0;34m"    C_MAGENTA="\033[0;35m"
       C_CYAN="\033[0;36m"
@@ -850,7 +553,6 @@ logging_initialize_color()
 
 _r_lowercase()
 {
-   # ksh bails on ,, during parse
    case "${BASH_VERSION}" in
       [4-9]*|[1-9][0-9]*)
          RVAL="${1,,}"
@@ -876,37 +578,6 @@ logging_initialize()
 logging_initialize "$@"
 
 :
-#! /usr/bin/env bash
-#
-#   Copyright (c) 2017 Nat! - Mulle kybernetiK
-#   All rights reserved.
-#
-#   Redistribution and use in source and binary forms, with or without
-#   modification, are permitted provided that the following conditions are met:
-#
-#   Redistributions of source code must retain the above copyright notice, this
-#   list of conditions and the following disclaimer.
-#
-#   Redistributions in binary form must reproduce the above copyright notice,
-#   this list of conditions and the following disclaimer in the documentation
-#   and/or other materials provided with the distribution.
-#
-#   Neither the name of Mulle kybernetiK nor the names of its contributors
-#   may be used to endorse or promote products derived from this software
-#   without specific prior written permission.
-#
-#   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-#   AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-#   IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-#   ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
-#   LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-#   CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-#   SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-#   INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-#   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-#   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-#   POSSIBILITY OF SUCH DAMAGE.
-#
 [ ! -z "${MULLE_EXEKUTOR_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
    echo "double inclusion of mulle-exekutor.sh" >&2
 
@@ -916,9 +587,6 @@ logging_initialize "$@"
 MULLE_EXEKUTOR_SH="included"
 
 
-# ####################################################################
-#                          Execution
-# ####################################################################
 exekutor_print_arrow()
 {
    local arrow
@@ -938,7 +606,6 @@ exekutor_print_arrow()
 }
 
 
-# keep output down to 240 byte per line
 exekutor_print()
 {
    exekutor_print_arrow
@@ -1028,9 +695,6 @@ exekutor()
 }
 
 
-#
-# the rexekutor promises only to read and is therefore harmless
-#
 rexekutor()
 {
    exekutor_trace "exekutor_print" "$@"
@@ -1060,10 +724,6 @@ eval_exekutor()
 }
 
 
-#
-# declared as harmless (read only)
-# old name reval_exekutor didnt make much sense
-#
 eval_rexekutor()
 {
    exekutor_trace "eval_exekutor_print" "$@"
@@ -1098,7 +758,6 @@ _eval_exekutor()
 
 redirect_exekutor()
 {
-   # funny not found problem ? the base directory of output is missing!a
    local output="$1"; shift
 
    exekutor_trace_output "exekutor_print" '>' "${output}" "$@"
@@ -1120,7 +779,6 @@ redirect_exekutor()
 
 redirect_eval_exekutor()
 {
-   # funny not found problem ? the base directory of output is missing!a
    local output="$1"; shift
 
    exekutor_trace_output "eval_exekutor_print" '>' "${output}" "$@"
@@ -1142,7 +800,6 @@ redirect_eval_exekutor()
 
 redirect_append_exekutor()
 {
-   # funny not found problem ? the base directory of output is missing!a
    local output="$1"; shift
 
    exekutor_trace_output "exekutor_print" '>>' "${output}" "$@"
@@ -1164,7 +821,6 @@ redirect_append_exekutor()
 
 _redirect_append_eval_exekutor()
 {
-   # You have a funny "not found" problem ? the base directory of output is missing!
    local output="$1"; shift
 
    exekutor_trace_output "eval_exekutor_print" '>>' "${output}" "$@"
@@ -1186,7 +842,6 @@ _redirect_append_eval_exekutor()
 
 _append_tee_exekutor()
 {
-   # You have a funny "not found" problem ? the base directory of output is missing!
    local output="$1"; shift
    local teeoutput="$1"; shift
 
@@ -1209,7 +864,6 @@ _append_tee_exekutor()
 
 _append_tee_eval_exekutor()
 {
-   # You have a funny "not found" problem ? the base directory of output is missing!
    local output="$1"; shift
    local teeoutput="$1"; shift
 
@@ -1230,15 +884,11 @@ _append_tee_eval_exekutor()
 }
 
 
-#
-# output is supposed to be the logfile and teeoutput the console
-#
 logging_tee_exekutor()
 {
    local output="$1"; shift
    local teeoutput="$1"; shift
 
-   # if we are tracing, we don't want to see this twice
    if [ "${MULLE_FLAG_LOG_EXEKUTOR}" != 'YES' ]
    then
       exekutor_print "$@" >> "${teeoutput}"
@@ -1249,15 +899,11 @@ logging_tee_exekutor()
 }
 
 
-#
-# output is supposed to be the logfile and teeoutput the console
-#
 logging_tee_eval_exekutor()
 {
    local output="$1"; shift
    local teeoutput="$1"; shift
 
-   # if we are tracing, we don't want to see this twice
    if [ "${MULLE_FLAG_LOG_EXEKUTOR}" != 'YES' ]
    then
       eval_exekutor_print "$@" >> "${teeoutput}"
@@ -1267,9 +913,6 @@ logging_tee_eval_exekutor()
 }
 
 
-#
-# output eval trace also into logfile
-#
 logging_redirekt_exekutor()
 {
    local output="$1"; shift
@@ -1294,11 +937,6 @@ logging_redirect_eval_exekutor()
 }
 
 
-#
-# prefer mulle-column as it colorifies
-#        column if installed (as its a BSD tool, its often missing)
-#        cat as a fallback to get anything
-#
 rexecute_column_table_or_cat()
 {
    local separator="$1"; shift
@@ -1334,37 +972,6 @@ rexecute_column_table_or_cat()
 }
 
 :
-#! /usr/bin/env bash
-#
-#   Copyright (c) 2017 Nat! - Mulle kybernetiK
-#   All rights reserved.
-#
-#   Redistribution and use in source and binary forms, with or without
-#   modification, are permitted provided that the following conditions are met:
-#
-#   Redistributions of source code must retain the above copyright notice, this
-#   list of conditions and the following disclaimer.
-#
-#   Redistributions in binary form must reproduce the above copyright notice,
-#   this list of conditions and the following disclaimer in the documentation
-#   and/or other materials provided with the distribution.
-#
-#   Neither the name of Mulle kybernetiK nor the names of its contributors
-#   may be used to endorse or promote products derived from this software
-#   without specific prior written permission.
-#
-#   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-#   AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-#   IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-#   ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
-#   LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-#   CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-#   SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-#   INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-#   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-#   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-#   POSSIBILITY OF SUCH DAMAGE.
-#
 [ ! -z "${MULLE_STRING_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
    echo "double inclusion of mulle-string.sh" >&2
 
@@ -1372,12 +979,7 @@ MULLE_STRING_SH="included"
 
 [ -z "${MULLE_COMPATIBILITY_SH}" ] && echo "mulle-compatibility.sh must be included before mulle-string.sh" 2>&1 && exit 1
 
-# ####################################################################
-#                            Concatenation
-# ####################################################################
-#
 
-# no separator
 r_append()
 {
    RVAL="${1}${2}"
@@ -1409,7 +1011,6 @@ concat()
 }
 
 
-# https://stackoverflow.com/questions/369758/how-to-trim-whitespace-from-a-bash-variable
 r_trim_whitespace()
 {
    RVAL="$*"
@@ -1418,9 +1019,6 @@ r_trim_whitespace()
 }
 
 
-#
-# works for a "common" set of separators
-#
 r_remove_ugly()
 {
    local s="$1"
@@ -1453,40 +1051,31 @@ r_remove_ugly()
    done
 }
 
-#
-# this is "cross-platform" because the paths on MINGW are converted to
-# '/' already
-#
 
-# use for PATHs
 r_colon_concat()
 {
    r_concat "$1" "$2" ":"
    r_remove_ugly "${RVAL}" ":"
 }
 
-# use for lists w/o empty elements
 r_comma_concat()
 {
    r_concat "$1" "$2" ","
    r_remove_ugly "${RVAL}" ","
 }
 
-# use for CSV
 r_semicolon_concat()
 {
    r_concat "$1" "$2" ";"
 }
 
 
-# use for filepaths
 r_slash_concat()
 {
    r_concat "$1" "$2" "/"
    r_remove_duplicate "${RVAL}" "/"
 }
 
-# remove a value from a list
 r_list_remove()
 {
    local sep="${3:- }"
@@ -1509,8 +1098,6 @@ r_comma_remove()
 }
 
 
-# use for building sentences, where space is a separator and
-# not indenting or styling
 r_space_concat()
 {
    concat_no_double_separator "$1" "$2" | string_remove_ugly_separators
@@ -1595,12 +1182,6 @@ r_remove_last_line()
    RVAL="$(sed '$d' <<< "$1")"  # remove last line
 }
 
-#
-# can't have linefeeds as delimiter
-# e.g. find_item "a,b,c" b -> 0
-#      find_item "a,b,c" d -> 1
-#      find_item "a,b,c" "," -> 1
-#
 find_item()
 {
    local line="$1"
@@ -1626,11 +1207,6 @@ find_item()
    return 1
 }
 
-#
-# find_line is fairly critical for mulle-sourcetree walk, which
-# is the slowest operation and most used operation. Don't dick
-# around with this without profiling!
-#
 find_empty_line_zsh()
 {
    local lines="$1"
@@ -1644,11 +1220,6 @@ find_empty_line_zsh()
    return 1
 }
 
-# zsh:
-# this is faster than calling fgrep externally
-# this is faster than while read line <<< lines
-# this is faster than case ${lines} in 
-#f
 find_line_zsh()
 {
    local lines="$1"
@@ -1684,14 +1255,8 @@ find_line_zsh()
 }
 
 
-# bash:
-# this is faster than calling fgrep externally
-# this is faster than while read line <<< lines
-# this is faster than for line in lines
-#
 find_line()
 {
-   # ZSH is apparently super slow in pattern matching
    if [ ! -z "${ZSH_VERSION}" ]
    then
       find_line_zsh "$@"
@@ -1704,17 +1269,13 @@ find_line()
    local escaped_lines
    local pattern
 
-# ensure leading and trailing linefeed for matching and $'' escaping
    printf -v escaped_lines "%q" "
 ${lines}
 "
 
-# add a linefeed here to get also $'' escaping
    printf -v pattern "%q" "${search}
 "
-   # remove $'
    pattern="${pattern:2}"
-   # remove \n'
    pattern="${pattern%???}"
 
    local rval
@@ -1759,9 +1320,6 @@ r_count_lines()
 }
 
 
-#
-# this removes any previous occurrence, its very costly
-#
 r_add_unique_line()
 {
    local lines="$1"
@@ -1803,10 +1361,6 @@ remove_duplicate_lines_stdin()
 }
 
 
-#
-# for very many lines use
-# `sed -n '1!G;h;$p' <<< "${lines}"`"
-#
 r_reverse_lines()
 {
    local lines="$1"
@@ -1826,11 +1380,6 @@ r_reverse_lines()
 }
 
 
-#
-# makes somewhat prettier filenames, removing superflous "."
-# and trailing '/'
-# DO NOT USE ON URLs
-#
 r_filepath_cleaned()
 {
    RVAL="$1"
@@ -1841,8 +1390,6 @@ r_filepath_cleaned()
 
    old=''
 
-   # remove excess //, also inside components
-   # remove excess /./, also inside components
    while [ "${RVAL}" != "${old}" ]
    do
       old="${RVAL}"
@@ -2001,10 +1548,6 @@ r_lowercase()
 
 r_identifier()
 {
-   # works in bash 3.2
-   # may want to disambiguate mulle-scion and MulleScion with __
-   # but it looks surprising for mulle--testallocator
-   #
    RVAL="${1//-/_}" # __
    RVAL="${RVAL//[^a-zA-Z0-9]/_}"
    case "${RVAL}" in
@@ -2015,10 +1558,6 @@ r_identifier()
 }
 
 
-# ####################################################################
-#                            Strings
-# ####################################################################
-#
 is_yes()
 {
    local s
@@ -2038,37 +1577,10 @@ is_yes()
 }
 
 
-# ####################################################################
-#                            Escaping
-# ####################################################################
-#
-
-#
-# unused code
-#
-
-# escape_linefeeds()
-# {
-#    local text
-#
-#    text="${text//\|/\\\|}"
-#    printf "%s" "${text}" | tr '\012' '|'
-# }
-#
-#
-# _unescape_linefeeds()
-# {
-#    tr '|' '\012' | sed -e 's/\\$/|/g' -e '/^$/d'
-# }
-#
-#
-# unescape_linefeeds()
-# {
-#    printf "%s\n" "$@" | tr '|' '\012' | sed -e 's/\\$/|/g' -e '/^$/d'
-# }
 
 
-# this is heaps faster than the sed code
+
+
 r_escaped_grep_pattern()
 {
    local s="$1"
@@ -2087,7 +1599,6 @@ r_escaped_grep_pattern()
 }
 
 
-# assumed that / is used like in sed -e 's/x/y/'
 r_escaped_sed_pattern()
 {
    local s="$1"
@@ -2105,7 +1616,6 @@ r_escaped_sed_pattern()
 }
 
 
-# assumed that / is used like in sed -e 's/x/y/'
 r_escaped_sed_replacement()
 {
    local s="$1"
@@ -2130,10 +1640,6 @@ r_escaped_backslashes()
 }
 
 
-# it's assumed you want to put contents into
-# singlequotes e.g.
-#   r_escaped_singlequotes "say 'hello'"
-#   x='${RVAL}'
 r_escaped_singlequotes()
 {
    local quote
@@ -2143,7 +1649,6 @@ r_escaped_singlequotes()
 }
 
 
-# does not add surrounding "" 
 r_escaped_doublequotes()
 {
    RVAL="${*//\\/\\\\}"
@@ -2151,7 +1656,6 @@ r_escaped_doublequotes()
 }
 
 
-# does not remove surrounding "" though
 r_unescaped_doublequotes()
 {
    RVAL="${*//\\\"/\"}"
@@ -2165,10 +1669,6 @@ r_escaped_shell_string()
 }
 
 
-# ####################################################################
-#                          Prefix / Suffix
-# ####################################################################
-#
 string_has_prefix()
 {
   [ "${1#$2}" != "$1" ]
@@ -2181,7 +1681,6 @@ string_has_suffix()
 }
 
 
-# much faster than calling "basename"
 r_basename()
 {
    local filename="$1"
@@ -2229,7 +1728,6 @@ r_dirname()
       break
    done
 
-   # need to escape filename here as it may contain wildcards
    printf -v last '%q' "${filename##*/}"
    RVAL="${filename%${last}}"
 
@@ -2253,10 +1751,6 @@ r_dirname()
 }
 
 
-#
-# get prefix leading up to character 'c', but if 'c' is quoted deal with it
-# properly
-#
 _r_prefix_with_unquoted_string()
 {
    local s="$1"
@@ -2290,16 +1784,11 @@ _r_prefix_with_unquoted_string()
 
       e_prefix="${e_prefix}\\${c}"
       head="${head}${e_prefix}"
-      # cut like this to avoid interpretation of e_prefix
       s="${s:${#e_prefix}}"
    done
 }
 
 
-#
-# should be safe from malicious backticks and so forth, unfortunately
-# this is not smart enough to parse all valid contents properly
-#
 _r_expand_string()
 {
    local prefix_opener
@@ -2313,18 +1802,12 @@ _r_expand_string()
    local head
    local found
 
-   # ex: "a${b:-c${d:-e}}g"
    while [ ${#_s} -ne 0 ]
    do
-      # look for ${
       _r_prefix_with_unquoted_string "${_s}" '${'
       found=$?
       prefix_opener="${RVAL}" # can be empty
 
-      #
-      # if there is an } before hand, then we stop execution
-      # but we consume that. If there is none at all we bail
-      #
       if ! _r_prefix_with_unquoted_string "${_s}" '}'
       then
          if [ ${found} -eq 0 ]
@@ -2334,10 +1817,6 @@ _r_expand_string()
             return 1
          fi
 
-         #
-         # if we don't have an opener ${ or it comes after us we
-         # are done
-         #
       else
          prefix_closer="${RVAL}"
          if [ ${found} -ne 0 -o ${#prefix_closer} -lt ${#prefix_opener} ]
@@ -2349,27 +1828,17 @@ _r_expand_string()
          fi
       fi
 
-      #
-      # No ${ here, then we are done
-      #
       if [ ${found} -ne 0 ]
       then
          RVAL="${head}${_s}"
          return 0
       fi
 
-      #
-      # the middle is what we evaluate, that'_s whats left in '_s'
-      #
       head="${head}${prefix_opener}"   # copy verbatim and continue
 
       _s="${_s:${#prefix_opener}}"
       _s="${_s#\$\{}"
 
-      #
-      # identifier_1 : ${identifier}
-      # identifier_2 : ${identifier:-anything}
-      #
       anything=
       identifier_1="${_s%%\}*}"     # this can't fail
       identifier_2="${_s%%:-*}"
@@ -2400,7 +1869,6 @@ _r_expand_string()
          fi
       fi
 
-      # idiot protection
       r_identifier "${identifier}"
       identifier="${RVAL}"
 
@@ -2440,37 +1908,6 @@ r_expanded_string()
 }
 
 :
-#! /usr/bin/env bash
-#
-#   Copyright (c) 2017 Nat! - Mulle kybernetiK
-#   All rights reserved.
-#
-#   Redistribution and use in source and binary forms, with or without
-#   modification, are permitted provided that the following conditions are met:
-#
-#   Redistributions of source code must retain the above copyright notice, this
-#   list of conditions and the following disclaimer.
-#
-#   Redistributions in binary form must reproduce the above copyright notice,
-#   this list of conditions and the following disclaimer in the documentation
-#   and/or other materials provided with the distribution.
-#
-#   Neither the name of Mulle kybernetiK nor the names of its contributors
-#   may be used to endorse or promote products derived from this software
-#   without specific prior written permission.
-#
-#   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-#   AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-#   IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-#   ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
-#   LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-#   CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-#   SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-#   INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-#   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-#   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-#   POSSIBILITY OF SUCH DAMAGE.
-#
 [ ! -z "${MULLE_INIT_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
    echo "double inclusion of mulle-init.sh" >&2
 
@@ -2480,7 +1917,6 @@ r_expanded_string()
 MULLE_INIT_SH="included"
 
 
-# export into RVAL global
 r_dirname()
 {
    RVAL="$1"
@@ -2525,11 +1961,6 @@ r_dirname()
 }
 
 
-#
-# stolen from:
-# http://stackoverflow.com/questions/1055671/how-can-i-get-the-behavior-of-gnus-readlink-f-on-a-mac
-# ----
-#
 r_prepend_path_if_relative()
 {
    case "$2" in
@@ -2560,13 +1991,6 @@ r_resolve_symlinks()
 }
 
 
-#
-# executablepath: will be $0
-# subdir: will be mulle-bashfunctions/${VERSION}
-# matchfile: the file to match agains
-#
-# Written this way, so it can get reused
-#
 r_get_libexec_dir()
 {
    local executablepath="$1"
@@ -2595,7 +2019,6 @@ r_get_libexec_dir()
    prefix="${RVAL}"
 
 
-   # now setup the global variable
 
    RVAL="${prefix}/libexec/${subdir}"
    if [ ! -f "${RVAL}/${matchfile}" ]
@@ -2650,37 +2073,6 @@ call_main()
 
    eval main "${flags}" "${args}"
 }
-#! /usr/bin/env bash
-#
-#   Copyright (c) 2017 Nat! - Mulle kybernetiK
-#   All rights reserved.
-#
-#   Redistribution and use in source and binary forms, with or without
-#   modification, are permitted provided that the following conditions are met:
-#
-#   Redistributions of source code must retain the above copyright notice, this
-#   list of conditions and the following disclaimer.
-#
-#   Redistributions in binary form must reproduce the above copyright notice,
-#   this list of conditions and the following disclaimer in the documentation
-#   and/or other materials provided with the distribution.
-#
-#   Neither the name of Mulle kybernetiK nor the names of its contributors
-#   may be used to endorse or promote products derived from this software
-#   without specific prior written permission.
-#
-#   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-#   AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-#   IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-#   ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
-#   LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-#   CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-#   SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-#   INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-#   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-#   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-#   POSSIBILITY OF SUCH DAMAGE.
-#
 [ ! -z "${MULLE_OPTIONS_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
    echo "double inclusion of mulle-options.sh" >&2
 
@@ -2689,12 +2081,7 @@ call_main()
 MULLE_OPTIONS_SH="included"
 
 
-## core option parsing
-# not used by mulle-bootstrap itself at the moment
 
-#
-# variables called flag. because they are indirectly set by flags
-#
 options_dump_env()
 {
    log_trace "ARGS:${C_TRACE2} ${MULLE_ARGUMENTS}"
@@ -2703,7 +2090,6 @@ options_dump_env()
    log_trace "LS  :${C_TRACE2} `ls -a1F`"
 }
 
-# caller should do set +x if 0
 options_setup_trace()
 {
 
@@ -2735,9 +2121,6 @@ options_setup_trace()
 
          if [ "${MULLE_TRACE_POSTPONE}" != 'YES' ]
          then
-            # log_trace "1848 trace (set -x) started"
-            # set -x # lol fcking zsh turns this off at function end
-            #        # unsetopt localoptions does not help
             PS4="+ ${ps4string} + "
          fi
          return 0
@@ -2797,14 +2180,6 @@ after_trace_warning()
 }
 
 
-#
-# local MULLE_FLAG_EXEKUTOR_DRY_RUN
-# local MULLE_FLAG_LOG_DEBUG
-# local MULLE_FLAG_LOG_EXEKUTOR
-# local MULLE_FLAG_LOG_TERSE
-# local MULLE_FLAG_LOG_ENVIRONMENT
-# local MULLE_TRACE
-#
 options_technical_flags()
 {
    local flag="$1"
@@ -2816,7 +2191,6 @@ options_technical_flags()
 
       -ld|--log-debug)
          MULLE_FLAG_LOG_DEBUG='YES'
-         # propagate
       ;;
 
       -lD)
@@ -2831,7 +2205,6 @@ options_technical_flags()
 
       -le|--log-environment)
          MULLE_FLAG_LOG_ENVIRONMENT='YES'
-         # propagate
       ;;
 
       -lE)
@@ -2846,7 +2219,6 @@ options_technical_flags()
 
       -ls|--log-settings)
          MULLE_FLAG_LOG_SETTINGS='YES'
-         # propagate
       ;;
 
       -lS)
@@ -2861,7 +2233,6 @@ options_technical_flags()
 
       -lx|--log-exekutor|--log-execution)
          MULLE_FLAG_LOG_EXEKUTOR='YES'
-         # propagate
       ;;
 
       -lX)
@@ -2890,7 +2261,6 @@ options_technical_flags()
          else
             ps4string='${BASH_SOURCE[0]##*/}:${LINENO}'
          fi
-         # propagate
       ;;
 
       -tfpwd|--trace-full-pwd)
@@ -2904,12 +2274,6 @@ options_technical_flags()
       ;;
 
       -tp|--trace-profile)
-#         if [ ! -z "${ZSH_VERSION}" ]
-#         then
-#            zmodload "zsh/zprof"
-#            # can't trap global exit from within function :(
-#            MULLE_RUN_ZPROF_ON_EXIT="YES"
-#         else
             before_trace_fail "${flag}"
    
             case "${MULLE_UNAME}" in
@@ -2933,7 +2297,6 @@ options_technical_flags()
                   fi
                ;;
             esac
-#         fi
          return # don't propagate
       ;;
 
@@ -3061,13 +2424,6 @@ options_technical_flags()
       ;;
    esac
 
-   #
-   # collect technical options so interested parties can forward them to
-   # other mulle tools. In tools they are called flags, and this will be
-   # renamed too, eventually. If you don't want to forward the technical
-   # flags to other mulle-bashfunction programs - sometimes- use
-   # --clear-flags after all the other flags.
-   #
    if [ -z "${MULLE_TECHNICAL_FLAGS}" ]
    then
       MULLE_TECHNICAL_FLAGS="${flag}"
@@ -3079,7 +2435,6 @@ options_technical_flags()
 }
 
 
-## option parsing common
 
 
 options_unpostpone_trace()
@@ -3092,9 +2447,6 @@ options_unpostpone_trace()
 }
 
 
-#
-# this has very limited use, i only use it in some tests
-# caller should do set +x if 0
 _options_mini_main()
 {
    while [ $# -ne 0 ]
@@ -3113,3 +2465,2189 @@ _options_mini_main()
 
 
 :
+[ ! -z "${MULLE_PATH_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
+   echo "double inclusion of mulle-path.sh" >&2
+
+[ -z "${MULLE_STRING_SH}" ] && echo "mulle-string.sh must be included before mulle-path.sh" 2>&1 && exit 1
+
+
+MULLE_PATH_SH="included"
+
+
+r_path_depth()
+{
+   local name="$1"
+
+   local depth
+
+   depth=0
+
+   if [ ! -z "${name}" ]
+   then
+      depth=1
+
+      while [ "$name" != "." -a "${name}" != '/' ]
+      do
+         r_dirname "${name}"
+         name="${RVAL}"
+
+         depth=$(($depth + 1))
+      done
+   fi
+   RVAL="$depth"
+}
+
+
+r_extensionless_basename()
+{
+   r_basename "$@"
+
+   RVAL="${RVAL%.*}"
+}
+
+
+
+r_path_extension()
+{
+   r_basename "$@"
+   case "${RVAL}" in
+      *.*)
+        RVAL="${RVAL##*.}"
+        return
+      ;;
+   esac
+
+   RVAL=""
+}
+
+
+_r_canonicalize_dir_path()
+{
+   RVAL="`
+   (
+     cd "$1" 2>/dev/null &&
+     pwd -P
+   )`"
+}
+
+
+_r_canonicalize_file_path()
+{
+   local component
+   local directory
+
+   r_basename "$1"
+   component="${RVAL}"
+   r_dirname "$1"
+   directory="${RVAL}"
+
+   if ! _r_canonicalize_dir_path "${directory}"
+   then
+      return 1
+   fi
+
+   RVAL="${RVAL}/${component}"
+   return 0
+}
+
+
+r_canonicalize_path()
+{
+   [ -z "$1" ] && internal_fail "empty path"
+
+   if [ -d "$1" ]
+   then
+      _r_canonicalize_dir_path "$1"
+   else
+      _r_canonicalize_file_path "$1"
+   fi
+}
+
+
+__r_relative_path_between()
+{
+    RVAL=''
+    [ $# -ge 1 ] && [ $# -le 2 ] || return 1
+
+    current="${2:+"$1"}"
+    target="${2:-"$1"}"
+
+    [ "$target" != . ] || target=/
+
+    target="/${target##/}"
+    [ "$current" != . ] || current=/
+
+    current="${current:="/"}"
+    current="/${current##/}"
+    appendix="${target##/}"
+    relative=''
+
+    while appendix="${target#"$current"/}"
+        [ "$current" != '/' ] && [ "$appendix" = "$target" ]; do
+        if [ "$current" = "$appendix" ]; then
+            relative="${relative:-.}"
+            RVAL="${relative#/}"
+            return 0
+        fi
+        current="${current%/*}"
+        relative="$relative${relative:+/}.."
+    done
+
+    RVAL="$relative${relative:+${appendix:+/}}${appendix#/}"
+}
+
+
+_r_relative_path_between()
+{
+   local a
+   local b
+
+   if [ "${MULLE_TRACE_PATHS_FLIP_X}" = 'YES' ]
+   then
+      set +x
+   fi
+
+
+   r_simplified_path "$1"
+   a="${RVAL}"
+   r_simplified_path "$2"
+   b="${RVAL}"
+
+
+   [ -z "${a}" ] && internal_fail "Empty path (\$1)"
+   [ -z "${b}" ] && internal_fail "Empty path (\$2)"
+
+   __r_relative_path_between "${b}" "${a}"   # flip args (historic)
+
+   if [ "${MULLE_TRACE_PATHS_FLIP_X}" = 'YES' ]
+   then
+      set -x
+   fi
+}
+
+r_relative_path_between()
+{
+   local a="$1"
+   local b="$2"
+
+
+   case "${a}" in
+      "")
+         internal_fail "First path is empty"
+      ;;
+
+      ../*|*/..|*/../*|..)
+         internal_fail "Path \"${a}\" mustn't contain .."
+      ;;
+
+      ./*|*/.|*/./*|.)
+         internal_fail "Filename \"${a}\" mustn't contain component \".\""
+      ;;
+
+
+      /*)
+         case "${b}" in
+            "")
+               internal_fail "Second path is empty"
+            ;;
+
+            ../*|*/..|*/../*|..)
+               internal_fail "Filename \"${b}\" mustn't contain \"..\""
+            ;;
+
+            ./*|*/.|*/./*|.)
+               internal_fail "Filename \"${b}\" mustn't contain \".\""
+            ;;
+
+
+            /*)
+            ;;
+
+            *)
+               internal_fail "Mixing absolute filename \"${a}\" and relative filename \"${b}\""
+            ;;
+         esac
+      ;;
+
+      *)
+         case "${b}" in
+            "")
+               internal_fail "Second path is empty"
+            ;;
+
+            ../*|*/..|*/../*|..)
+               internal_fail "Filename \"${b}\" mustn't contain component \"..\"/"
+            ;;
+
+            ./*|*/.|*/./*|.)
+               internal_fail "Filename \"${b}\" mustn't contain component \".\""
+            ;;
+
+            /*)
+               internal_fail "Mixing relative filename \"${a}\" and absolute filename \"${b}\""
+            ;;
+
+            *)
+            ;;
+         esac
+      ;;
+   esac
+
+   _r_relative_path_between "${a}" "${b}"
+}
+
+
+r_compute_relative()
+{
+   local name="$1"
+
+   local depth
+   local relative
+
+   r_path_depth "${name}"
+   depth="${RVAL}"
+
+   if [ "${depth}" -gt 1 ]
+   then
+      relative=".."
+      while [ "$depth" -gt 2 ]
+      do
+         relative="${relative}/.."
+         depth=$(($depth - 1))
+      done
+   fi
+
+
+   RVAL="${relative}"
+}
+
+
+
+r_physicalpath()
+{
+   if [ -d "$1" ]
+   then
+      RVAL="`( cd "$1" && pwd -P ) 2>/dev/null `"
+      return $?
+   fi
+
+   local dir
+   local file
+
+   r_dirname "$1"
+   dir="${RVAL}"
+
+   r_basename "$1"
+   file="${RVAL}"
+
+   if ! r_physicalpath "${dir}"
+   then
+      RVAL=
+      return 1
+   fi
+
+   r_filepath_concat "${RVAL}" "${file}"
+}
+
+
+physicalpath()
+{
+   if ! r_physicalpath "$@"
+   then
+      return 1
+   fi
+   printf "%s\n" "${RVAL}"
+}
+
+
+is_absolutepath()
+{
+   case "${1}" in
+      /*|~*)
+        return 0
+      ;;
+
+      *)
+        return 1
+      ;;
+   esac
+}
+
+
+is_relativepath()
+{
+   case "${1}" in
+      ""|/*|~*)
+        return 1
+      ;;
+
+      *)
+        return 0
+      ;;
+   esac
+}
+
+
+r_absolutepath()
+{
+  local directory="$1"
+  local working="${2:-${PWD}}"
+
+   case "${directory}" in
+      "")
+        RVAL=''
+      ;;
+
+      /*|~*)
+        RVAL="${directory}"
+      ;;
+
+      *)
+        RVAL="${working}/${directory}"
+      ;;
+   esac
+}
+
+
+r_simplified_absolutepath()
+{
+  local directory="$1"
+  local working="${2:-${PWD}}"
+
+   case "${1}" in
+      "")
+        RVAL=''
+      ;;
+
+      /*|~*)
+        r_simplified_path "${directory}"
+      ;;
+
+      *)
+        r_simplified_path "${working}/${directory}"
+      ;;
+   esac
+}
+
+
+r_symlink_relpath()
+{
+   local a
+   local b
+
+   r_absolutepath "$1"
+   a="$RVAL"
+
+   r_absolutepath "$2"
+   b="$RVAL"
+
+   _r_relative_path_between "${a}" "${b}"
+}
+
+
+
+_r_simplified_path()
+{
+   local filepath="$1"
+
+   [ -z "${filepath}" ] && fail "empty path given"
+
+   local i
+   local last
+   local result
+   local remove_empty
+
+
+   remove_empty='NO'  # remove trailing slashes
+
+   IFS="/"
+   shell_disable_glob
+   for i in ${filepath}
+   do
+      shell_enable_glob
+      case "$i" in
+         \.)
+           remove_empty='YES'
+           continue
+         ;;
+
+         \.\.)
+           remove_empty='YES'
+
+           if [ "${last}" = "|" ]
+           then
+              continue
+           fi
+
+           if [ ! -z "${last}" -a "${last}" != ".." ]
+           then
+              r_remove_last_line "${result}"
+              result="${RVAL}"
+              r_get_last_line "${result}"
+              last="${RVAL}"
+              continue
+           fi
+         ;;
+
+         ~*)
+            fail "Can't deal with ~ filepaths"
+         ;;
+
+         "")
+            if [ "${remove_empty}" = 'NO' ]
+            then
+               last='|'
+               result='|'
+            fi
+            continue
+         ;;
+      esac
+
+      remove_empty='YES'
+
+      last="${i}"
+
+      r_add_line "${result}" "${i}"
+      result="${RVAL}"
+   done
+
+   IFS="${DEFAULT_IFS}"
+   shell_enable_glob
+
+   if [ -z "${result}" ]
+   then
+      RVAL="."
+      return
+   fi
+
+   if [ "${result}" = '|' ]
+   then
+      RVAL="/"
+      return
+   fi
+
+   RVAL="`tr -d '|' <<< "${result}" | tr '\012' '/'`"
+   RVAL="${RVAL%/}"
+}
+
+
+r_simplified_path()
+{
+   case "${1}" in
+      ""|".")
+         RVAL="."
+      ;;
+
+      */|*\.\.*|*\./*|*/\.)
+         if [ "${MULLE_TRACE_PATHS_FLIP_X}" = 'YES' ]
+         then
+            set +x
+         fi
+
+         _r_simplified_path "$@"
+
+         if [ "${MULLE_TRACE_PATHS_FLIP_X}" = 'YES' ]
+         then
+            set -x
+         fi
+      ;;
+
+      *)
+         RVAL="$1"
+      ;;
+   esac
+}
+
+
+assert_sane_subdir_path()
+{
+   r_simplified_path "$1"
+
+   case "${RVAL}"  in
+      "")
+         fail "refuse empty subdirectory \"$1\""
+         exit 1
+      ;;
+
+      \$*|~|..|.|/*)
+         fail "refuse unsafe subdirectory path \"$1\""
+      ;;
+   esac
+}
+
+
+r_assert_sane_path()
+{
+   r_simplified_path "$1"
+
+   case "${RVAL}" in
+      \$*|~|${HOME}|..|.)
+         log_error "refuse unsafe path \"$1\""
+         exit 1
+      ;;
+
+      /tmp/*)
+      ;;
+
+      ""|/*)
+         local filepath
+
+         filepath="${RVAL}"
+         r_path_depth "${filepath}"
+         if [ "${RVAL}" -le 2 ]
+         then
+            fail "Refuse suspicious path \"$1\""
+         fi
+         RVAL="${filepath}"
+      ;;
+   esac
+}
+
+:
+[ ! -z "${MULLE_FILE_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
+   echo "double inclusion of mulle-file.sh" >&2
+
+[ -z "${MULLE_PATH_SH}" ]     && echo "mulle-path.sh must be included before mulle-file.sh" 2>&1 && exit 1
+[ -z "${MULLE_EXEKUTOR_SH}" ] && echo "mulle-exekutor.sh must be included before mulle-file.sh" 2>&1 && exit 1
+
+
+MULLE_FILE_SH="included"
+
+
+mkdir_if_missing()
+{
+   [ -z "$1" ] && internal_fail "empty path"
+
+   if [ -d "$1" ]
+   then
+      return 0
+   fi
+
+   log_fluff "Creating directory \"$1\" (${PWD#${MULLE_USER_PWD}/})"
+
+   local rval
+
+   exekutor mkdir -p "$1"
+   rval="$?"
+
+   if [ "${rval}" -eq 0 ]
+   then
+      return 0
+   fi
+
+   if [ -L "$1" ]
+   then
+      r_resolve_symlinks "$1"
+      if [ ! -d "${RVAL}" ]
+      then
+         fail "failed to create directory \"$1\" as a symlink is there"
+      fi
+      return 0
+   fi
+
+   if [ -f "$1" ]
+   then
+      fail "failed to create directory \"$1\" because a file is there"
+   fi
+   fail "failed to create directory \"$1\" from $PWD ($rval)"
+}
+
+
+r_mkdir_parent_if_missing()
+{
+   local dstdir="$1"
+
+   r_dirname "${dstdir}"
+   case "${RVAL}" in
+      ""|\.)
+      ;;
+
+      *)
+         mkdir_if_missing "${RVAL}"
+         return $?
+      ;;
+   esac
+
+   return 1
+}
+
+
+mkdir_parent_if_missing()
+{
+   r_mkdir_parent_if_missing "$@"
+}
+
+
+dir_is_empty()
+{
+   [ -z "$1" ] && internal_fail "empty path"
+
+   if [ ! -d "$1" ]
+   then
+      return 2
+   fi
+
+   local empty
+
+   empty="`ls -A "$1" 2> /dev/null`"
+   [ -z "$empty" ]
+}
+
+
+rmdir_safer()
+{
+   [ -z "$1" ] && internal_fail "empty path"
+
+   if [ -d "$1" ]
+   then
+      r_assert_sane_path "$1"
+      exekutor chmod -R ugo+wX "${RVAL}" >&2 || fail "Failed to make \"${RVAL}\" writable"
+      exekutor rm -rf "${RVAL}"  >&2 || fail "failed to remove \"${RVAL}\""
+   fi
+}
+
+
+rmdir_if_empty()
+{
+   [ -z "$1" ] && internal_fail "empty path"
+
+   if dir_is_empty "$1"
+   then
+      exekutor rmdir "$1"  >&2 || fail "failed to remove $1"
+   fi
+}
+
+
+_create_file_if_missing()
+{
+   local filepath="$1" ; shift
+
+   [ -z "${filepath}" ] && internal_fail "empty path"
+
+   if [ -f "${filepath}" ]
+   then
+      return
+   fi
+
+   local directory
+
+   r_dirname "${filepath}"
+   directory="${RVAL}"
+   if [ ! -z "${directory}" ]
+   then
+      mkdir_if_missing "${directory}"
+   fi
+
+   log_fluff "Creating \"${filepath}\""
+   if [ ! -z "$*" ]
+   then
+      redirect_exekutor "${filepath}" printf "%s\n" "$*" || fail "failed to create \"{filepath}\""
+   else
+      exekutor touch "${filepath}"  || fail "failed to create \"${filepath}\""
+   fi
+}
+
+
+merge_line_into_file()
+{
+  local line="$1"
+  local filepath="$2"
+
+  if fgrep -s -q -x "${line}" "${filepath}" 2> /dev/null
+  then
+     return
+  fi
+  redirect_append_exekutor "${filepath}" printf "%s\n" "${line}"
+}
+
+
+create_file_if_missing()
+{
+   _create_file_if_missing "$1" "# intentionally blank file"
+}
+
+
+_remove_file_if_present()
+{
+   [ -z "$1" ] && internal_fail "empty path"
+
+   if ! exekutor rm -f "$1" 2> /dev/null
+   then
+      exekutor chmod u+w "$1"  || fail "Failed to make $1 writable"
+      exekutor rm -f "$1"      || fail "failed to remove \"$1\""
+   fi
+   return 0
+}
+
+
+remove_file_if_present()
+{
+   if [ -e "$1"  -o -L "$1" ] && _remove_file_if_present "$1"
+   then
+      log_fluff "Removed \"${1#${PWD}/}\" (${PWD#${MULLE_USER_PWD}/})"
+      return 0
+   fi
+   return 1
+}
+
+
+_make_tmp_in_dir_mktemp()
+{
+   local tmpdir="$1"
+   local name="$2"
+   local filetype="$3"
+
+   case "${filetype}" in
+      *d*)
+         TMPDIR="${tmpdir}" exekutor mktemp -d "${name}-XXXXXXXX"
+      ;;
+
+      *)
+         TMPDIR="${tmpdir}" exekutor mktemp "${name}-XXXXXXXX"
+      ;;
+   esac
+}
+
+
+_r_make_tmp_in_dir_uuidgen()
+{
+   local UUIDGEN="$1"; shift
+
+   local tmpdir="$1"
+   local name="$2"
+   local filetype="$3"
+
+   local uuid
+   local fluke
+
+   local MKDIR
+   local TOUCH
+
+   MKDIR="$(command -v mkdir)"
+   TOUCH="$(command -v touch)"
+
+   [ -z "${MKDIR}" ] && fail "No \"mkdir\" found in PATH ($PATH)"
+   [ -z "${TOUCH}" ] && fail "No \"touch\" found in PATH ($PATH)"
+
+   fluke=0
+   RVAL=''
+
+   while :
+   do
+      uuid="`${UUIDGEN}`"
+      RVAL="${tmpdir}/${name}-${uuid:0:8}"
+
+      case "${filetype}" in
+         *d*)
+            exekutor "${MKDIR}" "${RVAL}" 2> /dev/null && return 0
+         ;;
+
+         *)
+            exekutor "${TOUCH}" "${RVAL}" 2> /dev/null && return 0
+         ;;
+      esac
+
+      if [ ! -e "${RVAL}" ]
+      then
+         fluke=$((fluke + 1 ))
+         if [ "${fluke}" -lt 3 ]
+         then
+            fail "Could not (even repeatedly) create \"${RVAL}\" (${filetype:-f})"
+         fi
+      fi
+   done
+}
+
+
+_r_make_tmp_in_dir()
+{
+   local tmpdir="$1"
+   local name="$2"
+   local filetype="$3"
+
+   mkdir_if_missing "${tmpdir}"
+
+   [ ! -w "${tmpdir}" ] && fail "${tmpdir} does not exist or is not writable"
+
+   name="${name:-${MULLE_EXECUTABLE_NAME}}"
+   name="${name:-mulle}"
+
+   local UUIDGEN
+
+   UUIDGEN="`command -v "uuidgen"`"
+   if [ ! -z "${UUIDGEN}" ]
+   then
+      _r_make_tmp_in_dir_uuidgen "${UUIDGEN}" "${tmpdir}" "${name}" "${filetype}"
+      return $?
+   fi
+
+   RVAL="`_make_tmp_in_dir_mktemp "${tmpdir}" "${name}" "${filetype}"`"
+   return $?
+}
+
+
+r_make_tmp()
+{
+   local name="$1"
+   local filetype="$2"
+
+   local tmpdir
+
+   tmpdir=
+   case "${MULLE_UNAME}" in
+      darwin)
+      ;;
+
+      *)
+         r_filepath_cleaned "${TMPDIR}"
+         tmpdir="${RVAL}"
+      ;;
+   esac
+   tmpdir="${tmpdir:-/tmp}"
+
+   _r_make_tmp_in_dir "${tmpdir}" "${name}" "${filetype}"
+}
+
+
+r_make_tmp_file()
+{
+   r_make_tmp "$1" "f"
+}
+
+r_make_tmp_directory()
+{
+   r_make_tmp "$1" "d"
+}
+
+
+
+r_resolve_all_path_symlinks()
+{
+   local filepath="$1"
+
+   local resolved
+
+   r_resolve_symlinks "${filepath}"
+   resolved="${RVAL}"
+
+   local filename
+   local directory
+   local resolved
+
+   r_dirname "${resolved}"
+   directory="${RVAL}"
+
+   case "${directory}" in
+      ''|'/')
+         RVAL="${resolved}"
+      ;;
+
+      *)
+         r_basename "${resolved}"
+         filename="${RVAL}"
+         r_resolve_all_path_symlinks "${directory}"
+         r_filepath_concat "${RVAL}" "${filename}"
+      ;;
+   esac
+}
+
+
+r_realpath()
+{
+   [ -e "$1" ] || fail "only use r_realpath on existing files ($1)"
+
+   r_resolve_symlinks "$1"
+   r_canonicalize_path "${RVAL}"
+}
+
+create_symlink()
+{
+   local url="$1"       # URL of the clone
+   local stashdir="$2"  # stashdir of this clone (absolute or relative to $PWD)
+   local absolute="$3"
+
+   [ -e "${url}" ]        || fail "${C_RESET}${C_BOLD}${url}${C_ERROR} does not exist (${PWD#${MULLE_USER_PWD}/})"
+   [ ! -z "${absolute}" ] || fail "absolute must be YES or NO"
+
+   r_absolutepath "${url}"
+   r_realpath "${RVAL}"
+   url="${RVAL}"        # resolve symlinks
+
+
+   local directory
+   r_dirname "${stashdir}"
+   directory="${RVAL}"
+
+   mkdir_if_missing "${directory}"
+   r_realpath "${directory}"
+   directory="${RVAL}"  # resolve symlinks
+
+   if [ "${absolute}" = 'NO' ]
+   then
+      r_symlink_relpath "${url}" "${directory}"
+      url="${RVAL}"
+   fi
+
+   local oldlink
+
+   if [ -L "${oldlink}" ]
+   then
+      oldlink="`readlink "${stashdir}"`"
+   fi
+
+   if [ -z "${oldlink}" -o "${oldlink}" != "${url}" ]
+   then
+      exekutor ln -s -f "${url}" "${stashdir}" >&2 || \
+         fail "failed to setup symlink \"${stashdir}\" (to \"${url}\")"
+   fi
+}
+
+
+modification_timestamp()
+{
+   case "${MULLE_UNAME}" in
+      linux|mingw)
+         stat --printf "%Y\n" "$1"
+      ;;
+
+      * )
+         stat -f "%m" "$1"
+      ;;
+   esac
+}
+
+
+lso()
+{
+   ls -aldG "$@" | \
+   awk '{k=0;for(i=0;i<=8;i++)k+=((substr($1,i+2,1)~/[rwx]/)*2^(8-i));if(k)printf(" %0o ",k);print }' | \
+   awk '{print $1}'
+}
+
+
+file_is_binary()
+{
+   local result
+
+   result="`file -b --mime-encoding "$1"`"
+   [ "${result}" = "binary" ]
+}
+
+
+
+dir_has_files()
+{
+   local dirpath="$1"; shift
+
+   local flags
+
+   case "$1" in
+      f)
+         flags="-type f"
+         shift
+      ;;
+
+      d)
+         flags="-type d"
+         shift
+      ;;
+   esac
+
+   local empty
+
+   empty="`rexekutor find "${dirpath}" -xdev \
+                                       -mindepth 1 \
+                                       -maxdepth 1 \
+                                       -name "[a-zA-Z0-9_-]*" \
+                                       ${flags} \
+                                       "$@" \
+                                       -print 2> /dev/null`"
+   [ ! -z "$empty" ]
+}
+
+
+dirs_contain_same_files()
+{
+   log_entry "dirs_contain_same_files" "$@"
+
+   local etcdir="$1"
+   local sharedir="$2"
+
+   if [ ! -d "${etcdir}" -o ! -e "${etcdir}" ]
+   then
+      internal_fail "Both directories \"${etcdir}\" and \"${sharedir}\" need to exist"
+   fi
+
+   etcdir="${etcdir%%/}"
+   sharedir="${sharedir%%/}"
+
+   local etcfile
+   local sharefile
+   local filename 
+
+   IFS=$'\n'; shell_disable_glob
+   for sharefile in `find ${sharedir}  \! -type d -print`
+   do
+      IFS="${DEFAULT_IFS}"; shell_enable_glob
+
+      filename="${sharefile#${sharedir}/}"
+      etcfile="${etcdir}/${filename}"
+
+      if ! diff -q -b "${etcfile}" "${sharefile}" > /dev/null
+      then
+         return 2
+      fi
+   done
+
+   IFS=$'\n'; shell_disable_glob
+
+   for etcfile in `find ${etcdir} \! -type d -print`
+   do
+      IFS="${DEFAULT_IFS}"; shell_enable_glob
+
+      filename="${etcfile#${etcdir}/}"
+      sharefile="${sharedir}/${filename}"
+
+      if [ ! -e "${sharefile}" ]
+      then
+         return 2
+      fi
+   done
+
+   IFS="${DEFAULT_IFS}"; shell_enable_glob
+
+   return 0
+}
+
+
+
+
+
+inplace_sed()
+{
+   local tmpfile
+   local args
+   local filename
+
+   local rval 
+
+   case "${MULLE_UNAME}" in
+      darwin|freebsd)
+
+         while [ $# -ne 1 ]
+         do
+            r_escaped_shell_string "$1"
+            r_concat "${args}" "${RVAL}"
+            args="${RVAL}"
+            shift
+         done
+
+         filename="$1"
+
+         if [ ! -w "${filename}" ]
+         then
+            if [ ! -e "${filename}" ]
+            then
+               fail "\"${filename}\" does not exist"
+            fi
+            fail "\"${filename}\" is not writable"
+         fi
+
+
+         r_make_tmp
+         tmpfile="${RVAL}"
+
+         redirect_eval_exekutor "${tmpfile}" 'sed' "${args}" "'${filename}'"
+         rval=$?
+         if [ $rval -eq 0 ]
+         then
+            exekutor cp "${tmpfile}" "${filename}"
+         fi
+         _remove_file_if_present "${tmpfile}" # don't fluff log :)
+      ;;
+
+      *)
+         exekutor sed -i'' "$@"
+         rval=$?
+      ;;
+   esac
+
+   return ${rval}
+}
+
+
+:
+[ "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' -a ! -z "${MULLE_ARRAY_SH}" ] && \
+   echo "double inclusion of mulle-array.sh" >&2
+
+[ -z "${MULLE_LOGGING_SH}" ] && echo "mulle-logging.sh must be included before mulle-array.sh" 2>&1 && exit 1
+
+MULLE_ARRAY_SH="included"
+
+
+array_value_check()
+{
+   local value="$1"
+
+   case "${value}" in
+      *$'\n'*)
+         internal_fail "\"${value}\" has unescaped linefeeds"
+      ;;
+   esac
+}
+
+
+r_get_line_at_index()
+{
+   local array="$1"
+   local i="${2:-0}"
+
+
+   shell_disable_glob; IFS=$'\n'
+   for RVAL in ${array}
+   do
+      if [ $i -eq 0 ]
+      then
+         IFS="${DEFAULT_IFS}" ; shell_enable_glob
+         return 0
+      fi
+      i=$((i - 1))
+   done
+   IFS="${DEFAULT_IFS}" ; shell_enable_glob
+   return 1
+}
+
+
+r_insert_line_at_index()
+{
+   local array="$1"
+   local i="$2"
+   local value="$3"
+
+   array_value_check "${value}"
+
+   local line
+   local added='NO'
+   local rval
+
+   RVAL=
+   rval=1
+
+   shell_disable_glob; IFS=$'\n'
+   for line in ${array}
+   do
+      if [ $i -eq 0 ]
+      then
+         r_add_line "${RVAL}" "${value}"
+         rval=0
+      fi
+      r_add_line "${RVAL}" "${line}"
+      i=$((i - 1))
+   done
+   IFS="${DEFAULT_IFS}" ; shell_enable_glob
+
+   if [ $i -eq 0 ]
+   then
+      r_add_line "${RVAL}" "${value}"
+      rval=0
+   fi
+
+   return $rval
+}
+
+
+
+r_lines_in_range()
+{
+   local array="$1"
+   local i="$2"
+   local n="$3"
+
+   declare -a bash_array
+   declare -a res_array
+
+   IFS=$'\n' read -r -d '' -a bash_array <<< "${array}"
+
+   local j
+   local sentinel
+
+   sentinel=$((i + n))
+
+   j=0
+   while [ $i -lt ${sentinel} ]
+   do
+      res_array[${j}]="${bash_array[${i}]}"
+      i=$((i + 1))
+      j=$((j + 1))
+   done
+
+   RVAL="${res_array[*]}"
+}
+
+
+
+
+assoc_array_key_check()
+{
+   local key="$1"
+
+   [ -z "${key}" ] && internal_fail "key is empty"
+
+   local identifier
+
+   r_identifier "${key}"
+   identifier="${RVAL}"
+
+   [ "${identifier}" != "${key}" -a "${identifier}" != "_${key}" ] && internal_fail "\"${key}\" has non-identifier characters"
+}
+
+
+assoc_array_value_check()
+{
+   array_value_check "$@"
+}
+
+
+_r_assoc_array_add()
+{
+   local array="$1"
+   local key="$2"
+   local value="$3"
+
+   assoc_array_key_check "${key}"
+   assoc_array_value_check "${value}"
+
+
+   r_add_line "${array}" "${key}=${value}"
+}
+
+
+_r_assoc_array_remove()
+{
+   local array="$1"
+   local key="$2"
+
+   local line
+   local delim
+
+   RVAL=
+   shell_disable_glob; IFS=$'\n'
+   for line in ${array}
+   do
+      case "${line}" in
+         "${key}="*)
+         ;;
+
+         *)
+            RVAL="${line}${delim}${RVAL}"
+            delim=$'\n'
+         ;;
+      esac
+   done
+   IFS="${DEFAULT_IFS}" ; shell_enable_glob
+}
+
+
+r_assoc_array_get()
+{
+   local array="$1"
+   local key="$2"
+
+
+   local line
+   local rval
+
+   RVAL=
+   rval=1
+
+   shell_disable_glob; IFS=$'\n'
+   for line in ${array}
+   do
+      case "${line}" in
+         "${key}="*)
+            RVAL="${line#*=}"
+            rval=0
+            break
+         ;;
+      esac
+   done
+   IFS="${DEFAULT_IFS}" ; shell_enable_glob
+
+   return $rval
+}
+
+
+assoc_array_all_keys()
+{
+   local array="$1"
+
+   sed -n 's/^\([^=]*\)=.*$/\1/p' <<< "${array}"
+}
+
+
+assoc_array_all_values()
+{
+   local array="$1"
+
+   sed -n 's/^[^=]*=\(.*\)$/\1/p' <<< "${array}"
+}
+
+
+r_assoc_array_set()
+{
+   local array="$1"
+   local key="$2"
+   local value="$3"
+
+   if [ -z "${value}" ]
+   then
+      _r_assoc_array_remove "${array}" "${key}"
+      return
+   fi
+
+   local old_value
+
+   r_assoc_array_get "${array}" "${key}"
+   old_value="${RVAL}"
+
+   if [ ! -z "${old_value}" ]
+   then
+      _r_assoc_array_remove "${array}" "${key}"
+      array="${RVAL}"
+   fi
+
+   _r_assoc_array_add "${array}" "${key}" "${value}"
+}
+
+
+assoc_array_merge_with_array()
+{
+   local array1="$1"
+   local array2="$2"
+
+   printf "%s%s\n" "${array2}" "${array1}" | sort -u -t'=' -k1,1
+}
+
+
+assoc_array_augment_with_array()
+{
+   local array1="$1"
+   local array2="$2"
+
+   printf "%s%s\n" "${array1}" "${array2}" | sort -u -t'=' -k1,1
+}
+
+:
+
+[ ! -z "${MULLE_CASE_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
+   echo "double inclusion of mulle-case.sh" >&2
+
+MULLE_CASE_SH="included"
+
+_r_tweaked_de_camel_case()
+{
+   local s="$1"
+
+   local output
+   local state
+   local collect
+
+   local c
+   local d
+
+   s="${s//ObjC/Objc}"
+
+   state='start'
+   while [ ! -z "${s}" ]
+   do
+      d="${c}"
+      c="${s:0:1}"
+      s="${s:1}"
+
+      case "${state}" in
+         'start')
+            case "${c}" in
+               [A-Z])
+                  state="upper";
+                  collect="${collect}${c}"
+                  continue
+               ;;
+
+               *)
+                  state="lower"
+               ;;
+            esac
+         ;;
+
+         'upper')
+            case "${c}" in
+               [A-Z])
+                  collect="${collect}${c}"
+                  continue
+               ;;
+
+               *)
+                  if [ ! -z "${output}" -a ! -z "${collect}" ]
+                  then
+                     if [ ! -z "${collect:1}" ]
+                     then
+                        output="${output}_${collect%?}_${collect#${collect%?}}"
+                     else
+                        output="${output}_${collect}"
+                     fi
+                  else
+                     output="${output}${collect}"
+                  fi
+                  collect=""
+                  state="lower"
+               ;;
+            esac
+         ;;
+
+         'lower')
+            case "${c}" in
+               [A-Z])
+                  output="${output}${collect}"
+                  collect="${c}"
+                  state="upper"
+                  continue
+               ;;
+            esac
+         ;;
+      esac
+
+      output="${output}${c}"
+   done
+
+   if [ ! -z "${output}" -a ! -z "${collect}" ]
+   then
+      output="${output}_${collect}"
+   else
+      output="${output}${collect}"
+   fi
+
+   RVAL="${output}"
+}
+
+
+r_tweaked_de_camel_case()
+{
+   LC_ALL=C _r_tweaked_de_camel_case "$@"
+}
+
+
+r_de_camel_case_upcase_identifier()
+{
+   r_tweaked_de_camel_case "$1"
+   r_identifier "${RVAL}"
+   r_uppercase "${RVAL}"
+
+   case "${RVAL}" in
+      [A-Za-z_]*)
+      ;;
+
+      *)
+         RVAL="_${RVAL}"
+      ;;
+   esac
+}
+MULLE_PARALLEL_SH="included"
+
+[ -z "${MULLE_FILE_SH}" ] && echo "mulle-file.sh must be included before mulle-parallel.sh" 2>&1 && exit 1
+
+
+very_short_sleep()
+{
+   case "${MULLE_UNAME}" in 
+      darwin)
+         sleep 0.001 #s # 1000Hz  
+      ;;
+
+      *)
+         sleep 0.001s #s # 1000Hz  
+      ;;
+   esac
+}  
+
+r_get_core_count()
+{
+   if [ -z "${MULLE_CORES}" ]
+   then
+      MULLE_CORES="`/usr/bin/nproc 2> /dev/null`"
+      if [ -z "${MULLE_CORES}" ]
+      then
+         MULLE_CORES="`/usr/sbin/sysctl -n hw.ncpu 2> /dev/null`"
+      fi
+
+      if [ -z "${MULLE_CORES}" ]
+      then
+         MULLE_CORES=4
+         log_verbose "Unknown core count, setting it to 4 as default"
+      fi
+   fi
+   RVAL=${MULLE_CORES}
+}
+
+
+r_convenient_max_load_average()
+{
+   local cores="$1"
+
+   if [ -z "${cores}" ]
+   then
+      r_get_core_count
+      cores="${RVAL}"
+   fi
+
+   case "${MULLE_UNAME}" in
+      linux)
+         RVAL=$((cores * 6))
+      ;;
+
+      *)
+         RVAL=$((cores * 2))
+      ;;
+   esac
+}
+
+
+wait_for_available_job()
+{
+   log_entry "wait_for_available_job" "$@"
+
+   local maxjobs="${1:-8}"
+
+   local running
+   local count
+
+   while :
+   do
+      running=($(jobs -pr))  #  http://mywiki.wooledge.org/BashFAQ/004
+      count=${#running[@]}
+
+      if [ ${count} -le ${maxjobs} ]
+      then
+         log_debug "Currently only ${count} jobs run, spawn another"
+         break
+      fi
+      log_debug "Waiting on jobs to finish (${#running[@]})"
+      very_short_sleep
+   done
+}
+
+
+get_current_load_average()
+{
+   case "${MULLE_UNAME}" in
+      freebsd|darwin)
+         sysctl -n vm.loadavg | sed -n -e 's/.*{[ ]*\([0-9]*\).*/\1/p'
+      ;;
+
+      *)
+         uptime | sed -n -e 's/.*average[s]*:[ ]*\([0-9]*\).*/\1/p'
+      ;;
+   esac
+}
+
+
+r_available_core_count()
+{
+   log_entry "r_available_core_count" "$@"
+
+   local maxaverage="$1"
+
+   local cores
+
+   r_get_core_count
+   cores="${RVAL}"
+
+   if [ -z "${maxavg}" ]
+   then
+      r_convenient_max_load_average "${cores}"
+      maxaverage="${RVAL}"
+   fi
+
+   local loadavg
+   local available
+
+   loadavg="`get_current_load_average`"
+   available="$(( cores - loadavg ))"
+   if [ ${available} -lt 1 ]
+   then
+      available="1"
+   fi
+
+   RVAL="${available}"
+}
+
+
+wait_for_load_average()
+{
+   log_entry "wait_for_load_average" "$@"
+
+   local maxaverage="${1:-8}"
+
+   local loadavg
+
+   while :
+   do
+      loadavg="`get_current_load_average`"
+      if [ "${loadavg:-0}" -le ${maxaverage} ]
+      then
+         break
+      fi
+      log_debug "Waiting on load average to come down"
+
+      very_short_sleep
+   done
+}
+
+
+_parallel_begin()
+{
+   log_entry "_parallel_begin" "$@"
+
+   _parallel_maxjobs="$1"
+
+   _parallel_jobs=0
+   _parallel_fails=0
+
+   r_make_tmp "mulle-parallel" || exit 1
+   _parallel_statusfile="${RVAL}"
+
+   if [ -z "${_parallel_maxjobs}" ]
+   then
+      _parallel_maxjobs="${MULLE_PARALLEL_MAX_JOBS}"
+      if [ -z "${_parallel_maxjobs}" ]
+      then
+         r_get_core_count
+         _parallel_maxjobs="${RVAL}"
+      fi
+   fi
+}
+
+
+_parallel_end()
+{
+   log_entry "_parallel_end" "$@"
+
+   wait
+
+   _parallel_fails="`rexekutor wc -l "${_parallel_statusfile}" | awk '{ printf $1 }'`"
+   if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
+   then
+      log_trace2 "_parallel_jobs : ${_parallel_jobs}"
+      log_trace2 "_parallel_fails: ${_parallel_fails}"
+      log_trace2 "${_parallel_statusfile} : `cat "${_parallel_statusfile}"`"
+   fi
+
+   exekutor rm "${_parallel_statusfile}"
+
+   [ "${_parallel_fails}" -eq 0 ]
+}
+
+
+_parallel_status()
+{
+   log_entry "_parallel_status" "$@"
+
+   local rval="$1"; shift
+
+   [ -z "${_parallel_statusfile}" ] && internal_fail "_parallel_statusfile must be defined"
+
+   if [ $rval -ne 0 ]
+   then
+      log_warning "warning: $* failed with $rval"
+      redirect_append_exekutor "${_parallel_statusfile}" printf "%s\n" "${rval};$*"
+   fi
+}
+
+
+_parallel_execute()
+{
+   log_entry "_parallel_execute" "$@"
+
+   wait_for_available_job "${_parallel_maxjobs}"
+   _parallel_jobs=$(($_parallel_jobs + 1))
+
+   log_debug "Running job #${_parallel_jobs}: $*"
+
+   (
+      local rval
+
+      ( exekutor "$@" ) # run in subshell to capture exit code
+      _parallel_status $? "$@"
+   ) &
+}
+
+
+parallel_execute()
+{
+   log_entry "parallel_execute" "$@"
+
+   local arguments="$1"; shift
+
+   local _parallel_statusfile
+   local _parallel_maxjobs
+   local _parallel_jobs
+   local _parallel_fails
+
+   [ $# -eq 0 ] && internal_fail "missing commandline"
+
+   _parallel_begin
+
+   local argument
+
+   shell_disable_glob;  IFS=$'\n'
+   for argument in ${arguments}
+   do
+      shell_enable_glob; IFS="${DEFAULT_IFS}"
+
+      _parallel_execute "$@" "${argument}"
+   done
+
+   shell_enable_glob; IFS="${DEFAULT_IFS}"
+
+   _parallel_end
+}
+
+[ ! -z "${MULLE_VERSION_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
+   echo "double inclusion of mulle-version.sh" >&2
+
+MULLE_VERSION_SH="included"
+
+
+r_get_version_major()
+{
+   RVAL="${1%%\.*}"
+}
+
+
+r_get_version_minor()
+{
+   RVAL="${1#*\.}"
+   if [ "${RVAL}" = "$1" ]
+   then
+      RVAL=0
+   else
+      RVAL="${RVAL%%\.*}"
+   fi
+}
+
+r_get_version_patch()
+{
+   local prev
+
+   prev="${1#*\.}"
+   RVAL="${prev#*\.}"
+   if [ "${RVAL}" = "${prev}" ]
+   then
+      RVAL=0
+   else
+      RVAL="${RVAL%%\.*}"
+   fi
+}
+
+
+check_version()
+{
+   local version="$1"
+   local min_major="$2"
+   local min_minor="$3"
+
+   if [ -z "${version}" ]
+   then
+      return 1
+   fi
+
+   local major
+   local minor
+
+   r_get_version_major "${version}"
+   major="${RVAL}"
+
+   if [ "${major}" -lt "${min_major}" ]
+   then
+      return 0
+   fi
+
+   if [ "${major}" -ne "${min_major}" ]
+   then
+      return 1
+   fi
+
+   r_get_version_minor "${version}"
+   minor="${RVAL}"
+
+   [ "${minor}" -le "${min_minor}" ]
+}
+
+
+_r_version_value()
+{
+   RVAL="$((${1:-0} * 1048576 + ${2:-0} * 256 + ${3:-0}))"
+}
+
+
+r_version_value()
+{
+   local major
+   local minor
+   local patch
+
+   r_get_version_major "$1"
+   major="${RVAL}"
+   r_get_version_minor "$1"
+   minor="${RVAL}"
+   r_get_version_patch "$1"
+   patch="${RVAL}"
+
+   _r_version_value "${major}" "${minor}" "${patch}"
+}
+
+
+r_version_value_distance()
+{
+   RVAL="$(($2 - $1))"
+}
+
+
+r_version_distance()
+{
+   local value1
+   local value2
+
+   r_version_value "$1"
+   value1="${RVAL}"
+   r_version_value "$2"
+   value2="${RVAL}"
+
+   r_version_value_distance "${value1}" "${value2}"
+}
+
+
+is_compatible_version_value_distance()
+{
+   if [ "$1" -ge 1048576 -o "$1" -le -1048575 ]
+   then
+      return 1
+   fi
+
+   if [ "$1" -gt 4096 ]
+   then
+      return 1
+   fi
+
+   [ "$1" -le 0 ]
+}
+
+
+is_compatible_version()
+{
+   r_version_distance "$1" "$2"
+   is_compatible_version_value_distance "${RVAL}"
+}
+
+:
+[ ! -z "${MULLE_ETC_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
+   echo "double inclusion of mulle-etc.sh" >&2
+
+MULLE_ETC_SH="included"
+
+
+etc_prepare_for_write_of_file()
+{
+   log_entry "etc_prepare_for_write_of_file" "$@"
+
+   local filename="$1"
+
+   if [ -L "${filename}" ]
+   then
+      exekutor rm "${filename}"
+   fi
+}
+
+
+etc_make_file_from_symlinked_file()
+{
+   log_entry "etc_make_file_from_symlinked_file" "$@"
+
+   local dstfile="$1"
+
+   if [ ! -L "${dstfile}" ]
+   then
+      return 1
+   fi
+
+   local flags
+
+   if [ "${MULLE_FLAG_LOG_FLUFF}" = 'YES' ]
+   then
+      flags="-v"
+   fi
+
+   local targetfile
+
+   targetfile="`readlink "${dstfile}"`"
+   exekutor rm "${dstfile}"
+
+   local directory
+   local filename
+
+   r_dirname "${dstfile}"
+   directory="${RVAL}"
+   r_basename "${dstfile}"
+   filename="${RVAL}"
+   (
+      cd "${directory}" || exit 1
+
+      if [ ! -f "${targetfile}" ]
+      then
+         log_fluff "Stale link encountered"
+         return 0
+      fi
+
+      exekutor cp ${flags} "${targetfile}" "${filename}" || exit 1
+      exekutor chmod ug+w "${filename}"
+   ) || fail "Could not copy \"${targetfile}\" to \"${dstfile}\""
+}
+
+
+etc_symlink_or_copy_file()
+{
+   log_entry "etc_symlink_or_copy_file" "$@"
+
+   local srcfile="$1"
+   local dstdir="$2"
+   local filename="$3"
+   local symlink="$4"
+
+   [ -f "${srcfile}" ] || internal_fail "\"${srcfile}\" does not exist or is not a file"
+   [ -d "${dstdir}" ]  || internal_fail "\"${dstdir}\" does not exist or is not a directory"
+
+   local dstfile
+
+   if [ -z "${filename}" ]
+   then
+   	r_basename "${srcfile}"
+   	filename="${RVAL}"
+	fi
+
+   r_filepath_concat "${dstdir}" "${filename}"
+   dstfile="${RVAL}"
+
+   if [ -e "${dstfile}" ]
+   then
+      fail "\"${dstfile}\" already exists"
+   fi
+
+   r_mkdir_parent_if_missing "${dstfile}"
+
+   local flags
+
+   if [ "${MULLE_FLAG_LOG_FLUFF}" = 'YES' ]
+   then
+      flags="-v"
+   fi
+
+   if [ -z "${symlink}" ]
+   then
+      case "${MULLE_UNAME}" in
+         mingw)
+            symlink="NO"
+         ;;
+
+         *)
+            symlink="YES"
+         ;;
+      esac
+   fi
+
+   if [ "${symlink}" = 'YES' ]
+   then
+      local linkrel
+
+      r_relative_path_between "${srcfile}" "${dstdir}"
+      linkrel="${RVAL}"
+
+      exekutor ln -s ${flags} "${linkrel}" "${dstfile}"
+      return $?
+   fi
+
+   exekutor cp ${flags} "${srcfile}" "${dstfile}" &&
+   exekutor chmod ug+w "${dstfile}"
+}
+
+
+etc_setup_from_share_if_needed()
+{
+   log_entry "etc_setup_from_share_if_needed" "$@"
+
+   local etc="$1"
+   local share="$2"
+   local symlink="$3"
+
+   if [ -d "${etc}" ]
+   then
+      log_fluff "etc folder already setup"
+      return
+   fi
+
+   mkdir_if_missing "${etc}"
+
+   local flags
+
+   if [ "${MULLE_FLAG_LOG_FLUFF}" = 'YES' ]
+   then
+      flags="-v"
+   fi
+
+   local filename
+   local base
+
+   if [ -d "${share}" ] # sometimes it's not there, but find complains
+   then
+      IFS=$'\n'; shell_disable_glob
+      for filename in `find "${share}" ! -type d -print`
+      do
+         IFS="${DEFAULT_IFS}"; shell_enable_glob
+         r_basename "${filename}"
+         etc_symlink_or_copy_file "${filename}" \
+                                  "${etc}" \
+                                  "${RVAL}" \
+                                  "${symlink}"
+      done
+      IFS="${DEFAULT_IFS}"; shell_enable_glob
+   fi
+}
+
+
+etc_remove_if_possible()
+{
+   log_entry "etc_remove_if_possible" "$@"
+
+   local etc="$1"
+   local share="$2"
+
+   if [ ! -d "${etc}" ]
+   then
+      return
+   fi
+
+   if dirs_contain_same_files "${etc}" "${share}"
+   then
+      rmdir_safer "${etc}"
+   fi
+}
+
+
+etc_repair_files()
+{
+   log_entry "etc_repair_files" "$@"
+
+   local srcdir="$1" # share
+   local dstdir="$2" # etc
+
+   local glob="$3"
+   local add="$4"
+   local symlink="$5"
+
+   if [ ! -d "${dstdir}" ]
+   then
+      log_verbose "Nothing to repair, as \"${dstdir}\" does not exist yet"
+      return
+   fi
+
+   local filename
+   local dstfile
+   local srcfile
+   local can_remove_etc
+
+   can_remove_etc='YES'
+
+   dstdir="${dstdir%%/}"
+   srcdir="${srcdir%%/}"
+
+   IFS=$'\n'; shell_disable_glob
+   for dstfile in `find "${dstdir}" ! -type d -print` # dstdir is etc
+   do
+      IFS="${DEFAULT_IFS}"; shell_enable_glob
+
+      filename="${dstfile#${dstdir}/}"
+      srcfile="${srcdir}/${filename}"
+
+      if [ -L "${dstfile}" ]
+      then
+         if ! ( cd "${dstdir}" && [ -f "`readlink "${filename}"`" ] )
+         then
+            globtest="${glob}${filename#${glob}}"
+            if [ ! -z "${glob}" ] && [ -f "${srcdir}"/${globtest} ]
+            then
+               log_verbose "\"${filename}\" moved to ${globtest}: relink"
+               remove_file_if_present "${dstfile}"
+               etc_symlink_or_copy_file "${srcdir}/"${globtest} \
+                                        "${dstdir}" \
+                                        "" \
+                                        "${symlink}"
+            else
+               log_verbose "\"${filename}\" no longer exists: remove"
+               remove_file_if_present "${dstfile}"
+            fi
+         else
+            log_fluff "\"${filename}\" is a healthy symlink: keep"
+         fi
+      else
+         if [ -f "${srcfile}" ]
+         then
+            if diff -q -b "${dstfile}" "${srcfile}" > /dev/null
+            then
+               log_verbose "\"${filename}\" has no user edits: replace with symlink"
+               remove_file_if_present "${dstfile}"
+               etc_symlink_or_copy_file "${srcfile}" \
+                                        "${dstdir}" \
+                                        "${filename}" \
+                                        "${symlink}"
+            else
+               log_fluff "\"${filename}\" contains edits: keep"
+               can_remove_etc='NO'
+            fi
+         else
+            log_fluff "\"${filename}\" is an addition: keep"
+            can_remove_etc='NO'
+         fi
+      fi
+   done
+
+   IFS=$'\n'; shell_disable_glob
+   for srcfile in `find "${srcdir}" ! -type d -print` # dstdir is etc
+   do
+      IFS="${DEFAULT_IFS}"; shell_enable_glob
+
+      filename="${srcfile#${srcdir}/}"
+      dstfile="${dstdir}/${filename}"
+
+      if [ ! -e "${dstfile}" ]
+      then
+         if [ "${add}" = 'YES' ]
+         then
+            log_verbose "\"${filename}\" is missing: recreate"
+            etc_symlink_or_copy_file "${srcfile}" \
+                                     "${dstdir}" \
+                                     "${filename}" \
+                                     "${symlink}"
+         else
+            log_info "\"${filename}\" is new but not used. Use \`repair --add\` to add it."
+            can_remove_etc='NO'
+         fi
+      fi
+   done
+   IFS="${DEFAULT_IFS}"; shell_enable_glob
+
+   if [ "${can_remove_etc}" = 'YES' ]
+   then
+      log_info "\"${dstdir#${MULLE_USER_PWD}/}\" contains no user changes so use \"share\" again"
+      rmdir_safer "${dstdir}"
+      rmdir_if_empty "${srcdir}"
+   fi
+}
+
