@@ -100,9 +100,18 @@ main()
    test_dirname "///b//"
    test_dirname "/a/b//"
 
-   test_dirname "//./b//"
+   case "${MULLE_UNAME}" in 
+      mingw)
+         # interestingly mingw does it better sort of 
+         # but its no use to us
+      ;;
+
+      *)
+         test_dirname "//./b//"
+         test_dirname "//a/b//"
+      ;;
+   esac
    test_dirname "////b//"
-   test_dirname "//a/b//"
 
    echo "All tests passed" >&2
 }
