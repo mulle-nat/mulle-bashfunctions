@@ -248,6 +248,10 @@ main()
          fail "Use mulle-sde add --extension \"mulle-nat/file.sh\" instead"
       ;;
 
+      username)
+         echo "${MULLE_USERNAME}"
+      ;;
+
       hostname)
          echo "${MULLE_HOSTNAME}"
       ;;
