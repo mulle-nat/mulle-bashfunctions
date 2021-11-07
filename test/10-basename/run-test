@@ -16,15 +16,29 @@ fail()
    exit 1
 }
 
+r_os_basename()
+{
+   # mingw basename is kinda broken, so we adapt here
+
+   RVAL="`basename -- "$1" `"
+   case "${MULLE_UNAME}" in   
+      mingw)
+         RVAL="${RVAL//\/\//\/}"
+      ;;
+   esac
+}
 
 test_basename()
 {
    local filename="$1"
 
-   r_basename "${filename}"
+   local output
 
-   local output="${RVAL}"
-   local expected="`basename -- "${filename}"`"
+   r_basename "${filename}"
+   output="${RVAL}"
+
+   r_os_basename "${filename}"
+   expected="${RVAL}"
 
    if [ "${output}" != "${expected}" ]
    then
@@ -90,9 +104,11 @@ init()
 {
    MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${MULLE_BASHFUNCTIONS_LIBEXEC_DIR:-../../src}"
 
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashglobal.sh" || exit 1
    . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-compatibility.sh" || exit 1
    . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-string.sh" || exit 1
    . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-logging.sh" || exit 1
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-exekutor.sh" || exit 1
 }
 
 

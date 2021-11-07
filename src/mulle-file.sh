@@ -32,8 +32,9 @@
 [ ! -z "${MULLE_FILE_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
    echo "double inclusion of mulle-file.sh" >&2
 
-[ -z "${MULLE_PATH_SH}" ]     && echo "mulle-path.sh must be included before mulle-file.sh" 2>&1 && exit 1
-[ -z "${MULLE_EXEKUTOR_SH}" ] && echo "mulle-exekutor.sh must be included before mulle-file.sh" 2>&1 && exit 1
+[ -z "${MULLE_BASHGLOBAL_SH}" ] && echo "mulle-bashglobal.sh must be included before mulle-file.sh" 2>&1 && exit 1
+[ -z "${MULLE_PATH_SH}" ]       && echo "mulle-path.sh must be included before mulle-file.sh" 2>&1 && exit 1
+[ -z "${MULLE_EXEKUTOR_SH}" ]   && echo "mulle-exekutor.sh must be included before mulle-file.sh" 2>&1 && exit 1
 
 
 MULLE_FILE_SH="included"

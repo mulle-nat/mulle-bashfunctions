@@ -1370,6 +1370,7 @@ rexecute_column_table_or_cat()
 
 MULLE_STRING_SH="included"
 
+[ -z "${MULLE_BASHGLOBAL_SH}" ]    && echo "mulle-bashglobal.sh must be included before mulle-file.sh" 2>&1 && exit 1
 [ -z "${MULLE_COMPATIBILITY_SH}" ] && echo "mulle-compatibility.sh must be included before mulle-string.sh" 2>&1 && exit 1
 
 # ####################################################################
@@ -3178,10 +3179,10 @@ r_path_depth()
          r_dirname "${name}"
          name="${RVAL}"
 
-         depth=$(($depth + 1))
+         depth=$((depth + 1))
       done
    fi
-   RVAL="$depth"
+   RVAL="${depth}"
 }
 
 
@@ -3785,8 +3786,9 @@ r_assert_sane_path()
 [ ! -z "${MULLE_FILE_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
    echo "double inclusion of mulle-file.sh" >&2
 
-[ -z "${MULLE_PATH_SH}" ]     && echo "mulle-path.sh must be included before mulle-file.sh" 2>&1 && exit 1
-[ -z "${MULLE_EXEKUTOR_SH}" ] && echo "mulle-exekutor.sh must be included before mulle-file.sh" 2>&1 && exit 1
+[ -z "${MULLE_BASHGLOBAL_SH}" ] && echo "mulle-bashglobal.sh must be included before mulle-file.sh" 2>&1 && exit 1
+[ -z "${MULLE_PATH_SH}" ]       && echo "mulle-path.sh must be included before mulle-file.sh" 2>&1 && exit 1
+[ -z "${MULLE_EXEKUTOR_SH}" ]   && echo "mulle-exekutor.sh must be included before mulle-file.sh" 2>&1 && exit 1
 
 
 MULLE_FILE_SH="included"
