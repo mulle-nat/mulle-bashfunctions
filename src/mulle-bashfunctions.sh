@@ -4028,7 +4028,7 @@ _r_make_tmp_in_dir_uuidgen()
 
    while :
    do
-      uuid="`${UUIDGEN}`"
+      uuid="`"${UUIDGEN}"`" || internal_fail "uuidgen failed"
       RVAL="${tmpdir}/${name}-${uuid:0:8}"
 
       case "${filetype}" in
