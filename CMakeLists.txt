@@ -74,11 +74,12 @@ execute_process( COMMAND bash -c "cat src/embed-header.sh ; egrep -h -v \"^#|^\ 
                  OUTPUT_FILE "src/mulle-bashfunctions-embed.sh")
 
 # probably more of a fun thing:
+# 
 # embed using eval `base64 <<< "<data>" | gzip -d -c`
-execute_process( COMMAND bash "-c" "gzip -c -9 \"src/mulle-bashfunctions-embed.sh\" | base64 -b 79 -o \"src/mulle-bashfunctions-embed.sh.gz.base64\"" 
-                 WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
-                 INPUT_FILE "src/mulle-bashfunctions-embed.sh"
-                 OUTPUT_FILE "src/mulle-bashfunctions-embed.sh.gz.base64")
+# execute_process( COMMAND bash "-c" "gzip -c -9 \"src/mulle-bashfunctions-embed.sh\" | base64 \"src/mulle-bashfunctions-embed.sh.gz.base64\"" 
+#                  WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+#                  INPUT_FILE "src/mulle-bashfunctions-embed.sh"
+#                  OUTPUT_FILE "src/mulle-bashfunctions-embed.sh.gz.base64")
 
 execute_process( COMMAND bash -c "cat src/header.sh ; egrep -h -v \"^#|^\ *#\" ${NONE_SCRIPTS_STR}"
                  WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
