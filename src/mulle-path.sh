@@ -81,6 +81,11 @@ r_extensionless_basename()
 }
 
 
+r_extensionless_filename()
+{
+   RVAL="${RVAL%.*}"
+}
+
 
 r_path_extension()
 {

@@ -2537,6 +2537,11 @@ r_extensionless_basename()
 }
 
 
+r_extensionless_filename()
+{
+   RVAL="${RVAL%.*}"
+}
+
 
 r_path_extension()
 {
@@ -4435,7 +4440,7 @@ etc_make_file_from_symlinked_file()
    r_basename "${dstfile}"
    filename="${RVAL}"
    (
-      cd "${directory}" || exit 1
+      rexekutor cd "${directory}" || exit 1
 
       if [ ! -f "${targetfile}" ]
       then
