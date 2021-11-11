@@ -97,11 +97,15 @@ then
 
       if [ "${MULLE_UNAME}" = "linux" ]
       then
-         read -r DEFAULT_IFS < /proc/sys/kernel/osrelease
-         case "${DEFAULT_IFS}" in
+         read -r MULLE_UNAME < /proc/sys/kernel/osrelease
+         case "${MULLE_UNAME}" in
             *-Microsoft)
                MULLE_UNAME="windows"
                MULLE_EXE_EXTENSION=".exe"
+            ;;
+  
+            *)
+               MULLE_UNAME="linux"
             ;;
          esac
       fi

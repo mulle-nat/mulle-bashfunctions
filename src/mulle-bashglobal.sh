@@ -116,12 +116,15 @@ then
       if [ "${MULLE_UNAME}" = "linux" ]
       then
          # check for WSL (Windows) we want this to be Windows then
-         # abuse DEFAULT_IFS as tmp variable to lessen global var pollution
-         read -r DEFAULT_IFS < /proc/sys/kernel/osrelease
-         case "${DEFAULT_IFS}" in
+         read -r MULLE_UNAME < /proc/sys/kernel/osrelease
+         case "${MULLE_UNAME}" in
             *-Microsoft)
                MULLE_UNAME="windows"
                MULLE_EXE_EXTENSION=".exe"
+            ;;
+  
+            *)
+               MULLE_UNAME="linux"
             ;;
          esac
       fi
