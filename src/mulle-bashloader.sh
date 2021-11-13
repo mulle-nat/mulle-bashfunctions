@@ -35,6 +35,53 @@ if [ -z "${MULLE_BASHLOADER_SH}" ]
 then
    MULLE_BASHLOADER_SH="included"
 
+   include_mulle_tool_library()
+   {
+      local tool="$1"
+      local name="$2"
+
+      local upper_tool
+      local upper_name
+
+      case "${BASH_VERSION}" in
+         [0123]*)
+            upper_tool="`printf "${tool}" | tr '[:lower:]' '[:upper:]'`"
+            upper_name="`printf "${name}" | tr '[:lower:]' '[:upper:]'`"
+         ;;
+
+         *)
+            if [ ! -z "${ZSH_VERSION}" ]
+            then
+               upper_tool="${tool:u}"
+               upper_name="${name:u}"
+            else
+               upper_tool="${tool^^}"
+               upper_name="${name^^}"
+            fi
+         ;;
+      esac
+
+      local header_define
+
+      header_define="MULLE_${upper_tool}_${upper_name}_SH"
+      if [ ! -z "${!header_define}" ]
+      then
+         return
+      fi
+
+      local tool_libexec_define
+
+      tool_libexec_define="MULLE_${upper_tool}_LIBEXEC_DIR"
+      if [ -z "${!tool_libexec_define}" ]
+      then
+         printf -v "${tool_libexec_define}" "%s" "`mulle-${tool} libexec-dir`" || exit 1
+         eval export "${tool_libexec_define}"
+      fi
+
+      . "${!tool_libexec_define}/mulle-${tool}-${name}.sh" || exit 1
+   }
+
+
    __bashfunctions_loader()
    {
       # not sure about this
