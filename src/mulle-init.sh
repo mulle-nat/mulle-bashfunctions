@@ -30,9 +30,9 @@
 #   POSSIBILITY OF SUCH DAMAGE.
 #
 [ ! -z "${MULLE_INIT_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
-   echo "double inclusion of mulle-init.sh" >&2
+   echo "$0: double inclusion of mulle-init.sh" >&2
 
-[ -z "${MULLE_STRING_SH}" ] && echo "mulle-string.sh must be included before mulle-init.sh" 2>&1 && exit 1
+[ -z "${MULLE_STRING_SH}" ] && _fatal "mulle-string.sh must be included before mulle-init.sh"
 
 
 MULLE_INIT_SH="included"

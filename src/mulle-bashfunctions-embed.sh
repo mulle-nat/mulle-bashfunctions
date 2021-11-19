@@ -302,7 +302,7 @@ shell_is_function()
 shell_enable_extglob
 
 [ ! -z "${MULLE_LOGGING_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
-   echo "double inclusion of mulle-logging.sh" >&2
+   echo "$0: double inclusion of mulle-logging.sh" >&2
 
 MULLE_LOGGING_SH="included"
 
@@ -523,9 +523,16 @@ MULLE_INTERNAL_ERROR_PREFIX=" *** internal error ***:"
 
 internal_fail()
 {
-   log_printf "${C_ERROR}${MULLE_EXECUTABLE_FAIL_PREFIX}${MULLE_INTERNAL_ERROR_PREFIX}${C_ERROR_TEXT}%b${C_RESET}\n" "$*"
+   log_printf "${C_ERROR}${MULLE_EXECUTABLE_FAIL_PREFIX}\
+${MULLE_INTERNAL_ERROR_PREFIX}${C_ERROR_TEXT}%b${C_RESET}\n" "$*"
    stacktrace
    exit 1
+}
+
+
+_fatal()
+{
+   internal_fail "$@"
 }
 
 
@@ -1011,8 +1018,8 @@ rexecute_column_table_or_cat()
 
 MULLE_STRING_SH="included"
 
-[ -z "${MULLE_BASHGLOBAL_SH}" ]    && echo "mulle-bashglobal.sh must be included before mulle-file.sh" 2>&1 && exit 1
-[ -z "${MULLE_COMPATIBILITY_SH}" ] && echo "mulle-compatibility.sh must be included before mulle-string.sh" 2>&1 && exit 1
+[ -z "${MULLE_BASHGLOBAL_SH}" ]    && _fatal "mulle-bashglobal.sh must be included before mulle-file.sh"
+[ -z "${MULLE_COMPATIBILITY_SH}" ] && _fatal "mulle-compatibility.sh must be included before mulle-string.sh"
 
 
 r_append()
@@ -1944,9 +1951,9 @@ r_expanded_string()
 
 :
 [ ! -z "${MULLE_INIT_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
-   echo "double inclusion of mulle-init.sh" >&2
+   echo "$0: double inclusion of mulle-init.sh" >&2
 
-[ -z "${MULLE_STRING_SH}" ] && echo "mulle-string.sh must be included before mulle-init.sh" 2>&1 && exit 1
+[ -z "${MULLE_STRING_SH}" ] && _fatal "mulle-string.sh must be included before mulle-init.sh"
 
 
 MULLE_INIT_SH="included"
@@ -2109,9 +2116,9 @@ call_main()
    eval main "${flags}" "${args}"
 }
 [ ! -z "${MULLE_OPTIONS_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
-   echo "double inclusion of mulle-options.sh" >&2
+   echo "$0: double inclusion of mulle-options.sh" >&2
 
-[ -z "${MULLE_LOGGING_SH}" ] && echo "mulle-logging.sh must be included before mulle-options.sh" 2>&1 && exit 1
+[ -z "${MULLE_LOGGING_SH}" ] && _fatal "mulle-logging.sh must be included before mulle-options.sh"
 
 MULLE_OPTIONS_SH="included"
 
@@ -2189,6 +2196,7 @@ EOF
       cat <<EOF
    -ld${S}${S}${DELIMITER}additional debug output
    -le${S}${S}${DELIMITER}additional environment debug output
+   -lt${S}${S}${DELIMITER}trace through bash code
    -lx${S}${S}${DELIMITER}external command execution log output
 EOF
    fi
@@ -2287,8 +2295,7 @@ options_technical_flags()
          MULLE_FLAG_LOG_SETTINGS=
       ;;
 
-
-      -t|--trace)
+      -lt|--trace)
          MULLE_TRACE='1848'
          if [ ! -z "${ZSH_VERSION}" ]
          then
@@ -2503,7 +2510,7 @@ _options_mini_main()
 [ ! -z "${MULLE_PATH_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
    echo "double inclusion of mulle-path.sh" >&2
 
-[ -z "${MULLE_STRING_SH}" ] && echo "mulle-string.sh must be included before mulle-path.sh" 2>&1 && exit 1
+[ -z "${MULLE_STRING_SH}" ] && _fatal "mulle-string.sh must be included before mulle-path.sh"
 
 
 MULLE_PATH_SH="included"
@@ -3047,9 +3054,9 @@ r_assert_sane_path()
 [ ! -z "${MULLE_FILE_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
    echo "double inclusion of mulle-file.sh" >&2
 
-[ -z "${MULLE_BASHGLOBAL_SH}" ] && echo "mulle-bashglobal.sh must be included before mulle-file.sh" 2>&1 && exit 1
-[ -z "${MULLE_PATH_SH}" ]       && echo "mulle-path.sh must be included before mulle-file.sh" 2>&1 && exit 1
-[ -z "${MULLE_EXEKUTOR_SH}" ]   && echo "mulle-exekutor.sh must be included before mulle-file.sh" 2>&1 && exit 1
+[ -z "${MULLE_BASHGLOBAL_SH}" ] && _fatal "mulle-bashglobal.sh must be included before mulle-file.sh"
+[ -z "${MULLE_PATH_SH}" ]       && _fatal "mulle-path.sh must be included before mulle-file.sh"
+[ -z "${MULLE_EXEKUTOR_SH}" ]   && _fatal "mulle-exekutor.sh must be included before mulle-file.sh"
 
 
 MULLE_FILE_SH="included"
@@ -3621,7 +3628,7 @@ inplace_sed()
 [ "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' -a ! -z "${MULLE_ARRAY_SH}" ] && \
    echo "double inclusion of mulle-array.sh" >&2
 
-[ -z "${MULLE_LOGGING_SH}" ] && echo "mulle-logging.sh must be included before mulle-array.sh" 2>&1 && exit 1
+[ -z "${MULLE_LOGGING_SH}" ] && _fatal "mulle-logging.sh must be included before mulle-array.sh"
 
 MULLE_ARRAY_SH="included"
 
@@ -3994,7 +4001,7 @@ r_de_camel_case_upcase_identifier()
 }
 MULLE_PARALLEL_SH="included"
 
-[ -z "${MULLE_FILE_SH}" ] && echo "mulle-file.sh must be included before mulle-parallel.sh" 2>&1 && exit 1
+[ -z "${MULLE_FILE_SH}" ] && _fatal "mulle-file.sh must be included before mulle-parallel.sh"
 
 
 very_short_sleep()
@@ -4188,7 +4195,13 @@ _parallel_end()
 
    exekutor rm "${_parallel_statusfile}"
 
-   [ "${_parallel_fails}" -eq 0 ]
+   if [ "${_parallel_fails}" -ne 0 ]
+   then
+      log_warning "warning: ${_parallel_fails} parallel jobs failed"
+      return 1
+   fi
+
+   return 0
 }
 
 
@@ -4202,7 +4215,7 @@ _parallel_status()
 
    if [ $rval -ne 0 ]
    then
-      log_warning "warning: $* failed with $rval"
+      log_warning "warning: Parallel job \"$*\" failed with $rval"
       redirect_append_exekutor "${_parallel_statusfile}" printf "%s\n" "${rval};$*"
    fi
 }

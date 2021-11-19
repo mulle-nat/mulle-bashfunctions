@@ -30,9 +30,9 @@
 #   POSSIBILITY OF SUCH DAMAGE.
 #
 [ ! -z "${MULLE_OPTIONS_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
-   echo "double inclusion of mulle-options.sh" >&2
+   echo "$0: double inclusion of mulle-options.sh" >&2
 
-[ -z "${MULLE_LOGGING_SH}" ] && echo "mulle-logging.sh must be included before mulle-options.sh" 2>&1 && exit 1
+[ -z "${MULLE_LOGGING_SH}" ] && _fatal "mulle-logging.sh must be included before mulle-options.sh"
 
 MULLE_OPTIONS_SH="included"
 
@@ -119,6 +119,7 @@ EOF
       cat <<EOF
    -ld${S}${S}${DELIMITER}additional debug output
    -le${S}${S}${DELIMITER}additional environment debug output
+   -lt${S}${S}${DELIMITER}trace through bash code
    -lx${S}${S}${DELIMITER}external command execution log output
 EOF
    fi
@@ -229,8 +230,9 @@ options_technical_flags()
          MULLE_FLAG_LOG_SETTINGS=
       ;;
 
-
-      -t|--trace)
+      # renamed to -lt, because obscuring -t is kinda harsh
+      # and i don't need it so often
+      -lt|--trace)
          MULLE_TRACE='1848'
          if [ ! -z "${ZSH_VERSION}" ]
          then

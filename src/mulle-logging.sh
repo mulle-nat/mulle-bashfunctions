@@ -30,7 +30,7 @@
 #   POSSIBILITY OF SUCH DAMAGE.
 #
 [ ! -z "${MULLE_LOGGING_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
-   echo "double inclusion of mulle-logging.sh" >&2
+   echo "$0: double inclusion of mulle-logging.sh" >&2
 
 MULLE_LOGGING_SH="included"
 
@@ -270,9 +270,18 @@ MULLE_INTERNAL_ERROR_PREFIX=" *** internal error ***:"
 
 internal_fail()
 {
-   log_printf "${C_ERROR}${MULLE_EXECUTABLE_FAIL_PREFIX}${MULLE_INTERNAL_ERROR_PREFIX}${C_ERROR_TEXT}%b${C_RESET}\n" "$*"
+   log_printf "${C_ERROR}${MULLE_EXECUTABLE_FAIL_PREFIX}\
+${MULLE_INTERNAL_ERROR_PREFIX}${C_ERROR_TEXT}%b${C_RESET}\n" "$*"
    stacktrace
    exit 1
+}
+
+
+# now that we have internal_fail defined we can rewrite _fatal
+# unset -f _fatal
+_fatal()
+{
+   internal_fail "$@"
 }
 
 

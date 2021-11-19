@@ -69,10 +69,13 @@ set( EMBED_SCRIPTS
 
 string( REPLACE ";" " " EMBED_SCRIPTS_STR "${EMBED_SCRIPTS}")
 
+execute_process( COMMAND bash -c "[ ! -f \"src/mulle-bashfunctions-embed.sh\" ] || chmod a+w \"src/mulle-bashfunctions-embed.sh\""
+                 WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
 execute_process( COMMAND bash -c "cat src/embed-header.sh ; egrep -h -v \"^#|^\ *#\" ${EMBED_SCRIPTS_STR}; cat src/embed-footer.sh"
                  WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
                  OUTPUT_FILE "src/mulle-bashfunctions-embed.sh")
-
+execute_process( COMMAND chmod a-w "src/mulle-bashfunctions-embed.sh"
+                 WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
 # probably more of a fun thing:
 # 
 # embed using eval `base64 <<< "<data>" | gzip -d -c`
@@ -81,21 +84,37 @@ execute_process( COMMAND bash -c "cat src/embed-header.sh ; egrep -h -v \"^#|^\ 
 #                  INPUT_FILE "src/mulle-bashfunctions-embed.sh"
 #                  OUTPUT_FILE "src/mulle-bashfunctions-embed.sh.gz.base64")
 
+execute_process( COMMAND bash -c "[ ! -f \"src/mulle-bashfunctions-none.sh\" ] || chmod a+w \"src/mulle-bashfunctions-none.sh\""
+                 WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
 execute_process( COMMAND bash -c "cat src/header.sh ; egrep -h -v \"^#|^\ *#\" ${NONE_SCRIPTS_STR}"
                  WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
                  OUTPUT_FILE "src/mulle-bashfunctions-none.sh")
+execute_process( COMMAND chmod a-w "src/mulle-bashfunctions-none.sh"
+                 WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
 
+execute_process( COMMAND bash -c "[ ! -f \"src/mulle-bashfunctions.sh\" ] || chmod a+w \"src/mulle-bashfunctions.sh\""
+                 WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
 execute_process( COMMAND bash -c "cat src/header.sh ; egrep -h -v \"^#|^\ *#\" ${DEFAULT_SCRIPTS_STR}"
                  WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
                  OUTPUT_FILE "src/mulle-bashfunctions.sh")
+execute_process( COMMAND chmod a-w "src/mulle-bashfunctions.sh"
+                 WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
 
+execute_process( COMMAND bash -c "[ ! -f \"src/mulle-bashfunctions-minimal.sh\" ] || chmod a+w \"src/mulle-bashfunctions-minimal.sh\""
+                 WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
 execute_process( COMMAND bash -c "cat src/header.sh ; egrep -h -v \"^#|^\ *#\" ${MINIMAL_SCRIPTS_STR}"
                  WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
                  OUTPUT_FILE "src/mulle-bashfunctions-minimal.sh")
+execute_process( COMMAND chmod a-w "src/mulle-bashfunctions-minimal.sh"
+                 WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
 
+execute_process( COMMAND bash -c "[ ! -f \"src/mulle-bashfunctions-all.sh\" ] || chmod a+w \"src/mulle-bashfunctions-all.sh\""
+                 WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
 execute_process( COMMAND bash -c "cat src/header.sh ; egrep -h -v \"^#|^\ *#\" ${ALL_SCRIPTS_STR}"
                  WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
                  OUTPUT_FILE "src/mulle-bashfunctions-all.sh")
+execute_process( COMMAND chmod a-w "src/mulle-bashfunctions-all.sh"
+                 WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
 
 
 set( SCRIPTS

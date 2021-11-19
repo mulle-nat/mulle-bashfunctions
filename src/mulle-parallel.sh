@@ -31,7 +31,7 @@
 #
 MULLE_PARALLEL_SH="included"
 
-[ -z "${MULLE_FILE_SH}" ] && echo "mulle-file.sh must be included before mulle-parallel.sh" 2>&1 && exit 1
+[ -z "${MULLE_FILE_SH}" ] && _fatal "mulle-file.sh must be included before mulle-parallel.sh"
 
 
 very_short_sleep()
@@ -238,7 +238,13 @@ _parallel_end()
 
    exekutor rm "${_parallel_statusfile}"
 
-   [ "${_parallel_fails}" -eq 0 ]
+   if [ "${_parallel_fails}" -ne 0 ]
+   then
+      log_warning "warning: ${_parallel_fails} parallel jobs failed"
+      return 1
+   fi
+
+   return 0
 }
 
 
@@ -253,7 +259,7 @@ _parallel_status()
    # only append to status file if error
    if [ $rval -ne 0 ]
    then
-      log_warning "warning: $* failed with $rval"
+      log_warning "warning: Parallel job \"$*\" failed with $rval"
       redirect_append_exekutor "${_parallel_statusfile}" printf "%s\n" "${rval};$*"
    fi
 }

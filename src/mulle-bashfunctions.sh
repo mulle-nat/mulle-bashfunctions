@@ -145,6 +145,60 @@ if [ -z "${MULLE_BASHLOADER_SH}" ]
 then
    MULLE_BASHLOADER_SH="included"
 
+   r_uppercase()
+   {
+      case "${BASH_VERSION}" in
+         [0123]*)
+            RVAL="`printf "$1" | tr '[:lower:]' '[:upper:]'`"
+         ;;
+
+         *)
+            if [ ! -z "${ZSH_VERSION}" ]
+            then
+               RVAL="${1:u}"
+            else
+               RVAL="${1^^}"
+            fi
+         ;;
+      esac
+   }
+
+   include_executable_library()
+   {
+      local executable="$1"
+      local header_define="$2"
+      local libexec_define="$3"
+      local filename="$4"
+
+      if [ ! -z "${!header_define}" ]
+      then
+         return
+      fi
+
+      if [ -z "${!libexec_define}" ]
+      then
+         printf -v "${libexec_define}" "%s" "`"${executable}" libexec-dir`" || exit 1
+         eval export "${libexec_define}"
+      fi
+
+      . "${!libexec_define}/${filename}" || exit 1
+   }
+
+   include_mulle_bashfunctions_library()
+   {
+      local name="$1"
+
+      local upper_name
+
+      r_uppercase "${name}"
+      upper_name="${RVAL}"
+
+      include_executable_library "mulle-bashfunctions-env" \
+                                 "MULLE_${upper_name}_SH" \
+                                 "MULLE_BASHFUNCTIONS_LIBEXEC_DIR" \
+                                 "mulle-${name}.sh"
+   }
+
    include_mulle_tool_library()
    {
       local tool="$1"
@@ -153,44 +207,37 @@ then
       local upper_tool
       local upper_name
 
-      case "${BASH_VERSION}" in
-         [0123]*)
-            upper_tool="`printf "${tool}" | tr '[:lower:]' '[:upper:]'`"
-            upper_name="`printf "${name}" | tr '[:lower:]' '[:upper:]'`"
-         ;;
+      r_uppercase "${tool}"
+      upper_tool="${RVAL}"
 
-         *)
-            if [ ! -z "${ZSH_VERSION}" ]
-            then
-               upper_tool="${tool:u}"
-               upper_name="${name:u}"
-            else
-               upper_tool="${tool^^}"
-               upper_name="${name^^}"
-            fi
-         ;;
-      esac
+      r_uppercase "${name}"
+      upper_name="${RVAL}"
 
-      local header_define
-
-      header_define="MULLE_${upper_tool}_${upper_name}_SH"
-      if [ ! -z "${!header_define}" ]
-      then
-         return
-      fi
-
-      local tool_libexec_define
-
-      tool_libexec_define="MULLE_${upper_tool}_LIBEXEC_DIR"
-      if [ -z "${!tool_libexec_define}" ]
-      then
-         printf -v "${tool_libexec_define}" "%s" "`mulle-${tool} libexec-dir`" || exit 1
-         eval export "${tool_libexec_define}"
-      fi
-
-      . "${!tool_libexec_define}/mulle-${tool}-${name}.sh" || exit 1
+      include_executable_library "mulle-${tool}" \
+                                 "MULLE_${upper_tool}_${upper_name}_SH" \
+                                 "MULLE_${upper_tool}_LIBEXEC_DIR" \
+                                 "mulle-${tool}-${name}.sh"
    }
 
+   include_mulle_toolenv_library()
+   {
+      local tool="$1"
+      local name="$2"
+
+      local upper_tool
+      local upper_name
+
+      r_uppercase "${tool}"
+      upper_tool="${RVAL}"
+
+      r_uppercase "${name}"
+      upper_name="${RVAL}"
+
+      include_executable_library "mulle-${tool}-env" \
+                                 "MULLE_${upper_tool}_${upper_name}_SH" \
+                                 "MULLE_${upper_tool}_LIBEXEC_DIR" \
+                                 "mulle-${tool}-${name}.sh"
+   }
 
    __bashfunctions_loader()
    {
@@ -206,82 +253,12 @@ then
       fi
 
       [ -z "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}" ] \
-         && echo "MULLE_BASHFUNCTIONS_LIBEXEC_DIR not set" && exit 1
-
-      if [ -z "${MULLE_COMPATIBILITY_SH}" ]
-      then
-         . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-compatibility.sh" || return 1
-      fi
-
-      case "$1" in
-         'none')
-         ;;
-
-         ""|*)
-            if [ -z "${MULLE_LOGGING_SH}" ]
-            then
-               . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-logging.sh"  || return 1
-            fi
-            if [ -z "${MULLE_EXEKUTOR_SH}" ]
-            then
-               . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-exekutor.sh" || return 1
-            fi
-            if [ -z "${MULLE_STRING_SH}" ]
-            then
-               . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-string.sh"   || return 1
-            fi
-            if [ -z "${MULLE_INIT_SH}" ]
-            then
-               . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-init.sh"     || return 1
-            fi
-            if [ -z "${MULLE_OPTIONS_SH}" ]
-            then
-               . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-options.sh"  || return 1
-            fi
-         ;;
-      esac
-      case "$1" in
-         'none'|'minimal')
-         ;;
-
-         ""|*)
-            if [ -z "${MULLE_PATH_SH}" ]
-            then
-               . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-path.sh" || return 1
-            fi
-            if [ -z "${MULLE_FILE_SH}" ]
-            then
-               . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-file.sh" || return 1
-            fi
-         ;;
-      esac
-
-      case "$1" in
-         'all')
-            if [ -z "${MULLE_ARRAY_SH}" ]
-            then
-               . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-array.sh"    || return 1
-            fi
-            if [ -z "${MULLE_CASE_SH}" ]
-            then
-               . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-case.sh"     || return 1
-            fi
-            if [ -z "${MULLE_ETC_SH}" ]
-            then
-               . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-etc.sh"      || return 1
-            fi
-            if [ -z "${MULLE_PARALLEL_SH}" ]
-            then
-               . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-parallel.sh" || return 1
-            fi
-            if [ -z "${MULLE_VERSION_SH}" ]
-            then
-               . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-version.sh"  || return 1
-            fi
-      esac
+         && echo "MULLE_BASHFUNCTIONS_LIBEXEC_DIR not set" >&2 \
+         && exit 1
+      :
    }
 
-   __bashfunctions_loader "$@" || exit 1
+   __bashfunctions_loader || exit 1
 fi
 [ ! -z "${MULLE_COMPATIBILITY_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
    echo "double inclusion of mulle-compatibility.sh" >&2
@@ -444,7 +421,7 @@ shell_is_function()
 shell_enable_extglob
 
 [ ! -z "${MULLE_LOGGING_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
-   echo "double inclusion of mulle-logging.sh" >&2
+   echo "$0: double inclusion of mulle-logging.sh" >&2
 
 MULLE_LOGGING_SH="included"
 
@@ -665,9 +642,16 @@ MULLE_INTERNAL_ERROR_PREFIX=" *** internal error ***:"
 
 internal_fail()
 {
-   log_printf "${C_ERROR}${MULLE_EXECUTABLE_FAIL_PREFIX}${MULLE_INTERNAL_ERROR_PREFIX}${C_ERROR_TEXT}%b${C_RESET}\n" "$*"
+   log_printf "${C_ERROR}${MULLE_EXECUTABLE_FAIL_PREFIX}\
+${MULLE_INTERNAL_ERROR_PREFIX}${C_ERROR_TEXT}%b${C_RESET}\n" "$*"
    stacktrace
    exit 1
+}
+
+
+_fatal()
+{
+   internal_fail "$@"
 }
 
 
@@ -1153,8 +1137,8 @@ rexecute_column_table_or_cat()
 
 MULLE_STRING_SH="included"
 
-[ -z "${MULLE_BASHGLOBAL_SH}" ]    && echo "mulle-bashglobal.sh must be included before mulle-file.sh" 2>&1 && exit 1
-[ -z "${MULLE_COMPATIBILITY_SH}" ] && echo "mulle-compatibility.sh must be included before mulle-string.sh" 2>&1 && exit 1
+[ -z "${MULLE_BASHGLOBAL_SH}" ]    && _fatal "mulle-bashglobal.sh must be included before mulle-file.sh"
+[ -z "${MULLE_COMPATIBILITY_SH}" ] && _fatal "mulle-compatibility.sh must be included before mulle-string.sh"
 
 
 r_append()
@@ -2086,9 +2070,9 @@ r_expanded_string()
 
 :
 [ ! -z "${MULLE_INIT_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
-   echo "double inclusion of mulle-init.sh" >&2
+   echo "$0: double inclusion of mulle-init.sh" >&2
 
-[ -z "${MULLE_STRING_SH}" ] && echo "mulle-string.sh must be included before mulle-init.sh" 2>&1 && exit 1
+[ -z "${MULLE_STRING_SH}" ] && _fatal "mulle-string.sh must be included before mulle-init.sh"
 
 
 MULLE_INIT_SH="included"
@@ -2251,9 +2235,9 @@ call_main()
    eval main "${flags}" "${args}"
 }
 [ ! -z "${MULLE_OPTIONS_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
-   echo "double inclusion of mulle-options.sh" >&2
+   echo "$0: double inclusion of mulle-options.sh" >&2
 
-[ -z "${MULLE_LOGGING_SH}" ] && echo "mulle-logging.sh must be included before mulle-options.sh" 2>&1 && exit 1
+[ -z "${MULLE_LOGGING_SH}" ] && _fatal "mulle-logging.sh must be included before mulle-options.sh"
 
 MULLE_OPTIONS_SH="included"
 
@@ -2331,6 +2315,7 @@ EOF
       cat <<EOF
    -ld${S}${S}${DELIMITER}additional debug output
    -le${S}${S}${DELIMITER}additional environment debug output
+   -lt${S}${S}${DELIMITER}trace through bash code
    -lx${S}${S}${DELIMITER}external command execution log output
 EOF
    fi
@@ -2429,8 +2414,7 @@ options_technical_flags()
          MULLE_FLAG_LOG_SETTINGS=
       ;;
 
-
-      -t|--trace)
+      -lt|--trace)
          MULLE_TRACE='1848'
          if [ ! -z "${ZSH_VERSION}" ]
          then
@@ -2645,7 +2629,7 @@ _options_mini_main()
 [ ! -z "${MULLE_PATH_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
    echo "double inclusion of mulle-path.sh" >&2
 
-[ -z "${MULLE_STRING_SH}" ] && echo "mulle-string.sh must be included before mulle-path.sh" 2>&1 && exit 1
+[ -z "${MULLE_STRING_SH}" ] && _fatal "mulle-string.sh must be included before mulle-path.sh"
 
 
 MULLE_PATH_SH="included"
@@ -3189,9 +3173,9 @@ r_assert_sane_path()
 [ ! -z "${MULLE_FILE_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
    echo "double inclusion of mulle-file.sh" >&2
 
-[ -z "${MULLE_BASHGLOBAL_SH}" ] && echo "mulle-bashglobal.sh must be included before mulle-file.sh" 2>&1 && exit 1
-[ -z "${MULLE_PATH_SH}" ]       && echo "mulle-path.sh must be included before mulle-file.sh" 2>&1 && exit 1
-[ -z "${MULLE_EXEKUTOR_SH}" ]   && echo "mulle-exekutor.sh must be included before mulle-file.sh" 2>&1 && exit 1
+[ -z "${MULLE_BASHGLOBAL_SH}" ] && _fatal "mulle-bashglobal.sh must be included before mulle-file.sh"
+[ -z "${MULLE_PATH_SH}" ]       && _fatal "mulle-path.sh must be included before mulle-file.sh"
+[ -z "${MULLE_EXEKUTOR_SH}" ]   && _fatal "mulle-exekutor.sh must be included before mulle-file.sh"
 
 
 MULLE_FILE_SH="included"
