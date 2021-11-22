@@ -165,10 +165,35 @@ url_parse()
          _fragment="${BASH_REMATCH[15]}"
       ;;
 
+      # hack for git@github.com:mulle-kybernetik-tv/nanovg.git
+      *:*)
+         _scheme=
+         _host="${url%:*}"
+         r_url_remove_query "${url##*:}"
+         r_url_remove_fragment "${RVAL}"
+         _path=${RVAL}
+         _userinfo=
+         _port=
+         case "${_host}" in 
+            *@*)
+               _userinfo="${_host%%@*}"
+               _host="${_host#*@}"
+            ;;
+         esac
+         case "${_host}" in 
+            *:*)
+               _port="${_host%%:*}"
+               _host="${_host#*:}"
+            ;;
+         esac
+         _query=
+         _fragment=
+      ;;
+
       *)
-         _scheme="${url%%:*}"
-         r_url_remove_query "${url#*:}"
-         r_url_remove_fragment
+         _scheme="${url%:*}"
+         r_url_remove_query "${url##*:}"
+         r_url_remove_fragment "${RVAL}"
          _path=${RVAL}
          _userinfo=
          _host=

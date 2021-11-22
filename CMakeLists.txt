@@ -44,6 +44,7 @@ ${DEFAULT_SCRIPTS}
 "src/mulle-array.sh"
 "src/mulle-case.sh"
 "src/mulle-parallel.sh"
+"src/mulle-url.sh"
 "src/mulle-version.sh"
 "src/mulle-etc.sh"
 )
@@ -63,6 +64,7 @@ set( EMBED_SCRIPTS
 "src/mulle-array.sh"
 "src/mulle-case.sh"
 "src/mulle-parallel.sh"
+"src/mulle-url.sh"
 "src/mulle-version.sh"
 "src/mulle-etc.sh"
 )
