@@ -420,6 +420,47 @@ shell_is_function()
 
 shell_enable_extglob
 
+
+unalias -a
+
+if [ ! -z "${ZSH_VERSION}" ]
+then
+   setopt aliases
+
+   alias .for="setopt noglob; for"
+   alias .foreachline="setopt noglob; IFS=$'\n'; for"
+   alias .foreachword="setopt noglob; IFS=' '$'\t'$'\n'; for"
+   alias .foreachitem="setopt noglob; IFS=','; for"
+   alias .foreachpath="setopt noglob; IFS=':'; for"
+   alias .foreachcolumn="setopt noglob; IFS=';'; for"
+   alias .foreachfile="unsetopt noglob; unsetopt nullglob; IFS=' '$'\t'$'\n'; for"
+
+
+   alias .do="do
+   unsetopt noglob; unsetopt nullglob; IFS=' '$'\t'$'\n'"
+   alias .done="done;unsetopt noglob; unsetopt nullglob; IFS=' '$'\t'$'\n'"
+
+else
+   shopt -s expand_aliases
+
+   alias .for="set -f; for"
+   alias .foreachline="set -f; IFS=$'\n'; for"
+   alias .foreachword="set -f; IFS=' '$'\t'$'\n'; for"
+   alias .foreachitem="set -f; IFS=','; for"
+   alias .foreachpath="set -f; IFS=':'; for"
+   alias .foreachcolumn="set -f; IFS=';'; for"
+   alias .foreachfile="set +f; shopt +u nullglob; IFS=' '$'\t'$'\n'; for"
+
+
+   alias .do="do
+set +f; shopt -u nullglob; IFS=' '$'\t'$'\n'"
+   alias .done="done;set +f; shopt -u nullglob; IFS=' '$'\t'$'\n'"
+fi
+
+
+alias .break="break"
+alias .continue="continue"
+
 [ ! -z "${MULLE_LOGGING_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
    echo "$0: double inclusion of mulle-logging.sh" >&2
 
@@ -809,7 +850,7 @@ exekutor_trace()
 {
    local printer="$1"; shift
 
-   if [  "${MULLE_FLAG_LOG_EXEKUTOR}" = 'YES' ]
+   if [ "${MULLE_FLAG_LOG_EXEKUTOR}" = 'YES' ]
    then
       if [ -z "${MULLE_EXEKUTOR_LOG_DEVICE}" ]
       then
@@ -1106,13 +1147,13 @@ rexecute_column_table_or_cat()
 
    if [ -z "${COLUMN}" ]
    then
-      for cmd in ${column_cmds}
-      do
+      .for cmd in ${column_cmds}
+      .do
          if COLUMN="`command -v "${cmd}" `"
          then
-            break
+            .break
          fi
-      done
+      .done
    fi
 
    if [ -z "${COLUMN}" ]
@@ -1294,16 +1335,15 @@ r_remove_line()
    local delim
 
    RVAL=
-   shell_disable_glob; IFS=$'\n'
-   for line in ${lines}
-   do
+
+   .foreachline line in ${lines}
+   .do
       if [ "${line}" != "${search}" ]
       then
          RVAL="${RVAL}${delim}${line}"
          delim=$'\n'
       fi
-   done
-   IFS="${DEFAULT_IFS}" ; shell_enable_glob
+   .done
 }
 
 
@@ -1317,9 +1357,9 @@ r_remove_line_once()
    local delim
 
    RVAL=
-   shell_disable_glob; IFS=$'\n'
-   for line in ${lines}
-   do
+
+   .foreachline line in ${lines}
+   .do
       if [ -z "${search}" -o "${line}" != "${search}" ]
       then
          RVAL="${RVAL}${delim}${line}"
@@ -1327,8 +1367,7 @@ r_remove_line_once()
       else 
          search="" 
       fi
-   done
-   IFS="${DEFAULT_IFS}" ; shell_enable_glob
+   .done
 }
 
 
@@ -1392,27 +1431,22 @@ find_line_zsh()
       then
          return 0
       fi
+
       find_empty_line_zsh "${lines}"
       return $?
    fi
 
-   local rval
    local line
 
-   rval=1
-
-   IFS=$'\n'
-   for line in ${lines}
-   do
+   .foreachline line in ${lines}
+   .do
       if [ "${line}" = "${search}" ]
       then
-         rval=0
-         break
+         return 0
       fi
-   done
-   IFS="${DEFAULT_IFS}"
+   .done
 
-   return $rval
+   return 1
 }
 
 
@@ -1472,12 +1506,10 @@ r_count_lines()
 
    local line
 
-   shell_disable_glob; IFS=$'\n'
-   for line in ${array}
-   do
+   .foreachline line in ${array}
+   .do
       RVAL=$((RVAL + 1))
-   done
-   IFS="${DEFAULT_IFS}" ; shell_enable_glob
+   .done
 }
 
 
@@ -1574,7 +1606,6 @@ r_filepath_concat()
 
    fallback=
 
-   shell_disable_glob
    for i in "$@"
    do
       sep="/"
@@ -1621,7 +1652,6 @@ r_filepath_concat()
          esac
       fi
    done
-   shell_enable_glob
 
    if [ ! -z "${s}" ]
    then

@@ -483,11 +483,9 @@ _r_simplified_path()
    remove_empty='NO'  # remove trailing slashes
 
    IFS="/"
-   shell_disable_glob
-   for i in ${filepath}
-   do
+   .for i in ${filepath}
+   .do
 #      log_printf "${C_FLUFF}%b${C_RESET}\n" "$i"
-      shell_enable_glob
       case "$i" in
          \.)
            remove_empty='YES'
@@ -500,7 +498,7 @@ _r_simplified_path()
 
            if [ "${last}" = "|" ]
            then
-              continue
+              .continue
            fi
 
            if [ ! -z "${last}" -a "${last}" != ".." ]
@@ -509,7 +507,7 @@ _r_simplified_path()
               result="${RVAL}"
               r_get_last_line "${result}"
               last="${RVAL}"
-              continue
+              .continue
            fi
          ;;
 
@@ -523,7 +521,7 @@ _r_simplified_path()
                last='|'
                result='|'
             fi
-            continue
+            .continue
          ;;
       esac
 
@@ -533,7 +531,7 @@ _r_simplified_path()
 
       r_add_line "${result}" "${i}"
       result="${RVAL}"
-   done
+   .done
 
    IFS="${DEFAULT_IFS}"
    shell_enable_glob

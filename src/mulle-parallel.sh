@@ -302,12 +302,12 @@ parallel_execute()
    local argument
 
    shell_disable_glob;  IFS=$'\n'
-   for argument in ${arguments}
-   do
+   .foreachline argument in ${arguments}
+   .do
       shell_enable_glob; IFS="${DEFAULT_IFS}"
 
       _parallel_execute "$@" "${argument}"
-   done
+   .done
 
    shell_enable_glob; IFS="${DEFAULT_IFS}"
 

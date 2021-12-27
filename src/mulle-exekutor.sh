@@ -104,7 +104,7 @@ exekutor_trace()
 {
    local printer="$1"; shift
 
-   if [  "${MULLE_FLAG_LOG_EXEKUTOR}" = 'YES' ]
+   if [ "${MULLE_FLAG_LOG_EXEKUTOR}" = 'YES' ]
    then
       if [ -z "${MULLE_EXEKUTOR_LOG_DEVICE}" ]
       then
@@ -430,13 +430,13 @@ rexecute_column_table_or_cat()
 
    if [ -z "${COLUMN}" ]
    then
-      for cmd in ${column_cmds}
-      do
+      .for cmd in ${column_cmds}
+      .do
          if COLUMN="`command -v "${cmd}" `"
          then
-            break
+            .break
          fi
-      done
+      .done
    fi
 
    if [ -z "${COLUMN}" ]

@@ -420,3 +420,44 @@ shell_is_function()
 
 shell_enable_extglob
 
+
+unalias -a
+
+if [ ! -z "${ZSH_VERSION}" ]
+then
+   setopt aliases
+
+   alias .for="setopt noglob; for"
+   alias .foreachline="setopt noglob; IFS=$'\n'; for"
+   alias .foreachword="setopt noglob; IFS=' '$'\t'$'\n'; for"
+   alias .foreachitem="setopt noglob; IFS=','; for"
+   alias .foreachpath="setopt noglob; IFS=':'; for"
+   alias .foreachcolumn="setopt noglob; IFS=';'; for"
+   alias .foreachfile="unsetopt noglob; unsetopt nullglob; IFS=' '$'\t'$'\n'; for"
+
+
+   alias .do="do
+   unsetopt noglob; unsetopt nullglob; IFS=' '$'\t'$'\n'"
+   alias .done="done;unsetopt noglob; unsetopt nullglob; IFS=' '$'\t'$'\n'"
+
+else
+   shopt -s expand_aliases
+
+   alias .for="set -f; for"
+   alias .foreachline="set -f; IFS=$'\n'; for"
+   alias .foreachword="set -f; IFS=' '$'\t'$'\n'; for"
+   alias .foreachitem="set -f; IFS=','; for"
+   alias .foreachpath="set -f; IFS=':'; for"
+   alias .foreachcolumn="set -f; IFS=';'; for"
+   alias .foreachfile="set +f; shopt +u nullglob; IFS=' '$'\t'$'\n'; for"
+
+
+   alias .do="do
+set +f; shopt -u nullglob; IFS=' '$'\t'$'\n'"
+   alias .done="done;set +f; shopt -u nullglob; IFS=' '$'\t'$'\n'"
+fi
+
+
+alias .break="break"
+alias .continue="continue"
+

@@ -194,3 +194,61 @@ shell_is_function()
 #
 shell_enable_extglob
 
+
+##
+## Special for macros. The default for in a shell script is "supposed to"
+## iterate though file names (e.g. for i in *). That's why globbing is on
+## by default. In mulle bash scripts, the for loop is often over strings,
+## where globbing is no use. Define some aliases, that facilitate string
+## fors
+##
+## .for x in * foo bar
+## .do
+##    echo "$x"
+## .done
+##
+## Concept inspired by: https://github.com/yoctu/yosh/blob/master/lib/0-type.sh
+##
+unalias -a
+
+if [ ! -z "${ZSH_VERSION}" ]
+then
+   ## zsh
+   setopt aliases
+
+   alias .for="setopt noglob; for"
+   alias .foreachline="setopt noglob; IFS=$'\n'; for"
+   alias .foreachword="setopt noglob; IFS=' '$'\t'$'\n'; for"
+   alias .foreachitem="setopt noglob; IFS=','; for"
+   alias .foreachpath="setopt noglob; IFS=':'; for"
+   alias .foreachcolumn="setopt noglob; IFS=';'; for"
+   alias .foreachfile="unsetopt noglob; unsetopt nullglob; IFS=' '$'\t'$'\n'; for"
+
+
+   alias .do="do
+   unsetopt noglob; unsetopt nullglob; IFS=' '$'\t'$'\n'"
+   alias .done="done;unsetopt noglob; unsetopt nullglob; IFS=' '$'\t'$'\n'"
+
+else
+   ## bash
+   shopt -s expand_aliases
+
+   alias .for="set -f; for"
+   alias .foreachline="set -f; IFS=$'\n'; for"
+   alias .foreachword="set -f; IFS=' '$'\t'$'\n'; for"
+   alias .foreachitem="set -f; IFS=','; for"
+   alias .foreachpath="set -f; IFS=':'; for"
+   alias .foreachcolumn="set -f; IFS=';'; for"
+   alias .foreachfile="set +f; shopt +u nullglob; IFS=' '$'\t'$'\n'; for"
+
+
+   alias .do="do
+set +f; shopt -u nullglob; IFS=' '$'\t'$'\n'"
+   alias .done="done;set +f; shopt -u nullglob; IFS=' '$'\t'$'\n'"
+fi
+
+
+# syntax sugar for shellcheck
+alias .break="break"
+alias .continue="continue"
+

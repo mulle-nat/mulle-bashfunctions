@@ -211,16 +211,15 @@ r_remove_line()
    local delim
 
    RVAL=
-   shell_disable_glob; IFS=$'\n'
-   for line in ${lines}
-   do
+
+   .foreachline line in ${lines}
+   .do
       if [ "${line}" != "${search}" ]
       then
          RVAL="${RVAL}${delim}${line}"
          delim=$'\n'
       fi
-   done
-   IFS="${DEFAULT_IFS}" ; shell_enable_glob
+   .done
 }
 
 
@@ -234,9 +233,9 @@ r_remove_line_once()
    local delim
 
    RVAL=
-   shell_disable_glob; IFS=$'\n'
-   for line in ${lines}
-   do
+
+   .foreachline line in ${lines}
+   .do
       if [ -z "${search}" -o "${line}" != "${search}" ]
       then
          RVAL="${RVAL}${delim}${line}"
@@ -244,8 +243,7 @@ r_remove_line_once()
       else 
          search="" 
       fi
-   done
-   IFS="${DEFAULT_IFS}" ; shell_enable_glob
+   .done
 }
 
 
@@ -325,27 +323,22 @@ find_line_zsh()
       then
          return 0
       fi
+
       find_empty_line_zsh "${lines}"
       return $?
    fi
 
-   local rval
    local line
 
-   rval=1
-
-   IFS=$'\n'
-   for line in ${lines}
-   do
+   .foreachline line in ${lines}
+   .do
       if [ "${line}" = "${search}" ]
       then
-         rval=0
-         break
+         return 0
       fi
-   done
-   IFS="${DEFAULT_IFS}"
+   .done
 
-   return $rval
+   return 1
 }
 
 
@@ -415,12 +408,10 @@ r_count_lines()
 
    local line
 
-   shell_disable_glob; IFS=$'\n'
-   for line in ${array}
-   do
+   .foreachline line in ${array}
+   .do
       RVAL=$((RVAL + 1))
-   done
-   IFS="${DEFAULT_IFS}" ; shell_enable_glob
+   .done
 }
 
 
@@ -531,7 +522,6 @@ r_filepath_concat()
 
    fallback=
 
-   shell_disable_glob
    for i in "$@"
    do
       sep="/"
@@ -578,7 +568,6 @@ r_filepath_concat()
          esac
       fi
    done
-   shell_enable_glob
 
    if [ ! -z "${s}" ]
    then

@@ -301,6 +301,47 @@ shell_is_function()
 
 shell_enable_extglob
 
+
+unalias -a
+
+if [ ! -z "${ZSH_VERSION}" ]
+then
+   setopt aliases
+
+   alias .for="setopt noglob; for"
+   alias .foreachline="setopt noglob; IFS=$'\n'; for"
+   alias .foreachword="setopt noglob; IFS=' '$'\t'$'\n'; for"
+   alias .foreachitem="setopt noglob; IFS=','; for"
+   alias .foreachpath="setopt noglob; IFS=':'; for"
+   alias .foreachcolumn="setopt noglob; IFS=';'; for"
+   alias .foreachfile="unsetopt noglob; unsetopt nullglob; IFS=' '$'\t'$'\n'; for"
+
+
+   alias .do="do
+   unsetopt noglob; unsetopt nullglob; IFS=' '$'\t'$'\n'"
+   alias .done="done;unsetopt noglob; unsetopt nullglob; IFS=' '$'\t'$'\n'"
+
+else
+   shopt -s expand_aliases
+
+   alias .for="set -f; for"
+   alias .foreachline="set -f; IFS=$'\n'; for"
+   alias .foreachword="set -f; IFS=' '$'\t'$'\n'; for"
+   alias .foreachitem="set -f; IFS=','; for"
+   alias .foreachpath="set -f; IFS=':'; for"
+   alias .foreachcolumn="set -f; IFS=';'; for"
+   alias .foreachfile="set +f; shopt +u nullglob; IFS=' '$'\t'$'\n'; for"
+
+
+   alias .do="do
+set +f; shopt -u nullglob; IFS=' '$'\t'$'\n'"
+   alias .done="done;set +f; shopt -u nullglob; IFS=' '$'\t'$'\n'"
+fi
+
+
+alias .break="break"
+alias .continue="continue"
+
 [ ! -z "${MULLE_LOGGING_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
    echo "$0: double inclusion of mulle-logging.sh" >&2
 
@@ -690,7 +731,7 @@ exekutor_trace()
 {
    local printer="$1"; shift
 
-   if [  "${MULLE_FLAG_LOG_EXEKUTOR}" = 'YES' ]
+   if [ "${MULLE_FLAG_LOG_EXEKUTOR}" = 'YES' ]
    then
       if [ -z "${MULLE_EXEKUTOR_LOG_DEVICE}" ]
       then
@@ -987,13 +1028,13 @@ rexecute_column_table_or_cat()
 
    if [ -z "${COLUMN}" ]
    then
-      for cmd in ${column_cmds}
-      do
+      .for cmd in ${column_cmds}
+      .do
          if COLUMN="`command -v "${cmd}" `"
          then
-            break
+            .break
          fi
-      done
+      .done
    fi
 
    if [ -z "${COLUMN}" ]
@@ -1175,16 +1216,15 @@ r_remove_line()
    local delim
 
    RVAL=
-   shell_disable_glob; IFS=$'\n'
-   for line in ${lines}
-   do
+
+   .foreachline line in ${lines}
+   .do
       if [ "${line}" != "${search}" ]
       then
          RVAL="${RVAL}${delim}${line}"
          delim=$'\n'
       fi
-   done
-   IFS="${DEFAULT_IFS}" ; shell_enable_glob
+   .done
 }
 
 
@@ -1198,9 +1238,9 @@ r_remove_line_once()
    local delim
 
    RVAL=
-   shell_disable_glob; IFS=$'\n'
-   for line in ${lines}
-   do
+
+   .foreachline line in ${lines}
+   .do
       if [ -z "${search}" -o "${line}" != "${search}" ]
       then
          RVAL="${RVAL}${delim}${line}"
@@ -1208,8 +1248,7 @@ r_remove_line_once()
       else 
          search="" 
       fi
-   done
-   IFS="${DEFAULT_IFS}" ; shell_enable_glob
+   .done
 }
 
 
@@ -1273,27 +1312,22 @@ find_line_zsh()
       then
          return 0
       fi
+
       find_empty_line_zsh "${lines}"
       return $?
    fi
 
-   local rval
    local line
 
-   rval=1
-
-   IFS=$'\n'
-   for line in ${lines}
-   do
+   .foreachline line in ${lines}
+   .do
       if [ "${line}" = "${search}" ]
       then
-         rval=0
-         break
+         return 0
       fi
-   done
-   IFS="${DEFAULT_IFS}"
+   .done
 
-   return $rval
+   return 1
 }
 
 
@@ -1353,12 +1387,10 @@ r_count_lines()
 
    local line
 
-   shell_disable_glob; IFS=$'\n'
-   for line in ${array}
-   do
+   .foreachline line in ${array}
+   .do
       RVAL=$((RVAL + 1))
-   done
-   IFS="${DEFAULT_IFS}" ; shell_enable_glob
+   .done
 }
 
 
@@ -1455,7 +1487,6 @@ r_filepath_concat()
 
    fallback=
 
-   shell_disable_glob
    for i in "$@"
    do
       sep="/"
@@ -1502,7 +1533,6 @@ r_filepath_concat()
          esac
       fi
    done
-   shell_enable_glob
 
    if [ ! -z "${s}" ]
    then
@@ -2908,10 +2938,8 @@ _r_simplified_path()
    remove_empty='NO'  # remove trailing slashes
 
    IFS="/"
-   shell_disable_glob
-   for i in ${filepath}
-   do
-      shell_enable_glob
+   .for i in ${filepath}
+   .do
       case "$i" in
          \.)
            remove_empty='YES'
@@ -2923,7 +2951,7 @@ _r_simplified_path()
 
            if [ "${last}" = "|" ]
            then
-              continue
+              .continue
            fi
 
            if [ ! -z "${last}" -a "${last}" != ".." ]
@@ -2932,7 +2960,7 @@ _r_simplified_path()
               result="${RVAL}"
               r_get_last_line "${result}"
               last="${RVAL}"
-              continue
+              .continue
            fi
          ;;
 
@@ -2946,7 +2974,7 @@ _r_simplified_path()
                last='|'
                result='|'
             fi
-            continue
+            .continue
          ;;
       esac
 
@@ -2956,7 +2984,7 @@ _r_simplified_path()
 
       r_add_line "${result}" "${i}"
       result="${RVAL}"
-   done
+   .done
 
    IFS="${DEFAULT_IFS}"
    shell_enable_glob
@@ -3265,9 +3293,6 @@ _r_make_tmp_in_dir_uuidgen()
    local name="$2"
    local filetype="$3"
 
-   local uuid
-   local fluke
-
    local MKDIR
    local TOUCH
 
@@ -3277,13 +3302,19 @@ _r_make_tmp_in_dir_uuidgen()
    [ -z "${MKDIR}" ] && fail "No \"mkdir\" found in PATH ($PATH)"
    [ -z "${TOUCH}" ] && fail "No \"touch\" found in PATH ($PATH)"
 
+   local uuid
+   local fluke
+   local len
+
+   len=4
    fluke=0
    RVAL=''
+
 
    while :
    do
       uuid="`"${UUIDGEN}"`" || internal_fail "uuidgen failed"
-      RVAL="${tmpdir}/${name}-${uuid:0:8}"
+      RVAL="${tmpdir}/${name}-${uuid:0:${len}}"
 
       case "${filetype}" in
          *d*)
@@ -3297,8 +3328,9 @@ _r_make_tmp_in_dir_uuidgen()
 
       if [ ! -e "${RVAL}" ]
       then
+         len=$((len + 1 ))
          fluke=$((fluke + 1 ))
-         if [ "${fluke}" -lt 3 ]
+         if [ "${fluke}" -gt 20 ]
          then
             fail "Could not (even repeatedly) create \"${RVAL}\" (${filetype:-f})"
          fi
@@ -3482,6 +3514,25 @@ file_is_binary()
 }
 
 
+file_size_in_bytes()
+{
+   if [ ! -f "$1" ]
+   then
+      return 1
+   fi
+
+   case "${MULLE_UNAME}" in
+      darwin|*bsd)
+         stat -f '%z' "$1"
+      ;;
+
+      *)
+         stat -c '%s' -- "$1"
+      ;;
+   esac
+}
+
+
 
 dir_has_files()
 {
@@ -3533,11 +3584,8 @@ dirs_contain_same_files()
    local sharefile
    local filename 
 
-   IFS=$'\n'; shell_disable_glob
-   for sharefile in `find ${sharedir}  \! -type d -print`
-   do
-      IFS="${DEFAULT_IFS}"; shell_enable_glob
-
+   .foreachline sharefile in `find ${sharedir}  \! -type d -print`
+   .do
       filename="${sharefile#${sharedir}/}"
       etcfile="${etcdir}/${filename}"
 
@@ -3545,14 +3593,10 @@ dirs_contain_same_files()
       then
          return 2
       fi
-   done
+   .done
 
-   IFS=$'\n'; shell_disable_glob
-
-   for etcfile in `find ${etcdir} \! -type d -print`
-   do
-      IFS="${DEFAULT_IFS}"; shell_enable_glob
-
+   .foreachline etcfile in `find ${etcdir} \! -type d -print`
+   .do
       filename="${etcfile#${etcdir}/}"
       sharefile="${sharedir}/${filename}"
 
@@ -3560,9 +3604,7 @@ dirs_contain_same_files()
       then
          return 2
       fi
-   done
-
-   IFS="${DEFAULT_IFS}"; shell_enable_glob
+   .done
 
    return 0
 }
@@ -3651,17 +3693,14 @@ r_get_line_at_index()
    local i="${2:-0}"
 
 
-   shell_disable_glob; IFS=$'\n'
-   for RVAL in ${array}
-   do
+   .foreachline RVAL in ${array}
+   .do
       if [ $i -eq 0 ]
       then
-         IFS="${DEFAULT_IFS}" ; shell_enable_glob
          return 0
       fi
       i=$((i - 1))
-   done
-   IFS="${DEFAULT_IFS}" ; shell_enable_glob
+   .done
    return 1
 }
 
@@ -3681,9 +3720,8 @@ r_insert_line_at_index()
    RVAL=
    rval=1
 
-   shell_disable_glob; IFS=$'\n'
-   for line in ${array}
-   do
+   .foreachline line in ${array}
+   .do
       if [ $i -eq 0 ]
       then
          r_add_line "${RVAL}" "${value}"
@@ -3691,8 +3729,7 @@ r_insert_line_at_index()
       fi
       r_add_line "${RVAL}" "${line}"
       i=$((i - 1))
-   done
-   IFS="${DEFAULT_IFS}" ; shell_enable_glob
+   .done
 
    if [ $i -eq 0 ]
    then
@@ -3779,9 +3816,9 @@ _r_assoc_array_remove()
    local delim
 
    RVAL=
-   shell_disable_glob; IFS=$'\n'
-   for line in ${array}
-   do
+
+   .foreachline line in ${array}
+   .do
       case "${line}" in
          "${key}="*)
          ;;
@@ -3791,8 +3828,7 @@ _r_assoc_array_remove()
             delim=$'\n'
          ;;
       esac
-   done
-   IFS="${DEFAULT_IFS}" ; shell_enable_glob
+   .done
 }
 
 
@@ -3808,18 +3844,16 @@ r_assoc_array_get()
    RVAL=
    rval=1
 
-   shell_disable_glob; IFS=$'\n'
-   for line in ${array}
-   do
+   .foreachline line in ${array}
+   .do
       case "${line}" in
          "${key}="*)
             RVAL="${line#*=}"
             rval=0
-            break
+            .break
          ;;
       esac
-   done
-   IFS="${DEFAULT_IFS}" ; shell_enable_glob
+   .done
 
    return $rval
 }
@@ -4257,12 +4291,12 @@ parallel_execute()
    local argument
 
    shell_disable_glob;  IFS=$'\n'
-   for argument in ${arguments}
-   do
+   .foreachline argument in ${arguments}
+   .do
       shell_enable_glob; IFS="${DEFAULT_IFS}"
 
       _parallel_execute "$@" "${argument}"
-   done
+   .done
 
    shell_enable_glob; IFS="${DEFAULT_IFS}"
 
@@ -4741,17 +4775,14 @@ etc_setup_from_share_if_needed()
 
    if [ -d "${share}" ] # sometimes it's not there, but find complains
    then
-      IFS=$'\n'; shell_disable_glob
-      for filename in `find "${share}" ! -type d -print`
-      do
-         IFS="${DEFAULT_IFS}"; shell_enable_glob
+      .foreachline filename in `find "${share}" ! -type d -print`
+      .do
          r_basename "${filename}"
          etc_symlink_or_copy_file "${filename}" \
                                   "${etc}" \
                                   "${RVAL}" \
                                   "${symlink}"
-      done
-      IFS="${DEFAULT_IFS}"; shell_enable_glob
+      .done
    fi
 }
 
@@ -4802,11 +4833,8 @@ etc_repair_files()
    dstdir="${dstdir%%/}"
    srcdir="${srcdir%%/}"
 
-   IFS=$'\n'; shell_disable_glob
-   for dstfile in `find "${dstdir}" ! -type d -print` # dstdir is etc
-   do
-      IFS="${DEFAULT_IFS}"; shell_enable_glob
-
+   .foreachline dstfile in `find "${dstdir}" ! -type d -print` # dstdir is etc
+   .do
       filename="${dstfile#${dstdir}/}"
       srcfile="${srcdir}/${filename}"
 
@@ -4850,13 +4878,10 @@ etc_repair_files()
             can_remove_etc='NO'
          fi
       fi
-   done
+   .done
 
-   IFS=$'\n'; shell_disable_glob
-   for srcfile in `find "${srcdir}" ! -type d -print` # dstdir is etc
-   do
-      IFS="${DEFAULT_IFS}"; shell_enable_glob
-
+   .foreachline srcfile in `find "${srcdir}" ! -type d -print` # dstdir is etc
+   .do
       filename="${srcfile#${srcdir}/}"
       dstfile="${dstdir}/${filename}"
 
@@ -4874,8 +4899,7 @@ etc_repair_files()
             can_remove_etc='NO'
          fi
       fi
-   done
-   IFS="${DEFAULT_IFS}"; shell_enable_glob
+   .done
 
    if [ "${can_remove_etc}" = 'YES' ]
    then

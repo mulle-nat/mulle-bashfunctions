@@ -259,9 +259,6 @@ _r_make_tmp_in_dir_uuidgen()
    local name="$2"
    local filetype="$3"
 
-   local uuid
-   local fluke
-
    local MKDIR
    local TOUCH
 
@@ -271,13 +268,19 @@ _r_make_tmp_in_dir_uuidgen()
    [ -z "${MKDIR}" ] && fail "No \"mkdir\" found in PATH ($PATH)"
    [ -z "${TOUCH}" ] && fail "No \"touch\" found in PATH ($PATH)"
 
+   local uuid
+   local fluke
+   local len
+
+   len=4
    fluke=0
    RVAL=''
+
 
    while :
    do
       uuid="`"${UUIDGEN}"`" || internal_fail "uuidgen failed"
-      RVAL="${tmpdir}/${name}-${uuid:0:8}"
+      RVAL="${tmpdir}/${name}-${uuid:0:${len}}"
 
       case "${filetype}" in
          *d*)
@@ -291,8 +294,9 @@ _r_make_tmp_in_dir_uuidgen()
 
       if [ ! -e "${RVAL}" ]
       then
+         len=$((len + 1 ))
          fluke=$((fluke + 1 ))
-         if [ "${fluke}" -lt 3 ]
+         if [ "${fluke}" -gt 20 ]
          then
             fail "Could not (even repeatedly) create \"${RVAL}\" (${filetype:-f})"
          fi
@@ -504,6 +508,25 @@ file_is_binary()
 }
 
 
+file_size_in_bytes()
+{
+   if [ ! -f "$1" ]
+   then
+      return 1
+   fi
+
+   case "${MULLE_UNAME}" in
+      darwin|*bsd)
+         stat -f '%z' "$1"
+      ;;
+
+      *)
+         stat -c '%s' -- "$1"
+      ;;
+   esac
+}
+
+
 # ####################################################################
 #                        Directory stat
 # ####################################################################
@@ -563,11 +586,8 @@ dirs_contain_same_files()
    local sharefile
    local filename 
 
-   IFS=$'\n'; shell_disable_glob
-   for sharefile in `find ${sharedir}  \! -type d -print`
-   do
-      IFS="${DEFAULT_IFS}"; shell_enable_glob
-
+   .foreachline sharefile in `find ${sharedir}  \! -type d -print`
+   .do
       filename="${sharefile#${sharedir}/}"
       etcfile="${etcdir}/${filename}"
 
@@ -575,14 +595,10 @@ dirs_contain_same_files()
       then
          return 2
       fi
-   done
+   .done
 
-   IFS=$'\n'; shell_disable_glob
-
-   for etcfile in `find ${etcdir} \! -type d -print`
-   do
-      IFS="${DEFAULT_IFS}"; shell_enable_glob
-
+   .foreachline etcfile in `find ${etcdir} \! -type d -print`
+   .do
       filename="${etcfile#${etcdir}/}"
       sharefile="${sharedir}/${filename}"
 
@@ -590,9 +606,7 @@ dirs_contain_same_files()
       then
          return 2
       fi
-   done
-
-   IFS="${DEFAULT_IFS}"; shell_enable_glob
+   .done
 
    return 0
 }

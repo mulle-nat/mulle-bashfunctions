@@ -197,17 +197,14 @@ etc_setup_from_share_if_needed()
    #
    if [ -d "${share}" ] # sometimes it's not there, but find complains
    then
-      IFS=$'\n'; shell_disable_glob
-      for filename in `find "${share}" ! -type d -print`
-      do
-         IFS="${DEFAULT_IFS}"; shell_enable_glob
+      .foreachline filename in `find "${share}" ! -type d -print`
+      .do
          r_basename "${filename}"
          etc_symlink_or_copy_file "${filename}" \
                                   "${etc}" \
                                   "${RVAL}" \
                                   "${symlink}"
-      done
-      IFS="${DEFAULT_IFS}"; shell_enable_glob
+      .done
    fi
 }
 
@@ -267,11 +264,8 @@ etc_repair_files()
    # create symlinks for files that are identical in share and throw old
    # files away
    #
-   IFS=$'\n'; shell_disable_glob
-   for dstfile in `find "${dstdir}" ! -type d -print` # dstdir is etc
-   do
-      IFS="${DEFAULT_IFS}"; shell_enable_glob
-
+   .foreachline dstfile in `find "${dstdir}" ! -type d -print` # dstdir is etc
+   .do
       filename="${dstfile#${dstdir}/}"
       srcfile="${srcdir}/${filename}"
 
@@ -316,18 +310,15 @@ etc_repair_files()
             can_remove_etc='NO'
          fi
       fi
-   done
+   .done
 
    #
    # Go through share, symlink everything that is not in etc. This is
    # may make files that have been deleted reappear though. So you explicitly
    # allow this with "add"
    #
-   IFS=$'\n'; shell_disable_glob
-   for srcfile in `find "${srcdir}" ! -type d -print` # dstdir is etc
-   do
-      IFS="${DEFAULT_IFS}"; shell_enable_glob
-
+   .foreachline srcfile in `find "${srcdir}" ! -type d -print` # dstdir is etc
+   .do
       filename="${srcfile#${srcdir}/}"
       dstfile="${dstdir}/${filename}"
 
@@ -345,8 +336,7 @@ etc_repair_files()
             can_remove_etc='NO'
          fi
       fi
-   done
-   IFS="${DEFAULT_IFS}"; shell_enable_glob
+   .done
 
    if [ "${can_remove_etc}" = 'YES' ]
    then

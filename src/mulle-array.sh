@@ -56,17 +56,14 @@ r_get_line_at_index()
 
    # for larger arrays:    sed -n "${i}pq" <<< "${array}"
 
-   shell_disable_glob; IFS=$'\n'
-   for RVAL in ${array}
-   do
+   .foreachline RVAL in ${array}
+   .do
       if [ $i -eq 0 ]
       then
-         IFS="${DEFAULT_IFS}" ; shell_enable_glob
          return 0
       fi
       i=$((i - 1))
-   done
-   IFS="${DEFAULT_IFS}" ; shell_enable_glob
+   .done
    return 1
 }
 
@@ -86,9 +83,8 @@ r_insert_line_at_index()
    RVAL=
    rval=1
 
-   shell_disable_glob; IFS=$'\n'
-   for line in ${array}
-   do
+   .foreachline line in ${array}
+   .do
       if [ $i -eq 0 ]
       then
          r_add_line "${RVAL}" "${value}"
@@ -96,8 +92,7 @@ r_insert_line_at_index()
       fi
       r_add_line "${RVAL}" "${line}"
       i=$((i - 1))
-   done
-   IFS="${DEFAULT_IFS}" ; shell_enable_glob
+   .done
 
    if [ $i -eq 0 ]
    then
@@ -232,9 +227,9 @@ _r_assoc_array_remove()
    local delim
 
    RVAL=
-   shell_disable_glob; IFS=$'\n'
-   for line in ${array}
-   do
+
+   .foreachline line in ${array}
+   .do
       case "${line}" in
          "${key}="*)
          ;;
@@ -244,8 +239,7 @@ _r_assoc_array_remove()
             delim=$'\n'
          ;;
       esac
-   done
-   IFS="${DEFAULT_IFS}" ; shell_enable_glob
+   .done
 }
 
 
@@ -263,18 +257,16 @@ r_assoc_array_get()
    RVAL=
    rval=1
 
-   shell_disable_glob; IFS=$'\n'
-   for line in ${array}
-   do
+   .foreachline line in ${array}
+   .do
       case "${line}" in
          "${key}="*)
             RVAL="${line#*=}"
             rval=0
-            break
+            .break
          ;;
       esac
-   done
-   IFS="${DEFAULT_IFS}" ; shell_enable_glob
+   .done
 
    return $rval
 }
