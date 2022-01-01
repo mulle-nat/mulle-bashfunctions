@@ -29,15 +29,15 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-[ ! -z "${MULLE_FILE_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
-   echo "double inclusion of mulle-file.sh" >&2
+if [ -z "${MULLE_FILE_SH}" ]
+then
+MULLE_FILE_SH="included"
 
 [ -z "${MULLE_BASHGLOBAL_SH}" ] && _fatal "mulle-bashglobal.sh must be included before mulle-file.sh"
 [ -z "${MULLE_PATH_SH}" ]       && _fatal "mulle-path.sh must be included before mulle-file.sh"
 [ -z "${MULLE_EXEKUTOR_SH}" ]   && _fatal "mulle-exekutor.sh must be included before mulle-file.sh"
 
 
-MULLE_FILE_SH="included"
 
 
 # ####################################################################
@@ -694,5 +694,5 @@ inplace_sed()
    return ${rval}
 }
 
-
+fi
 :

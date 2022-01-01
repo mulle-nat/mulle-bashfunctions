@@ -29,9 +29,8 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-[ ! -z "${MULLE_VERSION_QUALIFIER_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
-   echo "double inclusion of mulle-version.sh" >&2
-
+if [ -z "${MULLE_VERSION_QUALIFIER_SH}" ]
+then
 MULLE_VERSION_QUALIFIER_SH="included"
 
 ###
@@ -385,3 +384,6 @@ is_tags_filter()
 
    return 1
 }
+
+fi
+:

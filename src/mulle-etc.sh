@@ -29,9 +29,8 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-[ ! -z "${MULLE_ETC_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
-   echo "double inclusion of mulle-etc.sh" >&2
-
+if [ -z "${MULLE_ETC_SH}" ]
+then
 MULLE_ETC_SH="included"
 
 
@@ -346,3 +345,5 @@ etc_repair_files()
    fi
 }
 
+fi
+:

@@ -28,6 +28,8 @@
 #   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #
+if [ ! -z "${MULLE_URL_SH}" ]
+then
 MULLE_URL_SH="included"
 
 
@@ -226,4 +228,7 @@ r_url_get_path()
    esac
 }
 
+
+fi
+:
 

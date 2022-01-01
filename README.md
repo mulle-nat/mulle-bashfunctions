@@ -26,10 +26,6 @@ Executable                | Description
 `mulle-bashfunctions-env` | Find the location of the mulle-bashfunctions library
 
 
-Use `mulle-bashfunctions-env --version 4` to find the place of the scripts that
-provide version 4 compatibility.
-
-
 ## Install
 
 Install into `/usr` with sudo:
@@ -46,29 +42,33 @@ OS          | Command
 macos       | `brew install mulle-kybernetik/software/mulle-bashfunctions`
 
 
-## Conventions
-
-`RVAL` is a global variable. It is used to pass return values from functions.
-The RVAL value can be clobbered by **any** function. Functions that return RVAL
-are prefixed with `r_` or `_r_` or somesuch.
-
-
 ## Usage
 
 In your program:
 
 ```
 MULLE_BASHFUNCTIONS_LIBEXEC_DIR="`mulle-bashfunctions-env libexec-dir`"
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-boot.sh" || exit 1
 . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions.sh" || exit 1
 ```
 Now you can call the functions provided by the library.
 
-
 If you run it with **zsh**, `mulle-bashfunctions.sh` will `setopt sh_word_split`
-and `setopt POSIX_ARGZERO`.
+and `setopt POSIX_ARGZERO`. On bash **posix** mode will be enabled.
 
-`extglob` is required for bash and zsh for a few functions. These functions
-will fail (exit) if `extglob` is disabled.
+`pipefail` is set and expected to be kept.
+
+`extglob` is set and required for bash and zsh for a few functions.
+
+`expand_aliases` is set and required for use of the `.for .do .done` macros.
+
+Glob settings are unaffected and expected to be enabled by default.
+
+## Conventions
+
+`RVAL` is a global variable. It is used to pass return values from functions.
+The RVAL value can be clobbered by **any** function. Functions that return RVAL
+are prefixed with `r_` or `_r_` or somesuch.
 
 
 ## Develop

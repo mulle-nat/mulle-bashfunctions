@@ -29,9 +29,8 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-[ ! -z "${MULLE_STRING_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
-   echo "double inclusion of mulle-string.sh" >&2
-
+if [ -z "${MULLE_STRING_SH}" ]
+then
 MULLE_STRING_SH="included"
 
 [ -z "${MULLE_BASHGLOBAL_SH}" ]    && _fatal "mulle-bashglobal.sh must be included before mulle-file.sh"
@@ -1093,4 +1092,5 @@ r_expanded_string()
    return $rval
 }
 
+fi
 :

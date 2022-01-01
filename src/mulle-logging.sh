@@ -29,9 +29,8 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-[ ! -z "${MULLE_LOGGING_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
-   echo "$0: double inclusion of mulle-logging.sh" >&2
-
+if [ -z "${MULLE_LOGGING_SH}" ]
+then
 MULLE_LOGGING_SH="included"
 
 
@@ -373,6 +372,8 @@ logging_initialize()
    logging_initialize_color
 }
 
+
 logging_initialize "$@"
 
+fi
 :

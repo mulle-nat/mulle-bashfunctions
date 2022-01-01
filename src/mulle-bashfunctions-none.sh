@@ -163,6 +163,7 @@ then
       esac
    }
 
+
    include_executable_library()
    {
       local executable="$1"
@@ -184,60 +185,59 @@ then
       . "${!libexec_define}/${filename}" || exit 1
    }
 
-   include_mulle_bashfunctions_library()
+
+   include_library()
    {
-      local name="$1"
+      local s="$1"
+
+      local name
+      local tool
+
+      name="${s##*::}"
+      if [ "${name}" != "${s}" ]
+      then
+         tool="${s%::*}"
+      fi
 
       local upper_name
 
       r_uppercase "${name}"
       upper_name="${RVAL}"
 
-      include_executable_library "mulle-bashfunctions-env" \
-                                 "MULLE_${upper_name}_SH" \
-                                 "MULLE_BASHFUNCTIONS_LIBEXEC_DIR" \
-                                 "mulle-${name}.sh"
-   }
-
-   include_mulle_tool_library()
-   {
-      local tool="$1"
-      local name="$2"
+      if [ -z "${tool}" ]
+      then
+         include_executable_library "mulle-bashfunctions-env" \
+                                    "MULLE_${upper_name}_SH" \
+                                    "MULLE_BASHFUNCTIONS_LIBEXEC_DIR" \
+                                    "mulle-${name}.sh"
+         return $?
+      fi
 
       local upper_tool
-      local upper_name
 
       r_uppercase "${tool}"
       upper_tool="${RVAL}"
 
-      r_uppercase "${name}"
-      upper_name="${RVAL}"
+      local suffix
 
-      include_executable_library "mulle-${tool}" \
+      suffix=""
+      if [ "${use_env}" = 'YES' ]
+      then
+         suffix="-env"
+      fi
+
+      include_executable_library "mulle-${tool}${suffix}" \
                                  "MULLE_${upper_tool}_${upper_name}_SH" \
                                  "MULLE_${upper_tool}_LIBEXEC_DIR" \
                                  "mulle-${tool}-${name}.sh"
    }
 
-   include_mulle_toolenv_library()
+
+   include_library_env()
    {
-      local tool="$1"
-      local name="$2"
-
-      local upper_tool
-      local upper_name
-
-      r_uppercase "${tool}"
-      upper_tool="${RVAL}"
-
-      r_uppercase "${name}"
-      upper_name="${RVAL}"
-
-      include_executable_library "mulle-${tool}-env" \
-                                 "MULLE_${upper_tool}_${upper_name}_SH" \
-                                 "MULLE_${upper_tool}_LIBEXEC_DIR" \
-                                 "mulle-${tool}-${name}.sh"
+      include_library "$1" "YES"
    }
+
 
    __bashfunctions_loader()
    {
@@ -260,9 +260,8 @@ then
 
    __bashfunctions_loader || exit 1
 fi
-[ ! -z "${MULLE_COMPATIBILITY_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
-   echo "double inclusion of mulle-compatibility.sh" >&2
-
+if [ -z "${MULLE_COMPATIBILITY_SH}" ]
+then
 MULLE_COMPATIBILITY_SH="included"
 
 
@@ -287,7 +286,6 @@ shell_is_pipefail_enabled()
    esac
    return 0
 }
-
 
 
 shell_enable_extglob()
@@ -418,9 +416,6 @@ shell_is_function()
 }
 
 
-shell_enable_extglob
-
-
 unalias -a
 
 if [ ! -z "${ZSH_VERSION}" ]
@@ -461,3 +456,10 @@ fi
 alias .break="break"
 alias .continue="continue"
 
+
+
+shell_enable_extglob
+shell_enable_pipefail
+
+fi
+:

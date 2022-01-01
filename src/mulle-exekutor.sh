@@ -29,13 +29,13 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-[ ! -z "${MULLE_EXEKUTOR_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
-   echo "double inclusion of mulle-exekutor.sh" >&2
+if [ -z "${MULLE_EXEKUTOR_SH}" ]
+then
+MULLE_EXEKUTOR_SH="included"
 
 [ -z "${MULLE_LOGGING_SH}" ] && \
-   echo "mulle-logging.sh must be included before mulle-executor.sh" 2>&1 && exit 1
+   echo "mulle-logging.sh must be included before mulle-exekutor.sh" 2>&1 && exit 1
 
-MULLE_EXEKUTOR_SH="included"
 
 
 # ####################################################################
@@ -455,4 +455,5 @@ rexecute_column_table_or_cat()
    esac
 }
 
+fi
 :

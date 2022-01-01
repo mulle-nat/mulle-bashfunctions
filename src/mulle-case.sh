@@ -29,9 +29,8 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-[ ! -z "${MULLE_CASE_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
-   echo "double inclusion of mulle-case.sh" >&2
-
+if [ -z "${MULLE_CASE_SH}" ]
+then
 MULLE_CASE_SH="included"
 
 #
@@ -159,3 +158,7 @@ r_de_camel_case_upcase_identifier()
       ;;
    esac
 }
+
+fi
+
+:

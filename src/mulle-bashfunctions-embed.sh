@@ -141,9 +141,8 @@ then
       MULLE_USERNAME="${MULLE_USERNAME:-cptnemo}"
    fi
 fi
-[ ! -z "${MULLE_COMPATIBILITY_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
-   echo "double inclusion of mulle-compatibility.sh" >&2
-
+if [ -z "${MULLE_COMPATIBILITY_SH}" ]
+then
 MULLE_COMPATIBILITY_SH="included"
 
 
@@ -168,7 +167,6 @@ shell_is_pipefail_enabled()
    esac
    return 0
 }
-
 
 
 shell_enable_extglob()
@@ -299,9 +297,6 @@ shell_is_function()
 }
 
 
-shell_enable_extglob
-
-
 unalias -a
 
 if [ ! -z "${ZSH_VERSION}" ]
@@ -342,9 +337,15 @@ fi
 alias .break="break"
 alias .continue="continue"
 
-[ ! -z "${MULLE_LOGGING_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
-   echo "$0: double inclusion of mulle-logging.sh" >&2
 
+
+shell_enable_extglob
+shell_enable_pipefail
+
+fi
+:
+if [ -z "${MULLE_LOGGING_SH}" ]
+then
 MULLE_LOGGING_SH="included"
 
 
@@ -657,16 +658,18 @@ logging_initialize()
    logging_initialize_color
 }
 
+
 logging_initialize "$@"
 
+fi
 :
-[ ! -z "${MULLE_EXEKUTOR_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
-   echo "double inclusion of mulle-exekutor.sh" >&2
+if [ -z "${MULLE_EXEKUTOR_SH}" ]
+then
+MULLE_EXEKUTOR_SH="included"
 
 [ -z "${MULLE_LOGGING_SH}" ] && \
-   echo "mulle-logging.sh must be included before mulle-executor.sh" 2>&1 && exit 1
+   echo "mulle-logging.sh must be included before mulle-exekutor.sh" 2>&1 && exit 1
 
-MULLE_EXEKUTOR_SH="included"
 
 
 exekutor_print_arrow()
@@ -1053,10 +1056,10 @@ rexecute_column_table_or_cat()
    esac
 }
 
+fi
 :
-[ ! -z "${MULLE_STRING_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
-   echo "double inclusion of mulle-string.sh" >&2
-
+if [ -z "${MULLE_STRING_SH}" ]
+then
 MULLE_STRING_SH="included"
 
 [ -z "${MULLE_BASHGLOBAL_SH}" ]    && _fatal "mulle-bashglobal.sh must be included before mulle-file.sh"
@@ -1979,14 +1982,14 @@ r_expanded_string()
    return $rval
 }
 
+fi
 :
-[ ! -z "${MULLE_INIT_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
-   echo "$0: double inclusion of mulle-init.sh" >&2
+if [ -z "${MULLE_INIT_SH}" ]
+then
+MULLE_INIT_SH="included"
 
 [ -z "${MULLE_STRING_SH}" ] && _fatal "mulle-string.sh must be included before mulle-init.sh"
 
-
-MULLE_INIT_SH="included"
 
 
 r_dirname()
@@ -2091,7 +2094,6 @@ r_get_libexec_dir()
    prefix="${RVAL}"
 
 
-
    RVAL="${prefix}/libexec/${subdir}"
    if [ ! -f "${RVAL}/${matchfile}" ]
    then
@@ -2113,7 +2115,6 @@ r_get_libexec_dir()
 
    if [ ! -f "${RVAL}/${matchfile}" ]
    then
-      unset RVAL
       printf "%s\n" "$0 fatal error: Could not find \"${subdir}\" libexec (${PWD#${MULLE_USER_PWD}/})" >&2
       exit 1
    fi
@@ -2145,12 +2146,15 @@ call_main()
 
    eval main "${flags}" "${args}"
 }
-[ ! -z "${MULLE_OPTIONS_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
-   echo "$0: double inclusion of mulle-options.sh" >&2
+
+fi
+:
+if [ -z "${MULLE_OPTIONS_SH}" ]
+then
+MULLE_OPTIONS_SH="included"
 
 [ -z "${MULLE_LOGGING_SH}" ] && _fatal "mulle-logging.sh must be included before mulle-options.sh"
 
-MULLE_OPTIONS_SH="included"
 
 
 
@@ -2535,15 +2539,14 @@ _options_mini_main()
    options_setup_trace "${MULLE_TRACE}"
 }
 
-
+fi
 :
-[ ! -z "${MULLE_PATH_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
-   echo "double inclusion of mulle-path.sh" >&2
+if [ -z "${MULLE_PATH_SH}" ]
+then
+MULLE_PATH_SH="included"
 
 [ -z "${MULLE_STRING_SH}" ] && _fatal "mulle-string.sh must be included before mulle-path.sh"
 
-
-MULLE_PATH_SH="included"
 
 
 r_path_depth()
@@ -2943,7 +2946,7 @@ _r_simplified_path()
       case "$i" in
          \.)
            remove_empty='YES'
-           continue
+           .continue
          ;;
 
          \.\.)
@@ -3078,16 +3081,17 @@ r_assert_sane_path()
    esac
 }
 
+fi
 :
-[ ! -z "${MULLE_FILE_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
-   echo "double inclusion of mulle-file.sh" >&2
+if [ -z "${MULLE_FILE_SH}" ]
+then
+MULLE_FILE_SH="included"
 
 [ -z "${MULLE_BASHGLOBAL_SH}" ] && _fatal "mulle-bashglobal.sh must be included before mulle-file.sh"
 [ -z "${MULLE_PATH_SH}" ]       && _fatal "mulle-path.sh must be included before mulle-file.sh"
 [ -z "${MULLE_EXEKUTOR_SH}" ]   && _fatal "mulle-exekutor.sh must be included before mulle-file.sh"
 
 
-MULLE_FILE_SH="included"
 
 
 mkdir_if_missing()
@@ -3665,15 +3669,13 @@ inplace_sed()
    return ${rval}
 }
 
-
+fi
 :
-[ "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' -a ! -z "${MULLE_ARRAY_SH}" ] && \
-   echo "double inclusion of mulle-array.sh" >&2
-
-[ -z "${MULLE_LOGGING_SH}" ] && _fatal "mulle-logging.sh must be included before mulle-array.sh"
-
+if [ -z "${MULLE_ARRAY_SH}" ]
+then
 MULLE_ARRAY_SH="included"
 
+[ -z "${MULLE_LOGGING_SH}" ] && _fatal "mulle-logging.sh must be included before mulle-array.sh"
 
 array_value_check()
 {
@@ -3919,11 +3921,11 @@ assoc_array_augment_with_array()
    printf "%s%s\n" "${array1}" "${array2}" | sort -u -t'=' -k1,1
 }
 
+fi
 :
 
-[ ! -z "${MULLE_CASE_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
-   echo "double inclusion of mulle-case.sh" >&2
-
+if [ -z "${MULLE_CASE_SH}" ]
+then
 MULLE_CASE_SH="included"
 
 _r_tweaked_de_camel_case()
@@ -4033,6 +4035,12 @@ r_de_camel_case_upcase_identifier()
       ;;
    esac
 }
+
+fi
+
+:
+if [ -z "${MULLE_PARALLEL_SH}" ]
+then
 MULLE_PARALLEL_SH="included"
 
 [ -z "${MULLE_FILE_SH}" ] && _fatal "mulle-file.sh must be included before mulle-parallel.sh"
@@ -4303,6 +4311,10 @@ parallel_execute()
    _parallel_end
 }
 
+fi
+:
+if [ ! -z "${MULLE_URL_SH}" ]
+then
 MULLE_URL_SH="included"
 
 
@@ -4479,9 +4491,11 @@ r_url_get_path()
 }
 
 
-[ ! -z "${MULLE_VERSION_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
-   echo "double inclusion of mulle-version.sh" >&2
+fi
+:
 
+if [ -z "${MULLE_VERSION_SH}" ]
+then
 MULLE_VERSION_SH="included"
 
 
@@ -4616,10 +4630,10 @@ is_compatible_version()
    is_compatible_version_value_distance "${RVAL}"
 }
 
+fi
 :
-[ ! -z "${MULLE_ETC_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
-   echo "double inclusion of mulle-etc.sh" >&2
-
+if [ -z "${MULLE_ETC_SH}" ]
+then
 MULLE_ETC_SH="included"
 
 
@@ -4909,4 +4923,6 @@ etc_repair_files()
    fi
 }
 
+fi
+:
 ### << END OF mulle-bashfunctions-embed.sh <<

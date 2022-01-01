@@ -29,13 +29,12 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-[ ! -z "${MULLE_PATH_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
-   echo "double inclusion of mulle-path.sh" >&2
+if [ -z "${MULLE_PATH_SH}" ]
+then
+MULLE_PATH_SH="included"
 
 [ -z "${MULLE_STRING_SH}" ] && _fatal "mulle-string.sh must be included before mulle-path.sh"
 
-
-MULLE_PATH_SH="included"
 
 
 # ####################################################################
@@ -489,7 +488,7 @@ _r_simplified_path()
       case "$i" in
          \.)
            remove_empty='YES'
-           continue
+           .continue
          ;;
 
          \.\.)
@@ -638,4 +637,5 @@ r_assert_sane_path()
    esac
 }
 
+fi
 :

@@ -29,6 +29,8 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
+if [ -z "${MULLE_PARALLEL_SH}" ]
+then
 MULLE_PARALLEL_SH="included"
 
 [ -z "${MULLE_FILE_SH}" ] && _fatal "mulle-file.sh must be included before mulle-parallel.sh"
@@ -314,3 +316,5 @@ parallel_execute()
    _parallel_end
 }
 
+fi
+:

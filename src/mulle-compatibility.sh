@@ -29,9 +29,8 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-[ ! -z "${MULLE_COMPATIBILITY_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
-   echo "double inclusion of mulle-compatibility.sh" >&2
-
+if [ -z "${MULLE_COMPATIBILITY_SH}" ]
+then
 MULLE_COMPATIBILITY_SH="included"
 
 
@@ -56,7 +55,6 @@ shell_is_pipefail_enabled()
    esac
    return 0
 }
-
 
 
 shell_enable_extglob()
@@ -187,14 +185,6 @@ shell_is_function()
 }
 
 
-#
-# extglob is enabled by default now. I see no real downside
-# noglob would be another good default for scripting, but that's possibly
-# a bit too surprising
-#
-shell_enable_extglob
-
-
 ##
 ## Special for macros. The default for in a shell script is "supposed to"
 ## iterate though file names (e.g. for i in *). That's why globbing is on
@@ -252,3 +242,17 @@ fi
 alias .break="break"
 alias .continue="continue"
 
+
+#
+# extglob is enabled by default now. I see no real downside
+# noglob would be another good default for scripting, but that's possibly
+# a bit too surprising when copy/pasting foreign code
+#
+
+#  set -e # more pain then gain in the end
+#  set -u # doesn't work with my style
+shell_enable_extglob
+shell_enable_pipefail
+
+fi
+:

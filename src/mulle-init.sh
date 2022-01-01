@@ -29,13 +29,12 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-[ ! -z "${MULLE_INIT_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
-   echo "$0: double inclusion of mulle-init.sh" >&2
+if [ -z "${MULLE_INIT_SH}" ]
+then
+MULLE_INIT_SH="included"
 
 [ -z "${MULLE_STRING_SH}" ] && _fatal "mulle-string.sh must be included before mulle-init.sh"
 
-
-MULLE_INIT_SH="included"
 
 
 # export into RVAL global
@@ -121,7 +120,7 @@ r_resolve_symlinks()
 #
 # executablepath: will be $0
 # subdir: will be mulle-bashfunctions/${VERSION}
-# matchfile: the file to match agains
+# matchfile: the file to match against, to verify the directory
 #
 # Written this way, so it can get reused
 #
@@ -152,7 +151,6 @@ r_get_libexec_dir()
    r_dirname "${exedirpath}"
    prefix="${RVAL}"
 
-
    # now setup the global variable
 
    RVAL="${prefix}/libexec/${subdir}"
@@ -176,7 +174,6 @@ r_get_libexec_dir()
 
    if [ ! -f "${RVAL}/${matchfile}" ]
    then
-      unset RVAL
       printf "%s\n" "$0 fatal error: Could not find \"${subdir}\" libexec (${PWD#${MULLE_USER_PWD}/})" >&2
       exit 1
    fi
@@ -208,3 +205,6 @@ call_main()
 
    eval main "${flags}" "${args}"
 }
+
+fi
+:

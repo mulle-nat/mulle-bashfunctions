@@ -29,13 +29,11 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-[ "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' -a ! -z "${MULLE_ARRAY_SH}" ] && \
-   echo "double inclusion of mulle-array.sh" >&2
-
-[ -z "${MULLE_LOGGING_SH}" ] && _fatal "mulle-logging.sh must be included before mulle-array.sh"
-
+if [ -z "${MULLE_ARRAY_SH}" ]
+then
 MULLE_ARRAY_SH="included"
 
+[ -z "${MULLE_LOGGING_SH}" ] && _fatal "mulle-logging.sh must be included before mulle-array.sh"
 
 array_value_check()
 {
@@ -342,5 +340,6 @@ assoc_array_augment_with_array()
    printf "%s%s\n" "${array1}" "${array2}" | sort -u -t'=' -k1,1
 }
 
+fi
 :
 

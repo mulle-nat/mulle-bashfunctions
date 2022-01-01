@@ -3,70 +3,55 @@
 [ "${TRACE}" = 'YES' -o "${MULLE_BASHFUNCTIONS_EMBED_TRACE}" = 'YES' ] && set -x && : "$0" "$@"
 
 
-####
-#
-# Prelude to be placed at top of each script. Rerun this script either in
-# bash or zsh, if not already running in either (which can happen!)
-# Allows script to run on systems that either have bash (linux) or
-# zsh (macOS) only by default.
+MULLE_EXECUTABLE_VERSION="0.0.1"
 
+##########################################################################
+###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
+###########################################################################
+# #
+# # PRELUDE - Standard startup code for loading mulle-bashfunctions
+# #
+###
+
+#
+# Figure out MULLE_BASHFUNCTIONS_LIBEXEC_DIR on this machine if needed.
+#
+if [ -z "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}" ]
+then
+   MULLE_BASHFUNCTIONS_LIBEXEC_DIR="`mulle-bashfunctions-env libexec-dir`" || exit 1
+   export MULLE_BASHFUNCTIONS_LIBEXEC_DIR
+fi
+
+#
+# The booter reruns the executable either with bash or zsh, whatever the
+# system provides. On the second run --no-auto-shell will be set first.
+#
 if [ "$1" != --no-auto-shell ]
 then
-   if [ -z "${BASH_VERSION}" -a -z "${ZSH_VERSION}" ]
-   then
-      exe_shell="`command -v "bash" `"
-      exe_shell="${exe_shell:-`command -v "zsh" `}"
-
-      script="$0"
-
-      #
-      # Quote incoming arguments for shell expansion
-      #
-      args=""
-      for arg in "$@"
-      do
-         # True bourne sh doesn't know ${a//b/c} and <<<
-         case "${arg}" in
-            *\'*)
-               # Use cat instead of echo to avoid possible echo -n
-               # problems. Escape single quotes in string.
-               arg="`cat <<EOF | sed -e s/\'/\'\\\"\'\\\"\'/g
-${arg}
-EOF
-`"
-            ;;
-         esac
-         if [ -z "${args}" ]
-         then
-            args="'${arg}'"
-         else
-            args="${args} '${arg}'"
-         fi
-      done
-
-      #
-      # bash/zsh will use arg after -c <arg> as $0, convenient!
-      #
-
-      exec "${exe_shell:-bash}" -c ". ${script} --no-auto-shell ${args}" "${script}"
-   fi
-   if [ ! -z "${BASH_VERSION}" ]
-   then
-      set +o posix
-   fi
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-boot.sh" || exit 1
 else
    shift    # get rid of --no-auto-shell
 fi
 
 
 #
-# Main script to follow, runs now either in zsh or bash
+# Include mulle-bashfunctions.sh         : default functions
+#         mulle-bashfunctions-none.sh    : almost no functions
+#         mulle-bashfunctions-minimal.sh : few functions for basic scripts
+#         mulle-bashfunctions-all.sh     : everything, even obscure functions
 #
-####
+# Do this first to get aliases
+#
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions.sh" || exit 1
 
+###
+# # Now we are in bash or zsh with mulle-bashfunctions loaded
+# #
+###########################################################################
+###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
+###########################################################################
 
-
-MULLE_EXECUTABLE_VERSION="0.0.1"
+MULLE_EXECUTABLE="${BASH_SOURCE[0]:-${(%):-%x}}"
 
 
 print_flags()

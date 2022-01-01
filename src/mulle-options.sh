@@ -29,12 +29,12 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-[ ! -z "${MULLE_OPTIONS_SH}" -a "${MULLE_WARN_DOUBLE_INCLUSION}" = 'YES' ] && \
-   echo "$0: double inclusion of mulle-options.sh" >&2
+if [ -z "${MULLE_OPTIONS_SH}" ]
+then
+MULLE_OPTIONS_SH="included"
 
 [ -z "${MULLE_LOGGING_SH}" ] && _fatal "mulle-logging.sh must be included before mulle-options.sh"
 
-MULLE_OPTIONS_SH="included"
 
 
 ## core option parsing
@@ -461,5 +461,5 @@ _options_mini_main()
    options_setup_trace "${MULLE_TRACE}"
 }
 
-
+fi
 :

@@ -53,6 +53,7 @@ then
       esac
    }
 
+
    include_executable_library()
    {
       local executable="$1"
@@ -74,62 +75,60 @@ then
       . "${!libexec_define}/${filename}" || exit 1
    }
 
-   # used by mulle-bashfunctions
-   include_mulle_bashfunctions_library()
+
+   #  use <tool>::<name> scheme
+   include_library()
    {
-      local name="$1"
+      local s="$1"
+
+      local name
+      local tool
+
+      name="${s##*::}"
+      if [ "${name}" != "${s}" ]
+      then
+         tool="${s%::*}"
+      fi
 
       local upper_name
 
       r_uppercase "${name}"
       upper_name="${RVAL}"
 
-      include_executable_library "mulle-bashfunctions-env" \
-                                 "MULLE_${upper_name}_SH" \
-                                 "MULLE_BASHFUNCTIONS_LIBEXEC_DIR" \
-                                 "mulle-${name}.sh"
-   }
-
-   # used my mulle-match etc.
-   include_mulle_tool_library()
-   {
-      local tool="$1"
-      local name="$2"
+      if [ -z "${tool}" ]
+      then
+         include_executable_library "mulle-bashfunctions-env" \
+                                    "MULLE_${upper_name}_SH" \
+                                    "MULLE_BASHFUNCTIONS_LIBEXEC_DIR" \
+                                    "mulle-${name}.sh"
+         return $?
+      fi
 
       local upper_tool
-      local upper_name
 
       r_uppercase "${tool}"
       upper_tool="${RVAL}"
 
-      r_uppercase "${name}"
-      upper_name="${RVAL}"
+      local suffix
 
-      include_executable_library "mulle-${tool}" \
+      suffix=""
+      if [ "${use_env}" = 'YES' ]
+      then
+         suffix="-env"
+      fi
+
+      include_executable_library "mulle-${tool}${suffix}" \
                                  "MULLE_${upper_tool}_${upper_name}_SH" \
                                  "MULLE_${upper_tool}_LIBEXEC_DIR" \
                                  "mulle-${tool}-${name}.sh"
    }
 
-   include_mulle_toolenv_library()
+
+   include_library_env()
    {
-      local tool="$1"
-      local name="$2"
-
-      local upper_tool
-      local upper_name
-
-      r_uppercase "${tool}"
-      upper_tool="${RVAL}"
-
-      r_uppercase "${name}"
-      upper_name="${RVAL}"
-
-      include_executable_library "mulle-${tool}-env" \
-                                 "MULLE_${upper_tool}_${upper_name}_SH" \
-                                 "MULLE_${upper_tool}_LIBEXEC_DIR" \
-                                 "mulle-${tool}-${name}.sh"
+      include_library "$1" "YES"
    }
+
 
    __bashfunctions_loader()
    {
