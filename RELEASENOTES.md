@@ -53,7 +53,7 @@
 * added `file_is_binary` to file functions
 * the `logging_tee_eval_exekutor` has moved to mulle-make as it is only used there
 * lost the init command, this is now handled by `mulle-sde add`, consequently had to up the version to 3
-* `_init` now should call main via `call_main` to enable insertion of FLAGS via environment
+* `_init` now should call main via `call_with_flags "main"` to enable insertion of FLAGS via environment
 * use ``NO_COLOR`` instead of ``MULLE_NO_COLOR`` since its a standardization attempt i can deal with
 
 # 3.0.0
@@ -61,7 +61,7 @@
 * added `file_is_binary` to file functions
 * the `logging_tee_eval_exekutor` has moved to mulle-make as it is only used there
 * lost the init command, this is now handled by `mulle-sde add`, consequently had to up the version to 3
-* `_init` now should call main via `call_main` to enable insertion of FLAGS via environment
+* `_init` now should call main via `call_with_flags "main"` to enable insertion of FLAGS via environment
 * use `NO_COLOR` instead of `MULLE_NO_COLOR` since its a standardization attempt i can deal with
 
 
@@ -85,7 +85,7 @@
 
 ## 1.12.0
 
-* mulle-bashfunctions-env gains an init command for quick script setup
+* mulle-bashfunctions gains an init command for quick script setup
 
 
 ## 1.11.0
@@ -95,7 +95,7 @@
 * improved the old array code with less backticks
 * improved quoting code
 * added `r_available_core_count` with heuristics
-* added `log_grep_warning_error` for mulle-make
+* added `make::common::log_grep_warning_error` for mulle-make
 * exekutor routines now set `MULLE_EXEKUTOR_RVAL` for status
 * fix escaping but in `de_camel_case`
 * add `r_remove_lin,`  `r_add_unique_line` , `r_reverse_lines`

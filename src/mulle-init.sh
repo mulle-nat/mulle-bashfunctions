@@ -180,13 +180,14 @@ r_get_libexec_dir()
 }
 
 
-call_main()
+call_with_flags()
 {
+   local functionname="$1"; shift
    local flags="$1"; [ $# -ne 0 ] && shift
 
    if [ -z "${flags}" ]
    then
-      main "$@"
+      ${functionname} "$@"
       return $?
    fi
 
@@ -203,7 +204,7 @@ call_main()
 
    unset arg
 
-   eval main "${flags}" "${args}"
+   eval "'${functionname}'" "${flags}" "${args}"
 }
 
 fi

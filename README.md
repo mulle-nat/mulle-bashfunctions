@@ -23,7 +23,7 @@ prerequisite for another mulle tool.
 
 Executable                | Description
 --------------------------|--------------------------------
-`mulle-bashfunctions-env` | Find the location of the mulle-bashfunctions library
+`mulle-bashfunctions` | Find the location of the mulle-bashfunctions library
 
 
 ## Install
@@ -47,7 +47,7 @@ macos       | `brew install mulle-kybernetik/software/mulle-bashfunctions`
 In your program:
 
 ```
-MULLE_BASHFUNCTIONS_LIBEXEC_DIR="`mulle-bashfunctions-env libexec-dir`"
+MULLE_BASHFUNCTIONS_LIBEXEC_DIR="`mulle-bashfunctions libexec-dir`"
 . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-boot.sh" || exit 1
 . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions.sh" || exit 1
 ```

@@ -5,5 +5,5 @@ dist: trusty
 script:
   - ./bin/installer /tmp
   - cd test && ./run-test
-  - /tmp/bin/mulle-bashfunctions-env version
-  - /tmp/bin/mulle-bashfunctions-env libexec-dir
+  - /tmp/bin/mulle-bashfunctions version
+  - /tmp/bin/mulle-bashfunctions libexec-dir

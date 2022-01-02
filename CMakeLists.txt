@@ -120,7 +120,7 @@ execute_process( COMMAND chmod a-w "src/mulle-bashfunctions-all.sh"
 
 
 set( SCRIPTS
-mulle-bashfunctions-env
+mulle-bashfunctions
 )
 
 
@@ -137,11 +137,11 @@ file( GLOB LIBRARY_SCRIPTS
 #
 # Install
 #
-execute_process( COMMAND "${PROJECT_SOURCE_DIR}/mulle-bashfunctions-env" version
+execute_process( COMMAND "${PROJECT_SOURCE_DIR}/mulle-bashfunctions" version
                  WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
                  OUTPUT_VARIABLE MULLE_BASHFUNCTIONS_VERSION
                  OUTPUT_STRIP_TRAILING_WHITESPACE)
-message( STATUS "MULLE_BASHFUNCTIONS_VERSION is ${MULLE_BASHFUNCTIONS_VERSION} according to mulle-bashfunctions-env")
+message( STATUS "MULLE_BASHFUNCTIONS_VERSION is ${MULLE_BASHFUNCTIONS_VERSION} according to mulle-bashfunctions")
 
 
 set( PROJECT_VERSION "${MULLE_BASHFUNCTIONS_VERSION}")

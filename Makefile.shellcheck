@@ -27,9 +27,9 @@ SHELLFLAGS=-x -e SC2164,SC2166,SC2006,SC2236,SC1091,SC2039,SC2181,SC2059 -s sh
 	- shellcheck $(SHELLFLAGS) $<
 	(shellcheck -f json $(SHELLFLAGS) $< | jq '.[].level' | grep -w error > /dev/null ) && exit 1 || touch $@
 
-all:	$(CHECKSTAMPS) mulle-bashfunctions-env.chk shellcheck_check jq_check
+all:	$(CHECKSTAMPS) mulle-bashfunctions.chk shellcheck_check jq_check
 
-mulle-bashfunctions-env.chk:	mulle-bashfunctions-env
+mulle-bashfunctions.chk:	mulle-bashfunctions
 	- shellcheck $(SHELLFLAGS) $<
 	(shellcheck -f json $(SHELLFLAGS) $< | jq '.[].level' | grep -w error > /dev/null ) && exit 1 || touch $@
 

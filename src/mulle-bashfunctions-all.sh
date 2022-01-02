@@ -164,17 +164,11 @@ then
    }
 
 
-   include_executable_library()
+   r_include_path()
    {
       local executable="$1"
-      local header_define="$2"
+      local filename="$2"
       local libexec_define="$3"
-      local filename="$4"
-
-      if [ ! -z "${!header_define}" ]
-      then
-         return
-      fi
 
       if [ -z "${!libexec_define}" ]
       then
@@ -182,60 +176,112 @@ then
          eval export "${libexec_define}"
       fi
 
-      . "${!libexec_define}/${filename}" || exit 1
+      RVAL="${!libexec_define}/${filename}"
    }
 
 
-   include_library()
+   include_executable_library()
+   {
+      local header_define="$4"
+
+      if [ ! -z "${!header_define}" ]
+      then
+         return
+      fi
+
+      r_include_path "$@"
+
+       . "${RVAL}" || exit 1
+   }
+
+   __parse_include_specifier()
    {
       local s="$1"
+      local default_namespace="${2:-mulle}"  # default namespace (mulle)
 
       local name
-      local tool
 
       name="${s##*::}"
-      if [ "${name}" != "${s}" ]
-      then
-         tool="${s%::*}"
-      fi
 
       local upper_name
 
-      r_uppercase "${name}"
+      r_identifier "${name}"
+      r_uppercase "${RVAL}"
       upper_name="${RVAL}"
 
-      if [ -z "${tool}" ]
+      if [ "${name}" = "${s}" ]
       then
-         include_executable_library "mulle-bashfunctions-env" \
-                                    "MULLE_${upper_name}_SH" \
-                                    "MULLE_BASHFUNCTIONS_LIBEXEC_DIR" \
-                                    "mulle-${name}.sh"
-         return $?
+         if [ "${default_namespace}" = "mulle" ]
+         then
+            _executable="mulle-bashfunctions"
+            _filename="mulle-${name}.sh"
+            _libexecdir="MULLE_BASHFUNCTIONS_LIBEXEC_DIR"
+            _includeguard="MULLE_${upper_name}_SH"
+            return 0
+         fi
+
+         r_identifier "${default_namespace}"
+         upper_default_namespace="${RVAL}"
+
+         _executable="${default_namespace}-bashfunctions"
+         _filename="${default_namespace}-${name}.sh"
+         _libexecdir="${upper_default_namespace}_BASHFUNCTIONS_LIBEXEC_DIR"
+         _includeguard="${upper_default_namespace}_${upper_name}_SH"
+         return 0
       fi
+
+      local tool
+
+      tool="${s%::*}"
 
       local upper_tool
 
-      r_uppercase "${tool}"
+      case "${s}" in
+         *-*)
+            namespace="${tool%%-*}"
+            tool="${tool#*-}"
+         ;;
+
+         *)
+            namespace="${default_namespace}"
+         ;;
+      esac
+
+      r_concat "${namespace}" "${tool}" "-"
+      tool="${RVAL}"
+
+      r_identifier "${tool}"
+      r_uppercase "${RVAL}"
       upper_tool="${RVAL}"
 
-      local suffix
 
-      suffix=""
-      if [ "${use_env}" = 'YES' ]
-      then
-         suffix="-env"
-      fi
+      r_identifier "${name}"
+      r_uppercase "${RVAL}"
+      upper_name="${RVAL}"
 
-      include_executable_library "mulle-${tool}${suffix}" \
-                                 "MULLE_${upper_tool}_${upper_name}_SH" \
-                                 "MULLE_${upper_tool}_LIBEXEC_DIR" \
-                                 "mulle-${tool}-${name}.sh"
+      _executable="${tool}"
+      _filename="${tool}-${name}.sh"
+      _libexecdir="${upper_tool}_LIBEXEC_DIR"
+      _includeguard="${upper_tool}_${upper_name}_SH"
    }
 
 
-   include_library_env()
+   include()
    {
-      include_library "$1" "YES"
+      local s="$1"
+      local namespace="$2"  # default namespace, possibly not useful
+
+      local _executable
+      local _filename
+      local _libexecdir
+      local _includeguard
+
+      __parse_include_specifier "$@"
+
+      include_executable_library "${_executable}" \
+                                 "${_filename}" \
+                                 "${_libexecdir}" \
+                                 "${_includeguard}"
    }
 
 
@@ -444,7 +490,7 @@ else
    alias .foreachitem="set -f; IFS=','; for"
    alias .foreachpath="set -f; IFS=':'; for"
    alias .foreachcolumn="set -f; IFS=';'; for"
-   alias .foreachfile="set +f; shopt +u nullglob; IFS=' '$'\t'$'\n'; for"
+   alias .foreachfile="set +f; shopt -s nullglob; IFS=' '$'\t'$'\n'; for"
 
 
    alias .do="do
@@ -2240,13 +2286,14 @@ r_get_libexec_dir()
 }
 
 
-call_main()
+call_with_flags()
 {
+   local functionname="$1"; shift
    local flags="$1"; [ $# -ne 0 ] && shift
 
    if [ -z "${flags}" ]
    then
-      main "$@"
+      ${functionname} "$@"
       return $?
    fi
 
@@ -2263,7 +2310,7 @@ call_main()
 
    unset arg
 
-   eval main "${flags}" "${args}"
+   eval "'${functionname}'" "${flags}" "${args}"
 }
 
 fi
@@ -3347,6 +3394,12 @@ _create_file_if_missing()
 }
 
 
+create_file_if_missing()
+{
+   _create_file_if_missing "$1" "# intentionally blank file"
+}
+
+
 merge_line_into_file()
 {
   local line="$1"
@@ -3360,20 +3413,16 @@ merge_line_into_file()
 }
 
 
-create_file_if_missing()
-{
-   _create_file_if_missing "$1" "# intentionally blank file"
-}
-
-
 _remove_file_if_present()
 {
    [ -z "$1" ] && internal_fail "empty path"
 
-   if ! exekutor rm -f "$1" 2> /dev/null
+   if ! rm -f "$1" 2> /dev/null
    then
       exekutor chmod u+w "$1"  || fail "Failed to make $1 writable"
       exekutor rm -f "$1"      || fail "failed to remove \"$1\""
+   else
+      exekutor_trace "exekutor_print" rm -f "$1"
    fi
    return 0
 }
@@ -3796,7 +3845,8 @@ MULLE_ARRAY_SH="included"
 
 [ -z "${MULLE_LOGGING_SH}" ] && _fatal "mulle-logging.sh must be included before mulle-array.sh"
 
-array_value_check()
+
+function array_value_check()
 {
    local value="$1"
 
@@ -3893,7 +3943,7 @@ r_lines_in_range()
 
 
 
-assoc_array_key_check()
+function assoc_array_key_check()
 {
    local key="$1"
 
@@ -3908,13 +3958,13 @@ assoc_array_key_check()
 }
 
 
-assoc_array_value_check()
+function assoc_array_value_check()
 {
    array_value_check "$@"
 }
 
 
-_r_assoc_array_add()
+function _r_assoc_array_add()
 {
    local array="$1"
    local key="$2"
@@ -3928,7 +3978,7 @@ _r_assoc_array_add()
 }
 
 
-_r_assoc_array_remove()
+function _r_assoc_array_remove()
 {
    local array="$1"
    local key="$2"
@@ -4432,7 +4482,7 @@ parallel_execute()
 
 fi
 :
-if [ ! -z "${MULLE_URL_SH}" ]
+if [ -z "${MULLE_URL_SH}" ]
 then
 MULLE_URL_SH="included"
 

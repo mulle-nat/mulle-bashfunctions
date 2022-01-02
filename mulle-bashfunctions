@@ -524,9 +524,9 @@ _init()
    . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions-minimal.sh" || _fatal "loading mulle-bashfunctions-minimal.sh failed"
 
    # shellcheck source=src/mulle-logging.sh
-   include_library "logging" || internal_fail "include mulle-version.sh fail"
+   include "logging" || internal_fail "include mulle-version.sh fail"
    # shellcheck source=src/mulle-version.sh
-   include_library "version" || internal_fail "include mulle-version.sh fail"
+   include "version" || internal_fail "include mulle-version.sh fail"
 
    shell_enable_pipefail
    shell_enable_extglob

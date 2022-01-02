@@ -229,7 +229,7 @@ else
    alias .foreachitem="set -f; IFS=','; for"
    alias .foreachpath="set -f; IFS=':'; for"
    alias .foreachcolumn="set -f; IFS=';'; for"
-   alias .foreachfile="set +f; shopt +u nullglob; IFS=' '$'\t'$'\n'; for"
+   alias .foreachfile="set +f; shopt -s nullglob; IFS=' '$'\t'$'\n'; for"
 
 
    alias .do="do

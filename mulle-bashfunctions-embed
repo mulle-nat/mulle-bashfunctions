@@ -18,7 +18,7 @@ MULLE_EXECUTABLE_VERSION="0.0.1"
 #
 if [ -z "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}" ]
 then
-   MULLE_BASHFUNCTIONS_LIBEXEC_DIR="`mulle-bashfunctions-env libexec-dir`" || exit 1
+   MULLE_BASHFUNCTIONS_LIBEXEC_DIR="`mulle-bashfunctions libexec-dir`" || exit 1
    export MULLE_BASHFUNCTIONS_LIBEXEC_DIR
 fi
 
@@ -217,15 +217,15 @@ _init()
    then
       if [ -z "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}" ]
       then
-         MULLE_BASHFUNCTIONS_LIBEXEC_DIR="`mulle-bashfunctions-env libexec-dir 2> /dev/null`"
+         MULLE_BASHFUNCTIONS_LIBEXEC_DIR="`mulle-bashfunctions libexec-dir 2> /dev/null`"
          if [ -z "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}" ]
          then
             if [ -z "`command -v "${executablepath}"`" ]
             then
-               _fatal "mulle-bashfunctions-env not installed"
+               _fatal "mulle-bashfunctions not installed"
 
             else
-               echo "Fatal Error: Could not find libexec of mulle-bashfunctions-env ($PWD)" >&2
+               echo "Fatal Error: Could not find libexec of mulle-bashfunctions ($PWD)" >&2
             fi
             exit 1
          fi
@@ -240,18 +240,18 @@ _init()
    shell_enable_pipefail
    shell_enable_extglob
 
-   call_main "${MULLE_BASHFUNCTIONS_EMBED_FLAGS}" "$@"
+   call_with_flags "main" "${MULLE_BASHFUNCTIONS_EMBED_FLAGS}" "$@"
 }
 
 ##
-## Paste contents of mulle-bashfunctions-env-embed.sh here, if you don't 
+## Paste contents of mulle-bashfunctions-embed.sh here, if you don't
 ## want the dependency on mulle-bashfunctions.
 ##
 
 ### >> START OF mulle-bashfunctions-embed.sh >>
 ### << END OF mulle-bashfunctions-embed.sh <<
 
-_init "$@" # will call main indirectly via call_main
+_init "$@" # will call main indirectly via call_with_flags "main"
 
 ###
 ### INIT

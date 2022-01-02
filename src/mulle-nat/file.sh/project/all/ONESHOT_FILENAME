@@ -24,7 +24,7 @@ MULLE_EXECUTABLE_VERSION="0.0.0"
 #
 if [ -z "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}" ]
 then
-   MULLE_BASHFUNCTIONS_LIBEXEC_DIR="`mulle-bashfunctions-env libexec-dir`" || exit 1
+   MULLE_BASHFUNCTIONS_LIBEXEC_DIR="`mulle-bashfunctions libexec-dir`" || exit 1
    export MULLE_BASHFUNCTIONS_LIBEXEC_DIR
 fi
 
@@ -58,7 +58,7 @@ fi
 
 
 
-print_flags()
+<|ONESHOT_PREFIXLESS_DOWNCASE_IDENTIFIER|>::print_flags()
 {
    echo "   -f    : force operation"
 
@@ -71,7 +71,7 @@ print_flags()
 }
 
 
-usage()
+<|ONESHOT_PREFIXLESS_DOWNCASE_IDENTIFIER|>::usage()
 {
    [ $# -ne 0 ] && log_error "$*"
 
@@ -86,13 +86,13 @@ Usage:
 
 Flags:
 EOF
-   print_flags | LC_ALL=C sort >&2
+   <|ONESHOT_PREFIXLESS_DOWNCASE_IDENTIFIER|>::print_flags | LC_ALL=C sort >&2
 
    exit 1
 }
 
 
-main()
+<|ONESHOT_PREFIXLESS_DOWNCASE_IDENTIFIER|>::main()
 {
    # shield from environment by using local
    local MULLE_FLAG_MAGNUM_FORCE='NO'
@@ -170,12 +170,12 @@ main()
 }
 
 #
-# You can also use the function `call_main`, which has been defined during
-# mulle-boot. It lets you call 'main' with <|ONESHOT_UPCASE_IDENTIFIER|>_FLAGS
-# interposed (which is not that easy :)).
+# You can also use the function `call_with_flags`, which has been defined
+# during mulle-boot. It lets you call '<|ONESHOT_PREFIXLESS_DOWNCASE_IDENTIFIER|>::main'
+# with <|ONESHOT_UPCASE_IDENTIFIER|>_FLAGS interposed.
 #
-# call_main "${<|ONESHOT_UPCASE_IDENTIFIER|>_FLAGS}" "$@"
+# call_with_flags "<|ONESHOT_PREFIXLESS_DOWNCASE_IDENTIFIER|>::main" "${<|ONESHOT_UPCASE_IDENTIFIER|>_FLAGS}" "$@"
 
-main "$@"
+<|ONESHOT_PREFIXLESS_DOWNCASE_IDENTIFIER|>::main "$@"
 
 <|FOOTER|>

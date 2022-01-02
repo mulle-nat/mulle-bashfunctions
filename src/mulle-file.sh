@@ -179,6 +179,12 @@ _create_file_if_missing()
 }
 
 
+create_file_if_missing()
+{
+   _create_file_if_missing "$1" "# intentionally blank file"
+}
+
+
 merge_line_into_file()
 {
   local line="$1"
@@ -192,12 +198,6 @@ merge_line_into_file()
 }
 
 
-create_file_if_missing()
-{
-   _create_file_if_missing "$1" "# intentionally blank file"
-}
-
-
 _remove_file_if_present()
 {
    [ -z "$1" ] && internal_fail "empty path"
@@ -207,11 +207,14 @@ _remove_file_if_present()
    # though. We don't want an error message, so -f is also fine. 
    # Unfortunately, we can't find out then if file existed.
    #
-   if ! exekutor rm -f "$1" 2> /dev/null
+   if ! rm -f "$1" 2> /dev/null
    then
       # oughta be superflous on macOS but gives error codes...
       exekutor chmod u+w "$1"  || fail "Failed to make $1 writable"
       exekutor rm -f "$1"      || fail "failed to remove \"$1\""
+   else
+      # print this a little later, because of /dev/null
+      exekutor_trace "exekutor_print" rm -f "$1"
    fi
    return 0
 }

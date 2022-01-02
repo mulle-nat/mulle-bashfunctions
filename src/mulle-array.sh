@@ -35,7 +35,8 @@ MULLE_ARRAY_SH="included"
 
 [ -z "${MULLE_LOGGING_SH}" ] && _fatal "mulle-logging.sh must be included before mulle-array.sh"
 
-array_value_check()
+
+function array_value_check()
 {
    local value="$1"
 
@@ -178,7 +179,7 @@ r_lines_in_range()
 # assoc array contents can contain any characters except newline
 # assoc array keys should be identifiers
 #
-assoc_array_key_check()
+function assoc_array_key_check()
 {
    local key="$1"
 
@@ -193,13 +194,13 @@ assoc_array_key_check()
 }
 
 
-assoc_array_value_check()
+function assoc_array_value_check()
 {
    array_value_check "$@"
 }
 
 
-_r_assoc_array_add()
+function _r_assoc_array_add()
 {
    local array="$1"
    local key="$2"
@@ -216,7 +217,7 @@ _r_assoc_array_add()
 }
 
 
-_r_assoc_array_remove()
+function _r_assoc_array_remove()
 {
    local array="$1"
    local key="$2"

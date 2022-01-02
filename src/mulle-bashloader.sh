@@ -54,17 +54,11 @@ then
    }
 
 
-   include_executable_library()
+   r_include_path()
    {
       local executable="$1"
-      local header_define="$2"
+      local filename="$2"
       local libexec_define="$3"
-      local filename="$4"
-
-      if [ ! -z "${!header_define}" ]
-      then
-         return
-      fi
 
       if [ -z "${!libexec_define}" ]
       then
@@ -72,61 +66,137 @@ then
          eval export "${libexec_define}"
       fi
 
-      . "${!libexec_define}/${filename}" || exit 1
+      RVAL="${!libexec_define}/${filename}"
    }
 
 
-   #  use <tool>::<name> scheme
-   include_library()
+   include_executable_library()
+   {
+#      local executable="$1"
+#      local filename="$2"
+#      local libexec_define="$3"
+      local header_define="$4"
+
+      if [ ! -z "${!header_define}" ]
+      then
+         return
+      fi
+
+      r_include_path "$@"
+
+       . "${RVAL}" || exit 1
+   }
+
+   # local _executable
+   # local _filename
+   # local _libexecdir
+   # local _includeguard
+   #
+   __parse_include_specifier()
    {
       local s="$1"
+      local default_namespace="${2:-mulle}"  # default namespace (mulle)
 
       local name
-      local tool
 
       name="${s##*::}"
-      if [ "${name}" != "${s}" ]
-      then
-         tool="${s%::*}"
-      fi
 
       local upper_name
 
-      r_uppercase "${name}"
+      r_identifier "${name}"
+      r_uppercase "${RVAL}"
       upper_name="${RVAL}"
 
-      if [ -z "${tool}" ]
+      # short-cut for "file" (mulle-bashfunctions) and "file" "my" (my-bashfunctions)
+      if [ "${name}" = "${s}" ]
       then
-         include_executable_library "mulle-bashfunctions-env" \
-                                    "MULLE_${upper_name}_SH" \
-                                    "MULLE_BASHFUNCTIONS_LIBEXEC_DIR" \
-                                    "mulle-${name}.sh"
-         return $?
+         if [ "${default_namespace}" = "mulle" ]
+         then
+            _executable="mulle-bashfunctions"
+            _filename="mulle-${name}.sh"
+            _libexecdir="MULLE_BASHFUNCTIONS_LIBEXEC_DIR"
+            _includeguard="MULLE_${upper_name}_SH"
+            return 0
+         fi
+
+         r_identifier "${default_namespace}"
+         upper_default_namespace="${RVAL}"
+
+         _executable="${default_namespace}-bashfunctions"
+         _filename="${default_namespace}-${name}.sh"
+         _libexecdir="${upper_default_namespace}_BASHFUNCTIONS_LIBEXEC_DIR"
+         _includeguard="${upper_default_namespace}_${upper_name}_SH"
+         return 0
       fi
+
+      local tool
+
+      # here we are in "tool::file" (mulle) and "tool::file" "my"
+      tool="${s%::*}"
 
       local upper_tool
 
-      r_uppercase "${tool}"
+      case "${s}" in
+         *-*)
+            namespace="${tool%%-*}"
+            tool="${tool#*-}"
+         ;;
+
+         *)
+            namespace="${default_namespace}"
+         ;;
+      esac
+
+      r_concat "${namespace}" "${tool}" "-"
+      tool="${RVAL}"
+
+      r_identifier "${tool}"
+      r_uppercase "${RVAL}"
       upper_tool="${RVAL}"
 
-      local suffix
 
-      suffix=""
-      if [ "${use_env}" = 'YES' ]
-      then
-         suffix="-env"
-      fi
+      r_identifier "${name}"
+      r_uppercase "${RVAL}"
+      upper_name="${RVAL}"
 
-      include_executable_library "mulle-${tool}${suffix}" \
-                                 "MULLE_${upper_tool}_${upper_name}_SH" \
-                                 "MULLE_${upper_tool}_LIBEXEC_DIR" \
-                                 "mulle-${tool}-${name}.sh"
+      _executable="${tool}"
+      _filename="${tool}-${name}.sh"
+      _libexecdir="${upper_tool}_LIBEXEC_DIR"
+      _includeguard="${upper_tool}_${upper_name}_SH"
    }
 
 
-   include_library_env()
+   # use <tool>::<name> scheme
+   #
+   # if your MULLE_EXECUTABLE has a prefix "<foo>-" and "<tool>" does not
+   # have a prefix, the prefix will be prepended. If tool is empty, then
+   # "bashfunctions" will be used. e.g. your MULLE_EXECUTABLE is "my-grep"
+   # and you pass "bar" it will look for "libexec/my-bashfunctions/bar.sh"
+   #
+   # Examples:
+   #
+   #       s     | Produces call                    | Expected call return                      | Include define
+   # ------------|----------------------------------|-------------------------------------------|----------------
+   # "a::b"      | `mulle-a libexecdir`             | "/libexec/mulle-a/mulle-a-b.sh"           | `MULLE_A_B_SH`
+   # "your-a::b" | `your-a libexecdir`              | "/libexec/your-a/your-a-b.sh"             | `YOUR_A_B_SH`
+   # "b"         | `mulle-bashfunctions libexecdir` | "/libexec/mulle-bashfunctions/mulle-b.sh" | `MULLE_B_SH`
+   #
+   include()
    {
-      include_library "$1" "YES"
+      local s="$1"
+      local namespace="$2"  # default namespace, possibly not useful
+
+      local _executable
+      local _filename
+      local _libexecdir
+      local _includeguard
+
+      __parse_include_specifier "$@"
+
+      include_executable_library "${_executable}" \
+                                 "${_filename}" \
+                                 "${_libexecdir}" \
+                                 "${_includeguard}"
    }
 
 

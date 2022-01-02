@@ -1,0 +1,89 @@
+#! /bin/sh
+
+[ "${TRACE}" = 'YES' ] && set -x && : "$0" "$@"
+
+###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
+MULLE_BASHFUNCTIONS_LIBEXEC_DIR="`mulle-bashfunctions libexec-dir`" || exit 1
+export MULLE_BASHFUNCTIONS_LIBEXEC_DIR
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-boot.sh" || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions.sh" || exit 1
+###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
+
+if [ ! -z "${ZSH_VERSION}" ]
+then
+   setopt sh_word_split
+fi
+
+
+
+expect_output()
+{
+   local output="$1"
+   local expected="$2"
+
+   if [ "${output}" != "${expected}" ]
+   then
+      echo "Got \"${output}\". Expected: \"${expected}\"" >&2
+      stacktrace >&2
+      exit 1
+   fi
+}
+
+
+main()
+{
+   local _executable
+   local _filename
+   local _libexecdir
+   local _includeguard
+
+   __parse_include_specifier "file"
+
+   [ "${_executable}" = "mulle-bashfunctions" ]             || internal_fail "1"
+   [ "${_filename}"   = "mulle-file.sh" ]                   || internal_fail "2"
+   [ "${_libexecdir}" = "MULLE_BASHFUNCTIONS_LIBEXEC_DIR" ] || internal_fail "3"
+   [ "${_includeguard}" = "MULLE_FILE_SH" ]                 || internal_fail "4"
+
+   __parse_include_specifier "craft::file"
+
+   [ "${_executable}" = "mulle-craft" ]             || internal_fail "1"
+   [ "${_filename}"   = "mulle-craft-file.sh" ]     || internal_fail "2"
+   [ "${_libexecdir}" = "MULLE_CRAFT_LIBEXEC_DIR" ] || internal_fail "3"
+   [ "${_includeguard}" = "MULLE_CRAFT_FILE_SH" ]   || internal_fail "4"
+
+   __parse_include_specifier "your-craft::file"
+
+   [ "${_executable}" = "your-craft" ]             || internal_fail "1"
+   [ "${_filename}"   = "your-craft-file.sh" ]     || internal_fail "2"
+   [ "${_libexecdir}" = "YOUR_CRAFT_LIBEXEC_DIR" ] || internal_fail "3"
+   [ "${_includeguard}" = "YOUR_CRAFT_FILE_SH" ]   || internal_fail "4"
+
+   __parse_include_specifier "your-mine-craft::file"
+
+   [ "${_executable}" = "your-mine-craft" ]             || internal_fail "1"
+   [ "${_filename}"   = "your-mine-craft-file.sh" ]     || internal_fail "2"
+   [ "${_libexecdir}" = "YOUR_MINE_CRAFT_LIBEXEC_DIR" ] || internal_fail "3"
+   [ "${_includeguard}" = "YOUR_MINE_CRAFT_FILE_SH" ]   || internal_fail "4"
+
+   __parse_include_specifier "your-mine-craft::file-foo"
+
+   [ "${_executable}" = "your-mine-craft" ]               || internal_fail "1"
+   [ "${_filename}"   = "your-mine-craft-file-foo.sh" ]   || internal_fail "2"
+   [ "${_libexecdir}" = "YOUR_MINE_CRAFT_LIBEXEC_DIR" ]   || internal_fail "3"
+   [ "${_includeguard}" = "YOUR_MINE_CRAFT_FILE_FOO_SH" ] || internal_fail "4"
+
+   echo "All tests passed" >&2
+}
+
+
+init()
+{
+   MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${MULLE_BASHFUNCTIONS_LIBEXEC_DIR:-../../src}"
+
+   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions.sh" || exit 1
+}
+
+
+init 
+main "$@"
+

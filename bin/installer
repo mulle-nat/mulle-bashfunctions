@@ -162,12 +162,12 @@ main()
    cd "`dirname -- "${executable}"`"
    cd ..
 
-   if [ ! -x mulle-bashfunctions-env ]
+   if [ ! -x mulle-bashfunctions ]
    then
-      chmod 755 ./mulle-bashfunctions-env
+      chmod 755 ./mulle-bashfunctions
    fi
 
-   PROJECT_VERSION="`./mulle-bashfunctions-env version`"
+   PROJECT_VERSION="`./mulle-bashfunctions version`"
    [ -z "${PROJECT_VERSION}" ] && echo "tragisches versagen" >&2 && exit 1
 
    bin="${prefix}/bin"
@@ -189,8 +189,8 @@ main()
       mkdir -p "${share}" || installer_fail "could not create ${share}"
    fi
 
-   install -m "${mode}" "mulle-bashfunctions-env" "${bin}/mulle-bashfunctions-env" || exit 1
-   printf "install: ${C_MAGENTA}${C_BOLD}%s${C_RESET}\n" "${bin}/mulle-bashfunctions-env" >&2
+   install -m "${mode}" "mulle-bashfunctions" "${bin}/mulle-bashfunctions" || exit 1
+   printf "install: ${C_MAGENTA}${C_BOLD}%s${C_RESET}\n" "${bin}/mulle-bashfunctions" >&2
 
    for i in src/mulle*.sh
    do

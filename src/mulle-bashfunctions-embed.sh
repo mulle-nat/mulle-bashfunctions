@@ -325,7 +325,7 @@ else
    alias .foreachitem="set -f; IFS=','; for"
    alias .foreachpath="set -f; IFS=':'; for"
    alias .foreachcolumn="set -f; IFS=';'; for"
-   alias .foreachfile="set +f; shopt +u nullglob; IFS=' '$'\t'$'\n'; for"
+   alias .foreachfile="set +f; shopt -s nullglob; IFS=' '$'\t'$'\n'; for"
 
 
    alias .do="do
@@ -2121,13 +2121,14 @@ r_get_libexec_dir()
 }
 
 
-call_main()
+call_with_flags()
 {
+   local functionname="$1"; shift
    local flags="$1"; [ $# -ne 0 ] && shift
 
    if [ -z "${flags}" ]
    then
-      main "$@"
+      ${functionname} "$@"
       return $?
    fi
 
@@ -2144,7 +2145,7 @@ call_main()
 
    unset arg
 
-   eval main "${flags}" "${args}"
+   eval "'${functionname}'" "${flags}" "${args}"
 }
 
 fi
@@ -3228,6 +3229,12 @@ _create_file_if_missing()
 }
 
 
+create_file_if_missing()
+{
+   _create_file_if_missing "$1" "# intentionally blank file"
+}
+
+
 merge_line_into_file()
 {
   local line="$1"
@@ -3241,20 +3248,16 @@ merge_line_into_file()
 }
 
 
-create_file_if_missing()
-{
-   _create_file_if_missing "$1" "# intentionally blank file"
-}
-
-
 _remove_file_if_present()
 {
    [ -z "$1" ] && internal_fail "empty path"
 
-   if ! exekutor rm -f "$1" 2> /dev/null
+   if ! rm -f "$1" 2> /dev/null
    then
       exekutor chmod u+w "$1"  || fail "Failed to make $1 writable"
       exekutor rm -f "$1"      || fail "failed to remove \"$1\""
+   else
+      exekutor_trace "exekutor_print" rm -f "$1"
    fi
    return 0
 }
@@ -3677,7 +3680,8 @@ MULLE_ARRAY_SH="included"
 
 [ -z "${MULLE_LOGGING_SH}" ] && _fatal "mulle-logging.sh must be included before mulle-array.sh"
 
-array_value_check()
+
+function array_value_check()
 {
    local value="$1"
 
@@ -3774,7 +3778,7 @@ r_lines_in_range()
 
 
 
-assoc_array_key_check()
+function assoc_array_key_check()
 {
    local key="$1"
 
@@ -3789,13 +3793,13 @@ assoc_array_key_check()
 }
 
 
-assoc_array_value_check()
+function assoc_array_value_check()
 {
    array_value_check "$@"
 }
 
 
-_r_assoc_array_add()
+function _r_assoc_array_add()
 {
    local array="$1"
    local key="$2"
@@ -3809,7 +3813,7 @@ _r_assoc_array_add()
 }
 
 
-_r_assoc_array_remove()
+function _r_assoc_array_remove()
 {
    local array="$1"
    local key="$2"
@@ -4313,7 +4317,7 @@ parallel_execute()
 
 fi
 :
-if [ ! -z "${MULLE_URL_SH}" ]
+if [ -z "${MULLE_URL_SH}" ]
 then
 MULLE_URL_SH="included"
 
