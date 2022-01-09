@@ -159,10 +159,29 @@ options_technical_flags()
    local flag="$1"
 
    case "${flag}" in
+# single char
       -n|--dry-run)
          MULLE_FLAG_EXEKUTOR_DRY_RUN='YES'
       ;;
 
+      -s|--silent)
+         MULLE_FLAG_LOG_TERSE='YES'
+      ;;
+
+      -v|--verbose)
+         after_trace_warning "${flag}"
+
+         MULLE_TRACE='VERBOSE'
+      ;;
+
+      -V)
+         after_trace_warning "${flag}"
+
+         MULLE_TRACE='VERBOSE'
+         return # don't propagate
+      ;;
+
+# multichar
       -ld|--log-debug)
          MULLE_FLAG_LOG_DEBUG='YES'
          # propagate
@@ -243,6 +262,17 @@ options_technical_flags()
          # propagate
       ;;
 
+      -lT)
+         MULLE_TRACE='1848'
+         if [ ! -z "${ZSH_VERSION}" ]
+         then
+            ps4string='%1x:%I'
+         else
+            ps4string='${BASH_SOURCE[0]##*/}:${LINENO}'
+         fi
+         return # don't propagate
+      ;;
+
       -tfpwd|--trace-full-pwd)
          before_trace_fail "${flag}"
          if [ ! -z "${ZSH_VERSION}" ]
@@ -311,16 +341,6 @@ options_technical_flags()
          set +x
       ;;
 
-      -T)
-         MULLE_TRACE='1848'
-         if [ ! -z "${ZSH_VERSION}" ]
-         then
-            ps4string='%1x:%I'
-         else
-            ps4string='${BASH_SOURCE[0]##*/}:${LINENO}'
-         fi
-         return # don't propagate
-      ;;
 
       -T*T)
          MULLE_TRACE='1848'
@@ -333,18 +353,8 @@ options_technical_flags()
          flag="${flag%T}"
       ;;
 
-      -s|--silent)
-         MULLE_FLAG_LOG_TERSE='YES'
-      ;;
-
       -v-|--no-verbose)
          MULLE_FLAG_LOG_TERSE=
-      ;;
-
-      -v|--verbose)
-         after_trace_warning "${flag}"
-
-         MULLE_TRACE='VERBOSE'
       ;;
 
       -vv|--very-verbose)
@@ -357,13 +367,6 @@ options_technical_flags()
          after_trace_warning "${flag}"
 
          MULLE_TRACE='TRACE'
-      ;;
-
-      -V)
-         after_trace_warning "${flag}"
-
-         MULLE_TRACE='VERBOSE'
-         return # don't propagate
       ;;
 
       -VV)

@@ -180,6 +180,23 @@ r_get_libexec_dir()
 }
 
 
+r_escaped_eval_arguments()
+{
+   local arg
+   local args
+   local sep
+
+   args=""
+   for arg in "$@"
+   do
+      printf -v args "%s%s%q" "${args}" "${sep}" "${arg}"
+      sep=" "
+   done
+
+   RVAL="${args}"
+}
+
+
 call_with_flags()
 {
    local functionname="$1"; shift
@@ -191,20 +208,8 @@ call_with_flags()
       return $?
    fi
 
-   local arg
-   local args 
-   local sep 
-
-   args=""
-   for arg in "$@"
-   do
-      printf -v args "%s%s%q" "${args}" "${sep}" "${arg}"
-      sep=" "
-   done
-
-   unset arg
-
-   eval "'${functionname}'" "${flags}" "${args}"
+   r_escaped_eval_arguments "$@"
+   eval "'${functionname}'" "${flags}" "${RVAL}"
 }
 
 fi

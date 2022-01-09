@@ -1,10 +1,35 @@
 # 4.0.0
 
+* option -T is -lT now
+* mulle-bashfunctions-env is now mulle-bashfunctions, which makes the `include_library` code much simpler
+* `include_library` is now just include
+* changed include guards to be more C like, enabling double inclusion of mulle-bashfunctions in various forms
+* added mulle-boot so the startup code for zsh/bash detection can be more compact
+* added .foreachline et.al aliases. This neccessitates moving the mulle-bashfunctions init to the top of file file **HUGE CHANGE**
+* ``expand_aliases`` is now defined by default, to enable .foreachline loops
+* use new macros .foreachline .do .done statement
+* new function `include_mulle_tool_library`
+* add `r_extensionless_filename`
+* added mulle-bashfunctions-embed so an embedded mulle-bashfunctions-embed.sh file can be easily updated
+* add username command to mulle-bashfunctions-env
+* add a file to make mulle-bashfunctions embeddable in another script with the cost of adding 80k of script code
+* provide `MULLE_USERNAME` to shell scripts
+* `MULLE_EXEKUTOR_STRACKTRACE_RVAL` to trigger stacktrace on return value changed from 2 to 18
+* `r_semicolon_concat` does not remove trailing stray ';' anymore for CSV benefit
+* moved ``log_grep_warning_error`` back to tools
+* fix ``shell_disable_pipefail``
+* fix parallel for MacOS monterey
+* avoid error if etc folder is missing
+* avoid duplicate output of commandline in tee-logger routines
+* rename `assert_sane_name` to `r_assert_sane_name`
+* new functions `r_get_last_line` and `r_remove_last_line`
+* now uses "almagamated" files for faster startup
+* changed the way the `-t` flag is handled, you now need to query either ``options_setup_trace`` or ``_options_mini_main``
 * mulle-bashfunctions is now **compatible with zsh**
 * **BREAKING** removed a lot of unused functions, specifically those with a `r_` counterpart. maybe the only ones left are ``r_physicalpath/physicalpath`.`
 * added `mulle-compatiblity.sh` as bash/zsh glue for shell differences
 * **BREAKING** extglob is not set/unset on demand anymore. All shell scripts are expected to run with **extglob enabled**
-
+* mulle-bashfunctions now has precompiled headers, that improve startup time
 
 ## 3.4.0
 

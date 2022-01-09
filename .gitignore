@@ -9,6 +9,7 @@ tmp.*
 *.gz
 xcuserdata/
 build/
+old/
 
 mulle-project/publisher-info.sh
 
@@ -21,3 +22,4 @@ CPackConfig.cmake
 CPackSourceConfig.cmake
 cmake_install.cmake
 fcking-zsh*
+Makefile
