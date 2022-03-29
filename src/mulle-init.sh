@@ -1,4 +1,7 @@
-#! /usr/bin/env bash
+# shellcheck shell=bash
+# shellcheck disable=SC2236
+# shellcheck disable=SC2166
+# shellcheck disable=SC2006
 #
 #   Copyright (c) 2017 Nat! - Mulle kybernetiK
 #   All rights reserved.
@@ -29,7 +32,7 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-if [ -z "${MULLE_INIT_SH}" ]
+if ! [ ${MULLE_INIT_SH+x} ]
 then
 MULLE_INIT_SH="included"
 
@@ -107,8 +110,7 @@ r_resolve_symlinks()
 
    RVAL="$1"
 
-   filepath="`readlink "${RVAL}"`"
-   if [ $? -eq 0 ]
+   if filepath="`readlink "${RVAL}"`"
    then
       r_dirname "${RVAL}"
       r_prepend_path_if_relative "${RVAL}" "${filepath}"

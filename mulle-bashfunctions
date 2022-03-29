@@ -1,5 +1,10 @@
 #! /bin/sh
 #
+# shellcheck shell=bash
+# shellcheck disable=SC2236
+# shellcheck disable=SC2166
+# shellcheck disable=SC2006
+#
 #   Copyright (c) 2015-2017 Nat! - Mulle kybernetiK
 #   All rights reserved.
 #
@@ -39,8 +44,9 @@ MULLE_BASHFUNCTIONS_VERSION="4.0.0"
 # Allows script to run on systems that either have bash (linux) or
 # zsh (macOS) only by default.
 #
-if [ "$1" != --no-auto-shell ]
+if [ "${1:-}" != --no-auto-shell ]
 then
+   # bourne shell knows no -v
    if [ -z "${BASH_VERSION}" -a -z "${ZSH_VERSION}" ]
    then
       exe_shell="`command -v "bash" `"
@@ -92,7 +98,7 @@ fi
 # mingw via a .BAT or so. Correct this now
 #
 case "$PATH" in
-   '\\'*)
+   "\\"*)
       PATH="${PATH//\\/\/}"
    ;;
 esac
@@ -196,6 +202,79 @@ find_library_path()
 }
 
 
+HEAD_MARKER='### >> START OF mulle-bashfunctions-embed.sh >>'
+FOOT_MARKER='### << END OF mulle-bashfunctions-embed.sh <<'
+
+mulle_bashfunctions_usage()
+{
+   [ $# -ne 0 ] && log_error "$*"
+
+
+   cat <<EOF >&2
+Usage:
+   mulle-bashfunctions embed
+
+   Insert or update the mulle-bashfunctions-embed.sh code between these two
+   markers:
+
+   ${HEAD_MARKER}
+   ${FOOT_MARKER}
+
+   This lazy script just reads from stdio and outputs to stdout.
+
+Flags:
+EOF
+   print_flags | LC_ALL=C sort >&2
+
+   exit 1
+}
+
+
+mulle_bashfunctions_embed()
+{
+   while [ $# -ne 0 ]
+   do
+      case "$1" in
+         *)
+            mulle_bashfunctions_usage
+         ;;
+      esac
+   done
+
+
+   local line
+
+   # initial state, searching for start
+   IFS=$'\n'
+   while read -r line
+   do
+      if [ "${line}" = "${HEAD_MARKER}" ]
+      then
+         break
+      fi
+      printf "%s\n" "${line}"
+   done
+
+   # start found and consumed now put in embed.sh
+   cat "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions-embed.sh" || exit 1
+
+   # now search for end
+   while read -r line
+   do
+      if [ "${line}" = "${FOOT_MARKER}" ]
+      then
+         break
+      fi
+   done
+
+   # output rest
+   while read -r line
+   do
+      printf "%s\n" "${line}"
+   done
+}
+
+
 main()
 {
    #
@@ -262,6 +341,10 @@ export MULLE_UNAME"
          cat "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions-${cmd}.sh"
       ;;
 
+      embed)
+         mulle_bashfunctions_embed "$@"
+      ;;
+
       init|script)
          fail "Use mulle-sde add --extension \"mulle-nat/file.sh\" instead"
       ;;
@@ -297,8 +380,7 @@ export MULLE_UNAME"
       ;;
 
       *)
-         log_error "${MULLE_EXECUTABLE_FAIL_PREFIX}: Unknown command \"${cmd}\""
-         usage
+         usage "${MULLE_EXECUTABLE_FAIL_PREFIX}: Unknown command \"${cmd}\""
       ;;
    esac
 }
@@ -471,6 +553,7 @@ _fatal()
    exit 1
 }
 
+
 _init()
 {
    #
@@ -483,7 +566,7 @@ _init()
       ;;
    esac
 
-   if [ ! -z "${ZSH_VERSION}" ]
+   if [ ${ZSH_VERSION+x} ]
    then
      setopt sh_word_split
    fi
@@ -524,9 +607,9 @@ _init()
    . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions-minimal.sh" || _fatal "loading mulle-bashfunctions-minimal.sh failed"
 
    # shellcheck source=src/mulle-logging.sh
-   include "logging" || internal_fail "include mulle-version.sh fail"
+   include "logging" || _internal_fail "include mulle-version.sh fail"
    # shellcheck source=src/mulle-version.sh
-   include "version" || internal_fail "include mulle-version.sh fail"
+   include "version" || _internal_fail "include mulle-version.sh fail"
 
    shell_enable_pipefail
    shell_enable_extglob

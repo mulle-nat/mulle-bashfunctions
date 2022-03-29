@@ -1,4 +1,7 @@
-#! /usr/bin/env bash
+# shellcheck shell=bash
+# shellcheck disable=SC2236
+# shellcheck disable=SC2166
+# shellcheck disable=SC2006
 #
 #   Copyright (c) 2017 Nat! - Mulle kybernetiK
 #   All rights reserved.
@@ -29,7 +32,7 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-if [ -z "${MULLE_OPTIONS_SH}" ]
+if ! [ ${MULLE_OPTIONS_SH+x} ]
 then
 MULLE_OPTIONS_SH="included"
 
@@ -54,13 +57,17 @@ options_dump_env()
 # caller should do set +x if 0
 options_setup_trace()
 {
+   local mode="$1"
 
-   if [ "${MULLE_FLAG_LOG_ENVIRONMENT}" = YES ]
+   local rc
+
+   if [ "${MULLE_FLAG_LOG_ENVIRONMENT:-}" = YES ]
    then
       options_dump_env
    fi
 
-   case "${1}" in
+   rc=2
+   case "${mode}" in
       VERBOSE)
          MULLE_FLAG_LOG_VERBOSE='YES'
       ;;
@@ -81,18 +88,20 @@ options_setup_trace()
          MULLE_FLAG_LOG_FLUFF='YES'
          MULLE_FLAG_LOG_VERBOSE='YES'
 
-         if [ "${MULLE_TRACE_POSTPONE}" != 'YES' ]
+         if [ "${MULLE_TRACE_POSTPONE:-}" != 'YES' ]
          then
             # log_trace "1848 trace (set -x) started"
             # set -x # lol fcking zsh turns this off at function end
             #        # unsetopt localoptions does not help
             PS4="+ ${ps4string} + "
          fi
-         return 0
+         rc=0
       ;;
    esac
 
-   return 2
+   log_set_trace_level
+
+   return $rc
 }
 
 
@@ -114,7 +123,7 @@ _options_technical_flags_usage()
    -v${S}${S}${S}${DELIMITER}be verbose (increase with -vv, -vvv)
 EOF
 
-   if [ ! -z "${MULLE_TRACE}" ]
+   if [ ! -z "${MULLE_TRACE:-}" ]
    then
       cat <<EOF
    -ld${S}${S}${DELIMITER}additional debug output
@@ -134,14 +143,14 @@ options_technical_flags_usage()
 
 before_trace_fail()
 {
-   [ "${MULLE_TRACE}" = '1848' ] || \
+   [ "${MULLE_TRACE:-}" = '1848' ] || \
       fail "option \"$1\" must be specified after -t"
 }
 
 
 after_trace_warning()
 {
-   [ "${MULLE_TRACE}" = '1848' ] && \
+   [ "${MULLE_TRACE:-}" = '1848' ] && \
       log_warning "warning: ${MULLE_EXECUTABLE_FAIL_PREFIX}: $1 after -t invalidates -t"
 }
 
@@ -253,7 +262,7 @@ options_technical_flags()
       # and i don't need it so often
       -lt|--trace)
          MULLE_TRACE='1848'
-         if [ ! -z "${ZSH_VERSION}" ]
+         if [ ${ZSH_VERSION+x} ]
          then
             ps4string='%1x:%I' # TODO: fix for zsh
          else
@@ -264,7 +273,7 @@ options_technical_flags()
 
       -lT)
          MULLE_TRACE='1848'
-         if [ ! -z "${ZSH_VERSION}" ]
+         if [ ${ZSH_VERSION+x} ]
          then
             ps4string='%1x:%I'
          else
@@ -275,7 +284,7 @@ options_technical_flags()
 
       -tfpwd|--trace-full-pwd)
          before_trace_fail "${flag}"
-         if [ ! -z "${ZSH_VERSION}" ]
+         if [ ${ZSH_VERSION+x} ]
          then
             ps4string='%1x:%I \"\w\"'
          else
@@ -284,7 +293,7 @@ options_technical_flags()
       ;;
 
       -tp|--trace-profile)
-#         if [ ! -z "${ZSH_VERSION}" ]
+#         if [ ${ZSH_VERSION+x} ]
 #         then
 #            zmodload "zsh/zprof"
 #            # can't trap global exit from within function :(
@@ -294,10 +303,10 @@ options_technical_flags()
    
             case "${MULLE_UNAME}" in
                '')
-                  internal_fail 'MULLE_UNAME must be set by now'
+                  _internal_fail 'MULLE_UNAME must be set by now'
                ;;
                linux)
-                  if [ ! -z "${ZSH_VERSION}" ]
+                  if [ ${ZSH_VERSION+x} ]
                   then
                      ps4string='$(date "+%s.%N (%1x:%I)")'
                   else
@@ -305,7 +314,7 @@ options_technical_flags()
                   fi
                ;;
                *)
-                  if [ ! -z "${ZSH_VERSION}" ]
+                  if [ ${ZSH_VERSION+x} ]
                   then
                      ps4string='$(date "+%s (%1x:%I)")'
                   else
@@ -324,7 +333,7 @@ options_technical_flags()
 
       -tpwd|--trace-pwd)
          before_trace_fail "${flag}"
-         if [ ! -z "${ZSH_VERSION}" ]
+         if [ ${ZSH_VERSION+x} ]
          then
             ps4string='%1x:%I \".../\W\"'
          else
@@ -344,7 +353,7 @@ options_technical_flags()
 
       -T*T)
          MULLE_TRACE='1848'
-         if [ ! -z "${ZSH_VERSION}" ]
+         if [ ${ZSH_VERSION+x} ]
          then
             ps4string='%1x:%I'
          else
@@ -421,11 +430,11 @@ options_technical_flags()
    # flags to other mulle-bashfunction programs - sometimes- use
    # --clear-flags after all the other flags.
    #
-   if [ -z "${MULLE_TECHNICAL_FLAGS}" ]
+   if [ ${MULLE_TECHNICAL_FLAGS+x} ]
    then
-      MULLE_TECHNICAL_FLAGS="${flag}"
-   else
       MULLE_TECHNICAL_FLAGS="${MULLE_TECHNICAL_FLAGS} ${flag}"
+   else
+      MULLE_TECHNICAL_FLAGS="${flag}"
    fi
 
    return 0
@@ -461,7 +470,7 @@ _options_mini_main()
       break
    done
 
-   options_setup_trace "${MULLE_TRACE}"
+   options_setup_trace "${MULLE_TRACE:-}"
 }
 
 fi

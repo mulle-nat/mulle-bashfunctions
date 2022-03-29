@@ -1,4 +1,7 @@
-#! /usr/bin/env bash
+# shellcheck shell=bash
+# shellcheck disable=SC2236
+# shellcheck disable=SC2166
+# shellcheck disable=SC2006
 #
 #   Copyright (c) 2018 Nat! - Mulle kybernetiK
 #   All rights reserved.
@@ -29,7 +32,7 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-if [ -z "${MULLE_PARALLEL_SH}" ]
+if ! [ ${MULLE_PARALLEL_SH+x} ]
 then
 MULLE_PARALLEL_SH="included"
 
@@ -51,7 +54,7 @@ very_short_sleep()
 
 r_get_core_count()
 {
-   if [ -z "${MULLE_CORES}" ]
+   if ! [ ${MULLE_CORES+x} ]
    then
       # Linux (absolute path for restricted environments)
       MULLE_CORES="`/usr/bin/nproc 2> /dev/null`"
@@ -204,7 +207,7 @@ _parallel_begin()
 {
    log_entry "_parallel_begin" "$@"
 
-   _parallel_maxjobs="$1"
+   _parallel_maxjobs="${1:-0}"
 
    _parallel_jobs=0
    _parallel_fails=0
@@ -212,10 +215,10 @@ _parallel_begin()
    r_make_tmp "mulle-parallel" || exit 1
    _parallel_statusfile="${RVAL}"
 
-   if [ -z "${_parallel_maxjobs}" ]
+   if [ ${_parallel_maxjobs} -eq 0 ]
    then
-      _parallel_maxjobs="${MULLE_PARALLEL_MAX_JOBS}"
-      if [ -z "${_parallel_maxjobs}" ]
+      _parallel_maxjobs="${MULLE_PARALLEL_MAX_JOBS:-0}"
+      if [ ${_parallel_maxjobs} -eq 0 ]
       then
          r_get_core_count
          _parallel_maxjobs="${RVAL}"
@@ -231,12 +234,10 @@ _parallel_end()
    wait
 
    _parallel_fails="`rexekutor wc -l "${_parallel_statusfile}" | awk '{ printf $1 }'`"
-   if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
-   then
-      log_trace2 "_parallel_jobs : ${_parallel_jobs}"
-      log_trace2 "_parallel_fails: ${_parallel_fails}"
-      log_trace2 "${_parallel_statusfile} : `cat "${_parallel_statusfile}"`"
-   fi
+
+   log_setting "_parallel_jobs : ${_parallel_jobs}"
+   log_setting "_parallel_fails: ${_parallel_fails}"
+   log_setting "${_parallel_statusfile} : `cat "${_parallel_statusfile}"`"
 
    exekutor rm "${_parallel_statusfile}"
 
@@ -256,7 +257,7 @@ _parallel_status()
 
    local rval="$1"; shift
 
-   [ -z "${_parallel_statusfile}" ] && internal_fail "_parallel_statusfile must be defined"
+   [ -z "${_parallel_statusfile}" ] && _internal_fail "_parallel_statusfile must be defined"
 
    # only append to status file if error
    if [ $rval -ne 0 ]
@@ -297,7 +298,7 @@ parallel_execute()
    local _parallel_jobs
    local _parallel_fails
 
-   [ $# -eq 0 ] && internal_fail "missing commandline"
+   [ $# -eq 0 ] && _internal_fail "missing commandline"
 
    _parallel_begin
 

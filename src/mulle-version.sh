@@ -1,4 +1,8 @@
-#! /usr/bin/env bash
+#
+# shellcheck shell=bash
+# shellcheck disable=SC2236
+# shellcheck disable=SC2166
+# shellcheck disable=SC2006
 #
 #   Copyright (c) 2017 Nat! - Mulle kybernetiK
 #   All rights reserved.
@@ -29,7 +33,8 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-if [ -z "${MULLE_VERSION_SH}" ]
+
+if ! [ ${MULLE_VERSION_SH+x} ]
 then
 MULLE_VERSION_SH="included"
 

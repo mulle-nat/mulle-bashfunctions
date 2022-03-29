@@ -1,5 +1,8 @@
-#! /usr/bin/env bash
-#
+# shellcheck shell=bash
+# shellcheck disable=SC2236
+# shellcheck disable=SC2166
+# shellcheck disable=SC2006
+##
 #   Copyright (c) 2018-2021 Nat! - Mulle kybernetiK
 #   All rights reserved.
 #
@@ -31,13 +34,13 @@
 #
 
 # double inclusion of this file is OK!
-if [ -z "${MULLE_BASHGLOBAL_SH}" ]
+if ! [ ${MULLE_BASHGLOBAL_SH+x} ]
 then
    MULLE_BASHGLOBAL_SH="included"
 
    DEFAULT_IFS="${IFS}" # as early as possible
 
-   if [ ! -z "${ZSH_VERSION}" ]
+   if [ ${ZSH_VERSION+x} ]
    then
      setopt sh_word_split
      setopt POSIX_ARGZERO
@@ -45,7 +48,7 @@ then
 
    # this generally should be set by the main script
    # and not here, but if it isn't set then set it
-   if [ -z "${MULLE_EXECUTABLE}" ]
+   if [ -z "${MULLE_EXECUTABLE:-}" ]
    then
       # this actually works fairly well... We want to handle a lot of weird
       # situations, like only this file being sourced in. The main file being
@@ -69,7 +72,7 @@ then
    # MULLE_EXECUTABLE_BIN_DIR="${MULLE_EXECUTABLE%/*}"
 
    # can be convenient to overload by caller sometimes
-   if [ -z "${MULLE_EXECUTABLE_NAME}" ]
+   if [ -z "${MULLE_EXECUTABLE_NAME:-}" ]
    then
       MULLE_EXECUTABLE_NAME="${MULLE_EXECUTABLE##*/}"
    fi
@@ -78,7 +81,7 @@ then
    # this is useful for shortening filenames for output
    # like printf "%s\n" "${filename#${MULLE_USER_PWD}/}"
    #
-   if [ -z "${MULLE_USER_PWD}" ]
+   if [ -z "${MULLE_USER_PWD:-}" ]
    then
       MULLE_USER_PWD="${PWD}"
       export MULLE_USER_PWD
@@ -93,16 +96,16 @@ then
    #
    # need this for scripts also
    #
-   if [ -z "${MULLE_UNAME}" ]
+   if [ -z "${MULLE_UNAME:-}" ]
    then
-      case "${BASH_VERSION}" in
+      case "${BASH_VERSION:-}" in
          [0123]*)
             MULLE_UNAME="`uname | tr '[:upper:]' '[:lower:]'`"
          ;;
 
          *)
             MULLE_UNAME="`uname`"
-            if [ ! -z "${ZSH_VERSION}" ]
+            if [ ${ZSH_VERSION+x} ]
             then
                MULLE_UNAME="${MULLE_UNAME:l}"
             else
@@ -120,7 +123,6 @@ then
          case "${MULLE_UNAME}" in
             *-Microsoft)
                MULLE_UNAME="windows"
-               MULLE_EXE_EXTENSION=".exe"
             ;;
   
             *)
@@ -130,6 +132,10 @@ then
       fi
    fi
 
+   if [ "${MULLE_UNAME}" = "windows" ]
+   then
+      MULLE_EXE_EXTENSION=".exe"
+   fi
 
    #
    # Tip: you can change the hostname to "travis-ci" via Travis settings
@@ -138,7 +144,7 @@ then
    #
    #      mulle-env environment --hostname-travis-ci set FOO "VfL Bochum"
    #
-   if [ -z "${MULLE_HOSTNAME}" ]
+   if [ -z "${MULLE_HOSTNAME:-}" ]
    then
       case "${MULLE_UNAME}" in
          'mingw'*)
@@ -159,7 +165,7 @@ then
 
    # acquire some sort of username, its not super important
    # just be consistent
-   if [ -z "${MULLE_USERNAME}" ]
+   if [ -z "${MULLE_USERNAME:-}" ]
    then
       MULLE_USERNAME="${MULLE_USERNAME:-${USERNAME}}" # mingw
       MULLE_USERNAME="${MULLE_USERNAME:-${USER}}"

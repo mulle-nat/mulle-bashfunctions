@@ -29,19 +29,19 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #
 
-if [ -z "${MULLE_BASHGLOBAL_SH}" ]
+if ! [ ${MULLE_BASHGLOBAL_SH+x} ]
 then
    MULLE_BASHGLOBAL_SH="included"
 
    DEFAULT_IFS="${IFS}" # as early as possible
 
-   if [ ! -z "${ZSH_VERSION}" ]
+   if [ ${ZSH_VERSION+x} ]
    then
      setopt sh_word_split
      setopt POSIX_ARGZERO
    fi
 
-   if [ -z "${MULLE_EXECUTABLE}" ]
+   if [ -z "${MULLE_EXECUTABLE:-}" ]
    then
       MULLE_EXECUTABLE="${BASH_SOURCE[0]:-${(%):-%x}}"
       case "${MULLE_EXECUTABLE##*/}" in 
@@ -59,12 +59,12 @@ then
    esac
 
 
-   if [ -z "${MULLE_EXECUTABLE_NAME}" ]
+   if [ -z "${MULLE_EXECUTABLE_NAME:-}" ]
    then
       MULLE_EXECUTABLE_NAME="${MULLE_EXECUTABLE##*/}"
    fi
 
-   if [ -z "${MULLE_USER_PWD}" ]
+   if [ -z "${MULLE_USER_PWD:-}" ]
    then
       MULLE_USER_PWD="${PWD}"
       export MULLE_USER_PWD
@@ -76,16 +76,16 @@ then
    MULLE_EXECUTABLE_FAIL_PREFIX="${MULLE_EXECUTABLE_NAME}"
    MULLE_EXECUTABLE_PID="$$"
 
-   if [ -z "${MULLE_UNAME}" ]
+   if [ -z "${MULLE_UNAME:-}" ]
    then
-      case "${BASH_VERSION}" in
+      case "${BASH_VERSION:-}" in
          [0123]*)
             MULLE_UNAME="`uname | tr '[:upper:]' '[:lower:]'`"
          ;;
 
          *)
             MULLE_UNAME="`uname`"
-            if [ ! -z "${ZSH_VERSION}" ]
+            if [ ${ZSH_VERSION+x} ]
             then
                MULLE_UNAME="${MULLE_UNAME:l}"
             else
@@ -102,7 +102,6 @@ then
          case "${MULLE_UNAME}" in
             *-Microsoft)
                MULLE_UNAME="windows"
-               MULLE_EXE_EXTENSION=".exe"
             ;;
   
             *)
@@ -112,8 +111,12 @@ then
       fi
    fi
 
+   if [ "${MULLE_UNAME}" = "windows" ]
+   then
+      MULLE_EXE_EXTENSION=".exe"
+   fi
 
-   if [ -z "${MULLE_HOSTNAME}" ]
+   if [ -z "${MULLE_HOSTNAME:-}" ]
    then
       case "${MULLE_UNAME}" in
          'mingw'*)
@@ -132,7 +135,7 @@ then
       esac
    fi
 
-   if [ -z "${MULLE_USERNAME}" ]
+   if [ -z "${MULLE_USERNAME:-}" ]
    then
       MULLE_USERNAME="${MULLE_USERNAME:-${USERNAME}}" # mingw
       MULLE_USERNAME="${MULLE_USERNAME:-${USER}}"
@@ -141,7 +144,7 @@ then
       MULLE_USERNAME="${MULLE_USERNAME:-cptnemo}"
    fi
 fi
-if [ -z "${MULLE_COMPATIBILITY_SH}" ]
+if ! [ ${MULLE_COMPATIBILITY_SH+x} ]
 then
 MULLE_COMPATIBILITY_SH="included"
 
@@ -171,7 +174,7 @@ shell_is_pipefail_enabled()
 
 shell_enable_extglob()
 {
-   if [ ! -z "${ZSH_VERSION}" ]
+   if [ ${ZSH_VERSION+x} ]
    then
       setopt kshglob
       setopt bareglobqual
@@ -183,7 +186,7 @@ shell_enable_extglob()
 
 shell_disable_extglob()
 {
-   if [ ! -z "${ZSH_VERSION}" ]
+   if [ ${ZSH_VERSION+x} ]
    then
       unsetopt bareglobqual
       unsetopt kshglob
@@ -195,7 +198,7 @@ shell_disable_extglob()
 
 shell_is_extglob_enabled()
 {
-   if [ ! -z "${ZSH_VERSION}" ]
+   if [ ${ZSH_VERSION+x} ]
    then
       [[ -o kshglob ]]
       return $?
@@ -207,7 +210,7 @@ shell_is_extglob_enabled()
 
 shell_enable_nullglob()
 {
-   if [ ! -z "${ZSH_VERSION}" ]
+   if [ ${ZSH_VERSION+x} ]
    then
       setopt nullglob
    else
@@ -218,7 +221,7 @@ shell_enable_nullglob()
 
 shell_disable_nullglob()
 {
-   if [ ! -z "${ZSH_VERSION}" ]
+   if [ ${ZSH_VERSION+x} ]
    then
       unsetopt nullglob
    else
@@ -229,7 +232,7 @@ shell_disable_nullglob()
 
 shell_is_nullglob_enabled()
 {
-   if [ ! -z "${ZSH_VERSION}" ]
+   if [ ${ZSH_VERSION+x} ]
    then
       [[ -o nullglob ]]
       return $?
@@ -240,7 +243,7 @@ shell_is_nullglob_enabled()
 
 shell_enable_glob()
 {
-   if [ ! -z "${ZSH_VERSION}" ]
+   if [ ${ZSH_VERSION+x} ]
    then
       unsetopt noglob
    else
@@ -251,7 +254,7 @@ shell_enable_glob()
 
 shell_disable_glob()
 {
-   if [ ! -z "${ZSH_VERSION}" ]
+   if [ ${ZSH_VERSION+x} ]
    then
       setopt noglob
    else
@@ -262,7 +265,7 @@ shell_disable_glob()
 
 shell_is_glob_enabled()
 {
-   if [ ! -z "${ZSH_VERSION}" ]
+   if [ ${ZSH_VERSION+x} ]
    then
       if [[ -o noglob ]]
       then
@@ -282,7 +285,7 @@ shell_is_glob_enabled()
 
 shell_is_function()
 {
-   if [ ! -z "${ZSH_VERSION}" ]
+   if [ ${ZSH_VERSION+x} ]
    then
       case "`type "$1" `" in
          *function*)
@@ -299,7 +302,7 @@ shell_is_function()
 
 unalias -a
 
-if [ ! -z "${ZSH_VERSION}" ]
+if [ ${ZSH_VERSION+x} ]
 then
    setopt aliases
 
@@ -308,10 +311,9 @@ then
    alias .foreachword="setopt noglob; IFS=' '$'\t'$'\n'; for"
    alias .foreachitem="setopt noglob; IFS=','; for"
    alias .foreachpath="setopt noglob; IFS=':'; for"
+   alias .foreachpathcomponent="set -f; IFS='/'; for"
    alias .foreachcolumn="setopt noglob; IFS=';'; for"
    alias .foreachfile="unsetopt noglob; unsetopt nullglob; IFS=' '$'\t'$'\n'; for"
-
-
    alias .do="do
    unsetopt noglob; unsetopt nullglob; IFS=' '$'\t'$'\n'"
    alias .done="done;unsetopt noglob; unsetopt nullglob; IFS=' '$'\t'$'\n'"
@@ -324,10 +326,9 @@ else
    alias .foreachword="set -f; IFS=' '$'\t'$'\n'; for"
    alias .foreachitem="set -f; IFS=','; for"
    alias .foreachpath="set -f; IFS=':'; for"
+   alias .foreachpathcomponent="set -f; IFS='/'; for"
    alias .foreachcolumn="set -f; IFS=';'; for"
    alias .foreachfile="set +f; shopt -s nullglob; IFS=' '$'\t'$'\n'; for"
-
-
    alias .do="do
 set +f; shopt -u nullglob; IFS=' '$'\t'$'\n'"
    alias .done="done;set +f; shopt -u nullglob; IFS=' '$'\t'$'\n'"
@@ -344,17 +345,18 @@ shell_enable_pipefail
 
 fi
 :
-if [ -z "${MULLE_LOGGING_SH}" ]
+if ! [ ${MULLE_LOGGING_SH+x} ]
 then
 MULLE_LOGGING_SH="included"
 
 
-log_printf()
+
+_log_printf()
 {
    local format="$1" ; shift
 
 
-   if [ -z "${MULLE_EXEKUTOR_LOG_DEVICE}" ]
+   if [ -z "${MULLE_EXEKUTOR_LOG_DEVICE:-}" ]
    then
       printf "${format}" "$@" >&2
    else
@@ -364,89 +366,89 @@ log_printf()
 
 
 MULLE_LOG_ERROR_PREFIX=" error: "
-
-log_error()
-{
-   log_printf "${C_ERROR}${MULLE_EXECUTABLE_FAIL_PREFIX}${MULLE_LOG_ERROR_PREFIX}${C_ERROR_TEXT}%b${C_RESET}\n" "$*"
-}
-
-
 MULLE_LOG_FAIL_ERROR_PREFIX=" fatal error: "
 
-log_fail()
+_log_error()
 {
-   log_printf "${C_ERROR}${MULLE_EXECUTABLE_FAIL_PREFIX}${MULLE_LOG_FAIL_ERROR_PREFIX}${C_ERROR_TEXT}%b${C_RESET}\n" "$*"
+   _log_printf "${C_ERROR}${MULLE_EXECUTABLE_FAIL_PREFIX}${MULLE_LOG_ERROR_PREFIX}${C_ERROR_TEXT}%b${C_RESET}\n" "$*"
 }
 
 
-log_warning()
+
+_log_fail()
 {
-   if [ "${MULLE_FLAG_LOG_TERSE}" != 'YES' ]
+   _log_printf "${C_ERROR}${MULLE_EXECUTABLE_FAIL_PREFIX}${MULLE_LOG_FAIL_ERROR_PREFIX}${C_ERROR_TEXT}%b${C_RESET}\n" "$*"
+}
+
+
+_log_warning()
+{
+   if [ "${MULLE_FLAG_LOG_TERSE:-}" != 'YES' ]
    then
-      log_printf "${C_WARNING}%b${C_RESET}\n" "$*"
+      _log_printf "${C_WARNING}%b${C_RESET}\n" "$*"
    fi
 }
 
 
-log_info()
+_log_info()
 {
-   if [ "${MULLE_FLAG_LOG_TERSE}" != 'YES' ]
+   if [ "${MULLE_FLAG_LOG_TERSE:-}" != 'YES' ]
    then
-      log_printf "${C_INFO}%b${C_RESET}\n" "$*"
+      _log_printf "${C_INFO}%b${C_RESET}\n" "$*"
    fi
 }
 
 
-log_verbose()
+_log_verbose()
 {
-   if [ "${MULLE_FLAG_LOG_VERBOSE}" = 'YES' ]
+   if [ "${MULLE_FLAG_LOG_VERBOSE:-}" = 'YES' ]
    then
-      log_printf "${C_VERBOSE}%b${C_RESET}\n" "$*"
+      _log_printf "${C_VERBOSE}%b${C_RESET}\n" "$*"
    fi
 }
 
 
-log_fluff()
+_log_fluff()
 {
-   if [ "${MULLE_FLAG_LOG_FLUFF}" = 'YES' ]
+   if [ "${MULLE_FLAG_LOG_FLUFF:-}" = 'YES' ]
    then
-      log_printf "${C_FLUFF}%b${C_RESET}\n" "$*"
+      _log_printf "${C_FLUFF}%b${C_RESET}\n" "$*"
    else
-      log_debug "$@"
+      _log_debug "$@"
    fi
 }
 
 
-log_setting()
+_log_setting()
 {
-   if [ "${MULLE_FLAG_LOG_FLUFF}" = 'YES' ]
+   if [ "${MULLE_FLAG_LOG_SETTINGS:-}" = 'YES' ]
    then
-      log_printf "${C_SETTING}%b${C_RESET}\n" "$*"
+      _log_printf "${C_SETTING}%b${C_RESET}\n" "$*"
    fi
 }
 
 
-log_debug()
+_log_debug()
 {
-   if [ "${MULLE_FLAG_LOG_DEBUG}" != 'YES' ]
+   if [ "${MULLE_FLAG_LOG_DEBUG:-}" != 'YES' ]
    then
       return
    fi
 
    case "${MULLE_UNAME}" in
       linux)
-         log_printf "${C_DEBUG}$(date "+%s.%N") %b${C_RESET}\n" "$*"
+         _log_printf "${C_DEBUG}$(date "+%s.%N") %b${C_RESET}\n" "$*"
       ;;
       *)
-         log_printf "${C_DEBUG}$(date "+%s") %b${C_RESET}\n" "$*"
+         _log_printf "${C_DEBUG}$(date "+%s") %b${C_RESET}\n" "$*"
       ;;
    esac
 }
 
 
-log_entry()
+_log_entry()
 {
-   if [ "${MULLE_FLAG_LOG_DEBUG}" != 'YES' ]
+   if [ "${MULLE_FLAG_LOG_DEBUG:-}" != 'YES' ]
    then
       return
    fi
@@ -467,50 +469,85 @@ log_entry()
       shift
    done
 
-   log_debug "${functionname} ${args}"
+   _log_debug "${functionname} ${args}"
 }
 
 
-log_trace()
+_log_trace()
 {
    case "${MULLE_UNAME}" in
       linux)
-         log_printf "${C_TRACE}$(date "+%s.%N") %b${C_RESET}\n" "$*"
+         _log_printf "${C_TRACE}$(date "+%s.%N") %b${C_RESET}\n" "$*"
          ;;
 
       *)
-         log_printf "${C_TRACE}$(date "+%s") %b${C_RESET}\n" "$*"
+         _log_printf "${C_TRACE}$(date "+%s") %b${C_RESET}\n" "$*"
       ;;
    esac
 }
 
 
-log_trace2()
-{
-   case "${MULLE_UNAME}" in
-      linux)
-         log_printf "${C_TRACE2}$(date "+%s.%N") %b${C_RESET}\n" "$*"
-         ;;
+alias log_debug='_log_debug'
+alias log_entry='_log_entry'
+alias log_error='_log_error'
+alias log_fluff='_log_fluff'
+alias log_info='_log_info'
+alias log_setting='_log_setting'
+alias log_trace='_log_trace'
+alias log_verbose='_log_verbose'
+alias log_warning='_log_warning'
 
-      *)
-         log_printf "${C_TRACE2}$(date "+%s") %b${C_RESET}\n" "$*"
-      ;;
-   esac
+
+log_set_trace_level()
+{
+   if [ "${MULLE_FLAG_LOG_DEBUG:-}" != 'YES' ]
+   then
+      alias log_entry=': #'
+      alias log_debug=': #'
+   fi
+
+   if [ "${MULLE_FLAG_LOG_SETTINGS:-}" != 'YES' ]
+   then
+      alias log_setting=': #'
+   fi
+
+   if [ "${MULLE_FLAG_LOG_FLUFF:-}" != 'YES' ]
+   then
+      if [ "${MULLE_FLAG_LOG_DEBUG:-}" = 'YES' ]
+      then
+         alias log_fluff='log_debug'
+      else
+         alias log_fluff=': #'
+      fi
+   fi
+
+   if [ "${MULLE_FLAG_LOG_VERBOSE:-}" != 'YES' ]
+   then
+      alias log_verbose=': #'
+   fi
+
+   if [ "${MULLE_FLAG_LOG_TERSE:-}" = 'YES' ]
+   then
+      alias log_info=': #'
+      alias log_warning=': #'
+   fi
+   :
 }
 
 
 
-
-if [ -z "${BASH_VERSION}" ]
+if [ ${ZSH_VERSION+x} ]
 then
    function caller()
-   {
+   ( # sic!
       local i="${1:-1}"
 
+      set +u
       i=$((i+1))
       local file=${funcfiletrace[$((i))]%:*}
-      local line line=${funcfiletrace[$((i))]##*:}
+      local line=${funcfiletrace[$((i))]##*:}
       local func=${funcstack[$((i + 1))]}
+
       if [ -z "${func## }" ]
       then
          return 1
@@ -518,26 +555,28 @@ then
 
       printf "%s %s %s\n" "$line" "$func" "${file##*/}"
       return 0
-   }
+   ) # sic!
 fi
 
 
 stacktrace()
 {
-   local i=1
-   local line
-   local max
-
    case "$-" in
       *x*)
          return
       ;;
    esac
 
+   local i
+   local line
+   local max
+
+   i=1
    max=100
+
    while line="`caller $i`"
    do
-      log_printf "${C_CYAN}%b${C_RESET}\n" "$i: #${line}"
+      _log_printf "${C_CYAN}%b${C_RESET}\n" "$i: #${line}"
       i=$((i + 1))
       [ $i -gt $max ] && break
    done
@@ -548,10 +587,10 @@ fail()
 {
    if [ ! -z "$*" ]
    then
-      log_fail "$*"
+      _log_fail "$@"
    fi
 
-   if [ "${MULLE_FLAG_LOG_DEBUG}" = 'YES' ]
+   if [ "${MULLE_FLAG_LOG_DEBUG:-}" = 'YES' ]
    then
       stacktrace
    fi
@@ -563,10 +602,9 @@ fail()
 MULLE_INTERNAL_ERROR_PREFIX=" *** internal error ***:"
 
 
-internal_fail()
+_internal_fail()
 {
-   log_printf "${C_ERROR}${MULLE_EXECUTABLE_FAIL_PREFIX}\
-${MULLE_INTERNAL_ERROR_PREFIX}${C_ERROR_TEXT}%b${C_RESET}\n" "$*"
+   _log_printf "${C_ERROR}${MULLE_EXECUTABLE_FAIL_PREFIX}${MULLE_INTERNAL_ERROR_PREFIX}${C_ERROR_TEXT}%b${C_RESET}\n" "$*"
    stacktrace
    exit 1
 }
@@ -574,13 +612,13 @@ ${MULLE_INTERNAL_ERROR_PREFIX}${C_ERROR_TEXT}%b${C_RESET}\n" "$*"
 
 _fatal()
 {
-   internal_fail "$@"
+   _internal_fail "$@"
 }
 
 
 logging_reset()
 {
-   printf "${C_RESET}" >&2
+   printf "%b" "${C_RESET}" >&2
 }
 
 
@@ -593,13 +631,13 @@ logging_trap_install()
 logging_initialize_color()
 {
 
-   case "${TERM}" in
+   case "${TERM:-}" in
       dumb)
          MULLE_NO_COLOR=YES
       ;;
    esac
 
-   if [ -z "${NO_COLOR}" -a "${MULLE_NO_COLOR}" != 'YES' ] && [ ! -f /dev/stderr ]
+   if [ -z "${NO_COLOR:-}" -a "${MULLE_NO_COLOR:-}" != 'YES' ] && [ ! -f /dev/stderr ]
    then
       C_RESET="\033[0m"
 
@@ -612,7 +650,7 @@ logging_initialize_color()
       C_FAINT="\033[2m"
       C_SPECIAL_BLUE="\033[38;5;39;40m"
 
-      if [ "${MULLE_LOGGING_TRAP}" != 'NO' ]
+      if [ "${MULLE_LOGGING_TRAP:-}" != 'NO' ]
       then
          logging_trap_install
       fi
@@ -634,25 +672,6 @@ logging_initialize_color()
 }
 
 
-_r_lowercase()
-{
-   case "${BASH_VERSION}" in
-      [4-9]*|[1-9][0-9]*)
-         RVAL="${1,,}"
-         return
-      ;;
-   esac
-
-   if [ ! -z "${ZSH_VERSION}" ]
-   then
-      RVAL="${1:l}"
-      return
-   fi
-
-   RVAL="`printf "$1" | tr '[:upper:]' '[:lower:]'`"
-}
-
-
 logging_initialize()
 {
    logging_initialize_color
@@ -663,7 +682,7 @@ logging_initialize "$@"
 
 fi
 :
-if [ -z "${MULLE_EXEKUTOR_SH}" ]
+if ! [ ${MULLE_EXEKUTOR_SH+x} ]
 then
 MULLE_EXEKUTOR_SH="included"
 
@@ -676,13 +695,17 @@ exekutor_print_arrow()
 {
    local arrow
 
-   [ -z "${MULLE_EXECUTABLE_PID}" ] && internal_fail "MULLE_EXECUTABLE_PID not set"
+   [ -z "${MULLE_EXECUTABLE_PID}" ] && _internal_fail "MULLE_EXECUTABLE_PID not set"
 
-   if [ -z "${MULLE_EXEKUTOR_LOG_DEVICE}"  \
-        -a ! -z "${BASHPID}" \
-        -a "${MULLE_EXECUTABLE_PID}" != "${BASHPID}" ]
+   local pid
+
+   pid="${BASHPID:-$$}"
+
+   if [ -z "${MULLE_EXEKUTOR_LOG_DEVICE:-}"  \
+        -a ${pid} -ne 0 \
+        -a "${MULLE_EXECUTABLE_PID}" != "${pid}" ]
    then
-      arrow="=[${BASHPID:-0}]=>"
+      arrow="=[${pid}]=>"
    else
       arrow="==>"
    fi
@@ -723,7 +746,7 @@ eval_exekutor_print()
 
    while [ $# -ne 0 ]
    do
-      printf "%s" " `echo \"$1\"`"  # what was the point of that ?
+      printf " %s" "$1"  # what was the point of that ?
       shift
    done
    printf '\n'
@@ -734,9 +757,9 @@ exekutor_trace()
 {
    local printer="$1"; shift
 
-   if [ "${MULLE_FLAG_LOG_EXEKUTOR}" = 'YES' ]
+   if [ "${MULLE_FLAG_LOG_EXEKUTOR:-}" = 'YES' ]
    then
-      if [ -z "${MULLE_EXEKUTOR_LOG_DEVICE}" ]
+      if [ -z "${MULLE_EXEKUTOR_LOG_DEVICE:-}" ]
       then
          ${printer} "$@" >&2
       else
@@ -752,9 +775,9 @@ exekutor_trace_output()
    local redirect="$1"; shift
    local output="$1"; shift
 
-   if [ "${MULLE_FLAG_LOG_EXEKUTOR}" = 'YES' ]
+   if [ "${MULLE_FLAG_LOG_EXEKUTOR:-}" = 'YES' ]
    then
-      if [ -z "${MULLE_EXEKUTOR_LOG_DEVICE}" ]
+      if [ -z "${MULLE_EXEKUTOR_LOG_DEVICE:-}" ]
       then
          ${printer} "$@" "${redirect}" "${output}" >&2
       else
@@ -768,14 +791,16 @@ exekutor()
 {
    exekutor_trace "exekutor_print" "$@"
 
-   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = 'YES' ]
+   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN:-}" = 'YES' ]
    then
       return
    fi
 
    "$@"
-
    MULLE_EXEKUTOR_RVAL=$?
+
+   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-127}" ] && stacktrace
+
    return ${MULLE_EXEKUTOR_RVAL}
 }
 
@@ -785,8 +810,10 @@ rexekutor()
    exekutor_trace "exekutor_print" "$@"
 
    "$@"
-
    MULLE_EXEKUTOR_RVAL=$?
+
+   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-127}" ] && stacktrace
+
    return ${MULLE_EXEKUTOR_RVAL}
 }
 
@@ -795,7 +822,7 @@ eval_exekutor()
 {
    exekutor_trace "eval_exekutor_print" "$@"
 
-   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = 'YES' ]
+   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN:-}" = 'YES' ]
    then
       return
    fi
@@ -803,7 +830,7 @@ eval_exekutor()
    eval "$@"
    MULLE_EXEKUTOR_RVAL=$?
 
-   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-18}" ] && stacktrace
+   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-127}" ] && stacktrace
 
    return ${MULLE_EXEKUTOR_RVAL}
 }
@@ -816,7 +843,7 @@ eval_rexekutor()
    eval "$@"
    MULLE_EXEKUTOR_RVAL=$?
 
-   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-18}" ] && stacktrace
+   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-127}" ] && stacktrace
 
    return ${MULLE_EXEKUTOR_RVAL}
 }
@@ -826,16 +853,15 @@ _eval_exekutor()
 {
    exekutor_trace "eval_exekutor_print" "$@"
 
-   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = 'YES' ]
+   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN:-}" = 'YES' ]
    then
       return
    fi
 
    eval "$@"
-
    MULLE_EXEKUTOR_RVAL=$?
 
-   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-18}" ] && stacktrace
+   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-127}" ] && stacktrace
 
    return ${MULLE_EXEKUTOR_RVAL}
 }
@@ -847,16 +873,15 @@ redirect_exekutor()
 
    exekutor_trace_output "exekutor_print" '>' "${output}" "$@"
 
-   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = 'YES' ]
+   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN:-}" = 'YES' ]
    then
       return
    fi
 
    ( "$@" ) > "${output}"
-
    MULLE_EXEKUTOR_RVAL=$?
 
-   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-18}" ] && stacktrace
+   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-127}" ] && stacktrace
 
    return ${MULLE_EXEKUTOR_RVAL}
 }
@@ -868,7 +893,7 @@ redirect_eval_exekutor()
 
    exekutor_trace_output "eval_exekutor_print" '>' "${output}" "$@"
 
-   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = 'YES' ]
+   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN:-}" = 'YES' ]
    then
       return
    fi
@@ -877,7 +902,7 @@ redirect_eval_exekutor()
 
    MULLE_EXEKUTOR_RVAL=$?
 
-   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-18}" ] && stacktrace
+   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-127}" ] && stacktrace
 
    return ${MULLE_EXEKUTOR_RVAL}
 }
@@ -889,7 +914,7 @@ redirect_append_exekutor()
 
    exekutor_trace_output "exekutor_print" '>>' "${output}" "$@"
 
-   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = 'YES' ]
+   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN:-}" = 'YES' ]
    then
       return
    fi
@@ -898,7 +923,7 @@ redirect_append_exekutor()
 
    MULLE_EXEKUTOR_RVAL=$?
 
-   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-18}" ] && stacktrace
+   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-127}" ] && stacktrace
 
    return ${MULLE_EXEKUTOR_RVAL}
 }
@@ -910,7 +935,7 @@ _redirect_append_eval_exekutor()
 
    exekutor_trace_output "eval_exekutor_print" '>>' "${output}" "$@"
 
-   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = 'YES' ]
+   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN:-}" = 'YES' ]
    then
       return
    fi
@@ -919,7 +944,7 @@ _redirect_append_eval_exekutor()
 
    MULLE_EXEKUTOR_RVAL=$?
 
-   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-18}" ] && stacktrace
+   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-127}" ] && stacktrace
 
    return ${MULLE_EXEKUTOR_RVAL}
 }
@@ -932,18 +957,23 @@ _append_tee_exekutor()
 
    exekutor_trace_output "eval_exekutor_print" '>>' "${output}" "$@"
 
-   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = 'YES' ]
+   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN:-}" = 'YES' ]
    then
       return
    fi
 
-   ( "$@" ) 2>&1 | tee -a "${teeoutput}" "${output}"
+   if [ ${ZSH_VERSION+x} ]
+   then
+      ( "$@" ) 2>&1 | tee -a "${teeoutput}" "${output}"
+      MULLE_EXEKUTOR_RVAL=${pipestatus[1]}
+   else
+      ( "$@" ) 2>&1 | tee -a "${teeoutput}" "${output}"
+      MULLE_EXEKUTOR_RVAL=${PIPESTATUS[0]}
+   fi
 
-   MULLE_EXEKUTOR_RVAL=${PIPESTATUS[0]}
+   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-127}" ] && stacktrace
 
-   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-18}" ] && stacktrace
-
-   return ${MULLE_EXEKUTOR_RVAL}
+   return "${MULLE_EXEKUTOR_RVAL}"
 }
 
 
@@ -954,18 +984,23 @@ _append_tee_eval_exekutor()
 
    exekutor_trace_output "eval_exekutor_print" '>>' "${output}" "$@"
 
-   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = 'YES' ]
+   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN:-}" = 'YES' ]
    then
       return
    fi
 
-   ( eval "$@" ) 2>&1 | tee -a "${teeoutput}" "${output}"
+   if [ ${ZSH_VERSION+x} ]
+   then
+      ( eval "$@" ) 2>&1 | tee -a "${teeoutput}" "${output}"
+      MULLE_EXEKUTOR_RVAL=${pipestatus[1]}
+   else
+      ( eval "$@" ) 2>&1 | tee -a "${teeoutput}" "${output}"
+      MULLE_EXEKUTOR_RVAL=${PIPESTATUS[0]}
+   fi
 
-   MULLE_EXEKUTOR_RVAL=${PIPESTATUS[0]}
+   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-127}" ] && stacktrace
 
-   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-18}" ] && stacktrace
-
-   return ${MULLE_EXEKUTOR_RVAL}
+   return "${MULLE_EXEKUTOR_RVAL}"
 }
 
 
@@ -974,7 +1009,7 @@ logging_tee_exekutor()
    local output="$1"; shift
    local teeoutput="$1"; shift
 
-   if [ "${MULLE_FLAG_LOG_EXEKUTOR}" != 'YES' ]
+   if [ "${MULLE_FLAG_LOG_EXEKUTOR:-}" != 'YES' ]
    then
       exekutor_print "$@" >> "${teeoutput}"
    fi
@@ -989,7 +1024,7 @@ logging_tee_eval_exekutor()
    local output="$1"; shift
    local teeoutput="$1"; shift
 
-   if [ "${MULLE_FLAG_LOG_EXEKUTOR}" != 'YES' ]
+   if [ "${MULLE_FLAG_LOG_EXEKUTOR:-}" != 'YES' ]
    then
       eval_exekutor_print "$@" >> "${teeoutput}"
    fi
@@ -1002,7 +1037,7 @@ logging_redirekt_exekutor()
 {
    local output="$1"; shift
 
-   if [ "${MULLE_FLAG_LOG_EXEKUTOR}" != 'YES' ]
+   if [ "${MULLE_FLAG_LOG_EXEKUTOR:-}" != 'YES' ]
    then
       exekutor_print "$@" >> "${output}"
    fi
@@ -1014,7 +1049,7 @@ logging_redirect_eval_exekutor()
 {
    local output="$1"; shift
 
-   if [ "${MULLE_FLAG_LOG_EXEKUTOR}" != 'YES' ]
+   if [ "${MULLE_FLAG_LOG_EXEKUTOR:-}" != 'YES' ]
    then
       eval_exekutor_print "$@" >> "${output}"
    fi
@@ -1029,7 +1064,7 @@ rexecute_column_table_or_cat()
    local cmd
    local column_cmds="mulle-column column cat"
 
-   if [ -z "${COLUMN}" ]
+   if ! [ ${COLUMN+x} ]
    then
       .for cmd in ${column_cmds}
       .do
@@ -1058,7 +1093,7 @@ rexecute_column_table_or_cat()
 
 fi
 :
-if [ -z "${MULLE_STRING_SH}" ]
+if ! [ ${MULLE_STRING_SH+x} ]
 then
 MULLE_STRING_SH="included"
 
@@ -1218,6 +1253,7 @@ r_remove_line()
 
    local delim
 
+   delim=""
    RVAL=
 
    .foreachline line in ${lines}
@@ -1240,6 +1276,7 @@ r_remove_line_once()
 
    local delim
 
+   delim=""
    RVAL=
 
    .foreachline line in ${lines}
@@ -1266,15 +1303,16 @@ r_remove_last_line()
    RVAL="$(sed '$d' <<< "$1")"  # remove last line
 }
 
+
 find_item()
 {
    local line="$1"
    local search="$2"
    local delim="${3:-,}"
 
-   shell_is_extglob_enabled || internal_fail "need extglob enabled"
+   shell_is_extglob_enabled || _internal_fail "need extglob enabled"
 
-   if [ ! -z "${ZSH_VERSION}" ]
+   if [ ${ZSH_VERSION+x} ]
    then
       case "${delim}${line}${delim}" in
          *"${delim}${~search}${delim}"*)
@@ -1303,6 +1341,7 @@ find_empty_line_zsh()
 
    return 1
 }
+
 
 find_line_zsh()
 {
@@ -1336,7 +1375,7 @@ find_line_zsh()
 
 find_line()
 {
-   if [ ! -z "${ZSH_VERSION}" ]
+   if [ ${ZSH_VERSION+x} ]
    then
       find_line_zsh "$@"
       return $?
@@ -1361,9 +1400,9 @@ ${lines}
 
    rval=1
 
-   shell_is_extglob_enabled || internal_fail "extglob must be enabled"
+   shell_is_extglob_enabled || _internal_fail "extglob must be enabled"
 
-   if [ ! -z "${ZSH_VERSION}" ]
+   if [ ${ZSH_VERSION+x} ]
    then
       case "${escaped_lines}" in
          *"\\n${~pattern}\\n"*)
@@ -1445,6 +1484,7 @@ r_reverse_lines()
    local line
    local delim
 
+   delim=""
    RVAL=
 
    IFS=$'\n'
@@ -1488,7 +1528,8 @@ r_filepath_concat()
    local sep
    local fallback
 
-   fallback=
+   s=""
+   fallback=""
 
    for i in "$@"
    do
@@ -1556,14 +1597,14 @@ filepath_concat()
 
 r_upper_firstchar()
 {
-   case "${BASH_VERSION}" in
+   case "${BASH_VERSION:-}" in
       [0123]*)
-         RVAL="`printf "${1:0:1}" | tr '[:lower:]' '[:upper:]'`"
+         RVAL="`printf "%s" "${1:0:1}" | tr '[:lower:]' '[:upper:]'`"
          RVAL="${RVAL}${1:1}"
       ;;
 
       *)
-         if [ ! -z "${ZSH_VERSION}" ]
+         if [ ${ZSH_VERSION+x} ]
          then
             RVAL="${1:0:1}"
             RVAL="${RVAL:u}${1:1}"
@@ -1585,13 +1626,13 @@ r_capitalize()
 
 r_uppercase()
 {
-   case "${BASH_VERSION}" in
+   case "${BASH_VERSION:-}" in
       [0123]*)
-         RVAL="`printf "$1" | tr '[:lower:]' '[:upper:]'`"
+         RVAL="`printf "%s" "$1" | tr '[:lower:]' '[:upper:]'`"
       ;;
 
       *)
-         if [ ! -z "${ZSH_VERSION}" ]
+         if [ ${ZSH_VERSION+x} ]
          then
             RVAL="${1:u}"
          else
@@ -1604,13 +1645,13 @@ r_uppercase()
 
 r_lowercase()
 {
-   case "${BASH_VERSION}" in
+   case "${BASH_VERSION:-}" in
       [0123]*)
-         RVAL="`printf "$1" | tr '[:upper:]' '[:lower:]'`"
+         RVAL="`printf "%s" "$1" | tr '[:upper:]' '[:lower:]'`"
       ;;
 
       *)
-         if [ ! -z "${ZSH_VERSION}" ]
+         if [ ${ZSH_VERSION+x} ]
          then
             RVAL="${1:l}"
          else
@@ -1835,6 +1876,7 @@ _r_prefix_with_unquoted_string()
    local e_prefix
    local head
 
+   head=""
    while :
    do
       prefix="${s%%${c}*}"             # a${
@@ -1876,6 +1918,8 @@ _r_expand_string()
    local default_value
    local head
    local found
+
+   head=""
 
    while [ ${#_s} -ne 0 ]
    do
@@ -1949,7 +1993,7 @@ _r_expand_string()
 
       if [ "${_expand}" = 'YES' ]
       then
-         if [ ! -z "${ZSH_VERSION}" ]
+         if [ ${ZSH_VERSION+x} ]
          then
             value="${(P)identifier:-${default_value}}"
          else
@@ -1984,7 +2028,7 @@ r_expanded_string()
 
 fi
 :
-if [ -z "${MULLE_INIT_SH}" ]
+if ! [ ${MULLE_INIT_SH+x} ]
 then
 MULLE_INIT_SH="included"
 
@@ -2056,8 +2100,7 @@ r_resolve_symlinks()
 
    RVAL="$1"
 
-   filepath="`readlink "${RVAL}"`"
-   if [ $? -eq 0 ]
+   if filepath="`readlink "${RVAL}"`"
    then
       r_dirname "${RVAL}"
       r_prepend_path_if_relative "${RVAL}" "${filepath}"
@@ -2155,7 +2198,7 @@ call_with_flags()
 
 fi
 :
-if [ -z "${MULLE_OPTIONS_SH}" ]
+if ! [ ${MULLE_OPTIONS_SH+x} ]
 then
 MULLE_OPTIONS_SH="included"
 
@@ -2174,13 +2217,17 @@ options_dump_env()
 
 options_setup_trace()
 {
+   local mode="$1"
 
-   if [ "${MULLE_FLAG_LOG_ENVIRONMENT}" = YES ]
+   local rc
+
+   if [ "${MULLE_FLAG_LOG_ENVIRONMENT:-}" = YES ]
    then
       options_dump_env
    fi
 
-   case "${1}" in
+   rc=2
+   case "${mode}" in
       VERBOSE)
          MULLE_FLAG_LOG_VERBOSE='YES'
       ;;
@@ -2201,15 +2248,17 @@ options_setup_trace()
          MULLE_FLAG_LOG_FLUFF='YES'
          MULLE_FLAG_LOG_VERBOSE='YES'
 
-         if [ "${MULLE_TRACE_POSTPONE}" != 'YES' ]
+         if [ "${MULLE_TRACE_POSTPONE:-}" != 'YES' ]
          then
             PS4="+ ${ps4string} + "
          fi
-         return 0
+         rc=0
       ;;
    esac
 
-   return 2
+   log_set_trace_level
+
+   return $rc
 }
 
 
@@ -2231,7 +2280,7 @@ _options_technical_flags_usage()
    -v${S}${S}${S}${DELIMITER}be verbose (increase with -vv, -vvv)
 EOF
 
-   if [ ! -z "${MULLE_TRACE}" ]
+   if [ ! -z "${MULLE_TRACE:-}" ]
    then
       cat <<EOF
    -ld${S}${S}${DELIMITER}additional debug output
@@ -2251,14 +2300,14 @@ options_technical_flags_usage()
 
 before_trace_fail()
 {
-   [ "${MULLE_TRACE}" = '1848' ] || \
+   [ "${MULLE_TRACE:-}" = '1848' ] || \
       fail "option \"$1\" must be specified after -t"
 }
 
 
 after_trace_warning()
 {
-   [ "${MULLE_TRACE}" = '1848' ] && \
+   [ "${MULLE_TRACE:-}" = '1848' ] && \
       log_warning "warning: ${MULLE_EXECUTABLE_FAIL_PREFIX}: $1 after -t invalidates -t"
 }
 
@@ -2354,7 +2403,7 @@ options_technical_flags()
 
       -lt|--trace)
          MULLE_TRACE='1848'
-         if [ ! -z "${ZSH_VERSION}" ]
+         if [ ${ZSH_VERSION+x} ]
          then
             ps4string='%1x:%I' # TODO: fix for zsh
          else
@@ -2364,7 +2413,7 @@ options_technical_flags()
 
       -lT)
          MULLE_TRACE='1848'
-         if [ ! -z "${ZSH_VERSION}" ]
+         if [ ${ZSH_VERSION+x} ]
          then
             ps4string='%1x:%I'
          else
@@ -2375,7 +2424,7 @@ options_technical_flags()
 
       -tfpwd|--trace-full-pwd)
          before_trace_fail "${flag}"
-         if [ ! -z "${ZSH_VERSION}" ]
+         if [ ${ZSH_VERSION+x} ]
          then
             ps4string='%1x:%I \"\w\"'
          else
@@ -2388,10 +2437,10 @@ options_technical_flags()
    
             case "${MULLE_UNAME}" in
                '')
-                  internal_fail 'MULLE_UNAME must be set by now'
+                  _internal_fail 'MULLE_UNAME must be set by now'
                ;;
                linux)
-                  if [ ! -z "${ZSH_VERSION}" ]
+                  if [ ${ZSH_VERSION+x} ]
                   then
                      ps4string='$(date "+%s.%N (%1x:%I)")'
                   else
@@ -2399,7 +2448,7 @@ options_technical_flags()
                   fi
                ;;
                *)
-                  if [ ! -z "${ZSH_VERSION}" ]
+                  if [ ${ZSH_VERSION+x} ]
                   then
                      ps4string='$(date "+%s (%1x:%I)")'
                   else
@@ -2417,7 +2466,7 @@ options_technical_flags()
 
       -tpwd|--trace-pwd)
          before_trace_fail "${flag}"
-         if [ ! -z "${ZSH_VERSION}" ]
+         if [ ${ZSH_VERSION+x} ]
          then
             ps4string='%1x:%I \".../\W\"'
          else
@@ -2437,7 +2486,7 @@ options_technical_flags()
 
       -T*T)
          MULLE_TRACE='1848'
-         if [ ! -z "${ZSH_VERSION}" ]
+         if [ ${ZSH_VERSION+x} ]
          then
             ps4string='%1x:%I'
          else
@@ -2507,11 +2556,11 @@ options_technical_flags()
       ;;
    esac
 
-   if [ -z "${MULLE_TECHNICAL_FLAGS}" ]
+   if [ ${MULLE_TECHNICAL_FLAGS+x} ]
    then
-      MULLE_TECHNICAL_FLAGS="${flag}"
-   else
       MULLE_TECHNICAL_FLAGS="${MULLE_TECHNICAL_FLAGS} ${flag}"
+   else
+      MULLE_TECHNICAL_FLAGS="${flag}"
    fi
 
    return 0
@@ -2543,12 +2592,12 @@ _options_mini_main()
       break
    done
 
-   options_setup_trace "${MULLE_TRACE}"
+   options_setup_trace "${MULLE_TRACE:-}"
 }
 
 fi
 :
-if [ -z "${MULLE_PATH_SH}" ]
+if ! [ ${MULLE_PATH_SH+x} ]
 then
 MULLE_PATH_SH="included"
 
@@ -2640,7 +2689,7 @@ _r_canonicalize_file_path()
 
 r_canonicalize_path()
 {
-   [ -z "$1" ] && internal_fail "empty path"
+   [ -z "$1" ] && _internal_fail "empty path"
 
    if [ -d "$1" ]
    then
@@ -2689,7 +2738,7 @@ _r_relative_path_between()
    local a
    local b
 
-   if [ "${MULLE_TRACE_PATHS_FLIP_X}" = 'YES' ]
+   if [ "${MULLE_TRACE_PATHS_FLIP_X:-}" = 'YES' ]
    then
       set +x
    fi
@@ -2701,12 +2750,12 @@ _r_relative_path_between()
    b="${RVAL}"
 
 
-   [ -z "${a}" ] && internal_fail "Empty path (\$1)"
-   [ -z "${b}" ] && internal_fail "Empty path (\$2)"
+   [ -z "${a}" ] && _internal_fail "Empty path (\$1)"
+   [ -z "${b}" ] && _internal_fail "Empty path (\$2)"
 
    __r_relative_path_between "${b}" "${a}"   # flip args (historic)
 
-   if [ "${MULLE_TRACE_PATHS_FLIP_X}" = 'YES' ]
+   if [ "${MULLE_TRACE_PATHS_FLIP_X:-}" = 'YES' ]
    then
       set -x
    fi
@@ -2720,30 +2769,30 @@ r_relative_path_between()
 
    case "${a}" in
       "")
-         internal_fail "First path is empty"
+         _internal_fail "First path is empty"
       ;;
 
       ../*|*/..|*/../*|..)
-         internal_fail "Path \"${a}\" mustn't contain .."
+         _internal_fail "Path \"${a}\" mustn't contain .."
       ;;
 
       ./*|*/.|*/./*|.)
-         internal_fail "Filename \"${a}\" mustn't contain component \".\""
+         _internal_fail "Filename \"${a}\" mustn't contain component \".\""
       ;;
 
 
       /*)
          case "${b}" in
             "")
-               internal_fail "Second path is empty"
+               _internal_fail "Second path is empty"
             ;;
 
             ../*|*/..|*/../*|..)
-               internal_fail "Filename \"${b}\" mustn't contain \"..\""
+               _internal_fail "Filename \"${b}\" mustn't contain \"..\""
             ;;
 
             ./*|*/.|*/./*|.)
-               internal_fail "Filename \"${b}\" mustn't contain \".\""
+               _internal_fail "Filename \"${b}\" mustn't contain \".\""
             ;;
 
 
@@ -2751,7 +2800,7 @@ r_relative_path_between()
             ;;
 
             *)
-               internal_fail "Mixing absolute filename \"${a}\" and relative filename \"${b}\""
+               _internal_fail "Mixing absolute filename \"${a}\" and relative filename \"${b}\""
             ;;
          esac
       ;;
@@ -2759,19 +2808,19 @@ r_relative_path_between()
       *)
          case "${b}" in
             "")
-               internal_fail "Second path is empty"
+               _internal_fail "Second path is empty"
             ;;
 
             ../*|*/..|*/../*|..)
-               internal_fail "Filename \"${b}\" mustn't contain component \"..\"/"
+               _internal_fail "Filename \"${b}\" mustn't contain component \"..\"/"
             ;;
 
             ./*|*/.|*/./*|.)
-               internal_fail "Filename \"${b}\" mustn't contain component \".\""
+               _internal_fail "Filename \"${b}\" mustn't contain component \".\""
             ;;
 
             /*)
-               internal_fail "Mixing relative filename \"${a}\" and absolute filename \"${b}\""
+               _internal_fail "Mixing relative filename \"${a}\" and absolute filename \"${b}\""
             ;;
 
             *)
@@ -2786,11 +2835,12 @@ r_relative_path_between()
 
 r_compute_relative()
 {
-   local name="$1"
+   local name="${1:-}"
 
    local depth
    local relative
 
+   relative=""
    r_path_depth "${name}"
    depth="${RVAL}"
 
@@ -2800,7 +2850,7 @@ r_compute_relative()
       while [ "$depth" -gt 2 ]
       do
          relative="${relative}/.."
-         depth=$(($depth - 1))
+         depth=$((depth - 1))
       done
    fi
 
@@ -2944,11 +2994,11 @@ _r_simplified_path()
    local result
    local remove_empty
 
-
+   result=""
+   last=""
    remove_empty='NO'  # remove trailing slashes
 
-   IFS="/"
-   .for i in ${filepath}
+   .foreachpathcomponent i in ${filepath}
    .do
       case "$i" in
          \.)
@@ -2996,8 +3046,6 @@ _r_simplified_path()
       result="${RVAL}"
    .done
 
-   IFS="${DEFAULT_IFS}"
-   shell_enable_glob
 
    if [ -z "${result}" ]
    then
@@ -3024,14 +3072,14 @@ r_simplified_path()
       ;;
 
       */|*\.\.*|*\./*|*/\.)
-         if [ "${MULLE_TRACE_PATHS_FLIP_X}" = 'YES' ]
+         if [ "${MULLE_TRACE_PATHS_FLIP_X:-}" = 'YES' ]
          then
             set +x
          fi
 
          _r_simplified_path "$@"
 
-         if [ "${MULLE_TRACE_PATHS_FLIP_X}" = 'YES' ]
+         if [ "${MULLE_TRACE_PATHS_FLIP_X:-}" = 'YES' ]
          then
             set -x
          fi
@@ -3066,9 +3114,8 @@ r_assert_sane_path()
    r_simplified_path "$1"
 
    case "${RVAL}" in
-      \$*|~|${HOME}|..|.)
-         log_error "refuse unsafe path \"$1\""
-         exit 1
+      \$*|~|"${HOME}"|..|.)
+         fail "refuse unsafe path \"$1\""
       ;;
 
       /tmp/*)
@@ -3085,12 +3132,19 @@ r_assert_sane_path()
          fi
          RVAL="${filepath}"
       ;;
+
+      *)
+         if [ "${RVAL}" = "${HOME}" ]
+         then
+            fail "refuse unsafe path \"$1\""
+         fi
+      ;;
    esac
 }
 
 fi
 :
-if [ -z "${MULLE_FILE_SH}" ]
+if ! [ ${MULLE_FILE_SH+x} ]
 then
 MULLE_FILE_SH="included"
 
@@ -3103,7 +3157,7 @@ MULLE_FILE_SH="included"
 
 mkdir_if_missing()
 {
-   [ -z "$1" ] && internal_fail "empty path"
+   [ -z "$1" ] && _internal_fail "empty path"
 
    if [ -d "$1" ]
    then
@@ -3167,7 +3221,7 @@ mkdir_parent_if_missing()
 
 dir_is_empty()
 {
-   [ -z "$1" ] && internal_fail "empty path"
+   [ -z "$1" ] && _internal_fail "empty path"
 
    if [ ! -d "$1" ]
    then
@@ -3183,7 +3237,7 @@ dir_is_empty()
 
 rmdir_safer()
 {
-   [ -z "$1" ] && internal_fail "empty path"
+   [ -z "$1" ] && _internal_fail "empty path"
 
    if [ -d "$1" ]
    then
@@ -3196,7 +3250,7 @@ rmdir_safer()
 
 rmdir_if_empty()
 {
-   [ -z "$1" ] && internal_fail "empty path"
+   [ -z "$1" ] && _internal_fail "empty path"
 
    if dir_is_empty "$1"
    then
@@ -3209,7 +3263,7 @@ _create_file_if_missing()
 {
    local filepath="$1" ; shift
 
-   [ -z "${filepath}" ] && internal_fail "empty path"
+   [ -z "${filepath}" ] && _internal_fail "empty path"
 
    if [ -f "${filepath}" ]
    then
@@ -3256,7 +3310,7 @@ merge_line_into_file()
 
 _remove_file_if_present()
 {
-   [ -z "$1" ] && internal_fail "empty path"
+   [ -z "$1" ] && _internal_fail "empty path"
 
    if ! rm -f "$1" 2> /dev/null
    then
@@ -3304,7 +3358,7 @@ _r_make_tmp_in_dir_uuidgen()
 
    local tmpdir="$1"
    local name="$2"
-   local filetype="$3"
+   local filetype="${3:-f}"
 
    local MKDIR
    local TOUCH
@@ -3326,7 +3380,7 @@ _r_make_tmp_in_dir_uuidgen()
 
    while :
    do
-      uuid="`"${UUIDGEN}"`" || internal_fail "uuidgen failed"
+      uuid="`"${UUIDGEN}"`" || _internal_fail "uuidgen failed"
       RVAL="${tmpdir}/${name}-${uuid:0:${len}}"
 
       case "${filetype}" in
@@ -3356,7 +3410,7 @@ _r_make_tmp_in_dir()
 {
    local tmpdir="$1"
    local name="$2"
-   local filetype="$3"
+   local filetype="${3:-f}"
 
    mkdir_if_missing "${tmpdir}"
 
@@ -3382,7 +3436,7 @@ _r_make_tmp_in_dir()
 r_make_tmp()
 {
    local name="$1"
-   local filetype="$2"
+   local filetype="${2:-f}"
 
    local tmpdir
 
@@ -3392,7 +3446,8 @@ r_make_tmp()
       ;;
 
       *)
-         r_filepath_cleaned "${TMPDIR}"
+         tmpdir="${TMP:-${TMPDIR:-${TMP_DIR:-}}}"
+         r_filepath_cleaned "${tmpdir}"
          tmpdir="${RVAL}"
       ;;
    esac
@@ -3483,7 +3538,8 @@ create_symlink()
 
    local oldlink
 
-   if [ -L "${oldlink}" ]
+   oldlink=""
+   if [ -L "${stashdir}" ]
    then
       oldlink="`readlink "${stashdir}"`"
    fi
@@ -3587,7 +3643,7 @@ dirs_contain_same_files()
 
    if [ ! -d "${etcdir}" -o ! -e "${etcdir}" ]
    then
-      internal_fail "Both directories \"${etcdir}\" and \"${sharedir}\" need to exist"
+      _internal_fail "Both directories \"${etcdir}\" and \"${sharedir}\" need to exist"
    fi
 
    etcdir="${etcdir%%/}"
@@ -3680,7 +3736,7 @@ inplace_sed()
 
 fi
 :
-if [ -z "${MULLE_ARRAY_SH}" ]
+if ! [ ${MULLE_ARRAY_SH+x} ]
 then
 MULLE_ARRAY_SH="included"
 
@@ -3693,7 +3749,7 @@ function array_value_check()
 
    case "${value}" in
       *$'\n'*)
-         internal_fail "\"${value}\" has unescaped linefeeds"
+         _internal_fail "\"${value}\" has unescaped linefeeds"
       ;;
    esac
 }
@@ -3726,7 +3782,6 @@ r_insert_line_at_index()
    array_value_check "${value}"
 
    local line
-   local added='NO'
    local rval
 
    RVAL=
@@ -3788,14 +3843,14 @@ function assoc_array_key_check()
 {
    local key="$1"
 
-   [ -z "${key}" ] && internal_fail "key is empty"
+   [ -z "${key}" ] && _internal_fail "key is empty"
 
    local identifier
 
    r_identifier "${key}"
    identifier="${RVAL}"
 
-   [ "${identifier}" != "${key}" -a "${identifier}" != "_${key}" ] && internal_fail "\"${key}\" has non-identifier characters"
+   [ "${identifier}" != "${key}" -a "${identifier}" != "_${key}" ] && _internal_fail "\"${key}\" has non-identifier characters"
 }
 
 
@@ -3827,6 +3882,7 @@ function _r_assoc_array_remove()
    local line
    local delim
 
+   delim=""
    RVAL=
 
    .foreachline line in ${array}
@@ -3891,7 +3947,7 @@ r_assoc_array_set()
 {
    local array="$1"
    local key="$2"
-   local value="$3"
+   local value="${3:-}"
 
    if [ -z "${value}" ]
    then
@@ -3934,7 +3990,7 @@ assoc_array_augment_with_array()
 fi
 :
 
-if [ -z "${MULLE_CASE_SH}" ]
+if ! [ ${MULLE_CASE_SH+x} ]
 then
 MULLE_CASE_SH="included"
 
@@ -3947,14 +4003,12 @@ _r_tweaked_de_camel_case()
    local collect
 
    local c
-   local d
 
    s="${s//ObjC/Objc}"
 
    state='start'
    while [ ! -z "${s}" ]
    do
-      d="${c}"
       c="${s:0:1}"
       s="${s:1}"
 
@@ -4049,7 +4103,7 @@ r_de_camel_case_upcase_identifier()
 fi
 
 :
-if [ -z "${MULLE_PARALLEL_SH}" ]
+if ! [ ${MULLE_PARALLEL_SH+x} ]
 then
 MULLE_PARALLEL_SH="included"
 
@@ -4071,7 +4125,7 @@ very_short_sleep()
 
 r_get_core_count()
 {
-   if [ -z "${MULLE_CORES}" ]
+   if ! [ ${MULLE_CORES+x} ]
    then
       MULLE_CORES="`/usr/bin/nproc 2> /dev/null`"
       if [ -z "${MULLE_CORES}" ]
@@ -4211,7 +4265,7 @@ _parallel_begin()
 {
    log_entry "_parallel_begin" "$@"
 
-   _parallel_maxjobs="$1"
+   _parallel_maxjobs="${1:-0}"
 
    _parallel_jobs=0
    _parallel_fails=0
@@ -4219,10 +4273,10 @@ _parallel_begin()
    r_make_tmp "mulle-parallel" || exit 1
    _parallel_statusfile="${RVAL}"
 
-   if [ -z "${_parallel_maxjobs}" ]
+   if [ ${_parallel_maxjobs} -eq 0 ]
    then
-      _parallel_maxjobs="${MULLE_PARALLEL_MAX_JOBS}"
-      if [ -z "${_parallel_maxjobs}" ]
+      _parallel_maxjobs="${MULLE_PARALLEL_MAX_JOBS:-0}"
+      if [ ${_parallel_maxjobs} -eq 0 ]
       then
          r_get_core_count
          _parallel_maxjobs="${RVAL}"
@@ -4238,12 +4292,10 @@ _parallel_end()
    wait
 
    _parallel_fails="`rexekutor wc -l "${_parallel_statusfile}" | awk '{ printf $1 }'`"
-   if [ "${MULLE_FLAG_LOG_SETTINGS}" = 'YES' ]
-   then
-      log_trace2 "_parallel_jobs : ${_parallel_jobs}"
-      log_trace2 "_parallel_fails: ${_parallel_fails}"
-      log_trace2 "${_parallel_statusfile} : `cat "${_parallel_statusfile}"`"
-   fi
+
+   log_setting "_parallel_jobs : ${_parallel_jobs}"
+   log_setting "_parallel_fails: ${_parallel_fails}"
+   log_setting "${_parallel_statusfile} : `cat "${_parallel_statusfile}"`"
 
    exekutor rm "${_parallel_statusfile}"
 
@@ -4263,7 +4315,7 @@ _parallel_status()
 
    local rval="$1"; shift
 
-   [ -z "${_parallel_statusfile}" ] && internal_fail "_parallel_statusfile must be defined"
+   [ -z "${_parallel_statusfile}" ] && _internal_fail "_parallel_statusfile must be defined"
 
    if [ $rval -ne 0 ]
    then
@@ -4302,7 +4354,7 @@ parallel_execute()
    local _parallel_jobs
    local _parallel_fails
 
-   [ $# -eq 0 ] && internal_fail "missing commandline"
+   [ $# -eq 0 ] && _internal_fail "missing commandline"
 
    _parallel_begin
 
@@ -4323,7 +4375,7 @@ parallel_execute()
 
 fi
 :
-if [ -z "${MULLE_URL_SH}" ]
+if ! [ ${MULLE_URL_SH+x} ]
 then
 MULLE_URL_SH="included"
 
@@ -4423,7 +4475,11 @@ url_parse()
    log_entry "url_parse" "$@"
 
    local url="$1"
-   local s 
+
+   if [ ${ZSH_VERSION+x} ]
+   then
+      setopt local_options BASH_REMATCH
+   fi
 
    case "${url}" in
       *://*|/*)
@@ -4486,6 +4542,11 @@ r_url_get_path()
 
    local url="$1"
 
+   if [ ${ZSH_VERSION+x} ]
+   then
+      setopt local_options BASH_REMATCH
+   fi
+
    RVAL=
    case "${url}" in
       *://*|/*)
@@ -4504,7 +4565,8 @@ r_url_get_path()
 fi
 :
 
-if [ -z "${MULLE_VERSION_SH}" ]
+
+if ! [ ${MULLE_VERSION_SH+x} ]
 then
 MULLE_VERSION_SH="included"
 
@@ -4642,7 +4704,7 @@ is_compatible_version()
 
 fi
 :
-if [ -z "${MULLE_ETC_SH}" ]
+if ! [ ${MULLE_ETC_SH+x} ]
 then
 MULLE_ETC_SH="included"
 
@@ -4714,8 +4776,8 @@ etc_symlink_or_copy_file()
    local filename="$3"
    local symlink="$4"
 
-   [ -f "${srcfile}" ] || internal_fail "\"${srcfile}\" does not exist or is not a file"
-   [ -d "${dstdir}" ]  || internal_fail "\"${dstdir}\" does not exist or is not a directory"
+   [ -f "${srcfile}" ] || _internal_fail "\"${srcfile}\" does not exist or is not a file"
+   [ -d "${dstdir}" ]  || _internal_fail "\"${dstdir}\" does not exist or is not a directory"
 
    local dstfile
 
@@ -4795,7 +4857,6 @@ etc_setup_from_share_if_needed()
    fi
 
    local filename
-   local base
 
    if [ -d "${share}" ] # sometimes it's not there, but find complains
    then

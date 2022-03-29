@@ -1,4 +1,7 @@
-#! /usr/bin/env bash
+# shellcheck shell=bash
+# shellcheck disable=SC2236
+# shellcheck disable=SC2166
+# shellcheck disable=SC2006
 #
 #   Copyright (c) 2021 Nat! - Mulle kybernetiK
 #   All rights reserved.
@@ -29,7 +32,7 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-if [ -z "${MULLE_ETC_SH}" ]
+if ! [ ${MULLE_ETC_SH+x} ]
 then
 MULLE_ETC_SH="included"
 
@@ -106,8 +109,8 @@ etc_symlink_or_copy_file()
    local filename="$3"
    local symlink="$4"
 
-   [ -f "${srcfile}" ] || internal_fail "\"${srcfile}\" does not exist or is not a file"
-   [ -d "${dstdir}" ]  || internal_fail "\"${dstdir}\" does not exist or is not a directory"
+   [ -f "${srcfile}" ] || _internal_fail "\"${srcfile}\" does not exist or is not a file"
+   [ -d "${dstdir}" ]  || _internal_fail "\"${dstdir}\" does not exist or is not a directory"
 
    local dstfile
 
@@ -188,7 +191,6 @@ etc_setup_from_share_if_needed()
    fi
 
    local filename
-   local base
 
    #
    # use per default symlinks and change to file on edit (makes it

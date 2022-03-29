@@ -1,4 +1,7 @@
-#! /usr/bin/env bash
+# shellcheck shell=bash
+# shellcheck disable=SC2236
+# shellcheck disable=SC2166
+# shellcheck disable=SC2006
 #
 #   Copyright (c) 2015 Nat! - Mulle kybernetiK
 #   All rights reserved.
@@ -29,7 +32,7 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-if [ -z "${MULLE_FILE_SH}" ]
+if ! [ ${MULLE_FILE_SH+x} ]
 then
 MULLE_FILE_SH="included"
 
@@ -46,14 +49,12 @@ MULLE_FILE_SH="included"
 #
 mkdir_if_missing()
 {
-   [ -z "$1" ] && internal_fail "empty path"
+   [ -z "$1" ] && _internal_fail "empty path"
 
    if [ -d "$1" ]
    then
       return 0
    fi
-
-   log_fluff "Creating directory \"$1\" (${PWD#${MULLE_USER_PWD}/})"
 
    local rval
 
@@ -62,6 +63,7 @@ mkdir_if_missing()
 
    if [ "${rval}" -eq 0 ]
    then
+      log_fluff "Created directory \"$1\" (${PWD#${MULLE_USER_PWD}/})"
       return 0
    fi
 
@@ -111,7 +113,7 @@ mkdir_parent_if_missing()
 
 dir_is_empty()
 {
-   [ -z "$1" ] && internal_fail "empty path"
+   [ -z "$1" ] && _internal_fail "empty path"
 
    if [ ! -d "$1" ]
    then
@@ -127,7 +129,7 @@ dir_is_empty()
 
 rmdir_safer()
 {
-   [ -z "$1" ] && internal_fail "empty path"
+   [ -z "$1" ] && _internal_fail "empty path"
 
    if [ -d "$1" ]
    then
@@ -140,7 +142,7 @@ rmdir_safer()
 
 rmdir_if_empty()
 {
-   [ -z "$1" ] && internal_fail "empty path"
+   [ -z "$1" ] && _internal_fail "empty path"
 
    if dir_is_empty "$1"
    then
@@ -153,7 +155,7 @@ _create_file_if_missing()
 {
    local filepath="$1" ; shift
 
-   [ -z "${filepath}" ] && internal_fail "empty path"
+   [ -z "${filepath}" ] && _internal_fail "empty path"
 
    if [ -f "${filepath}" ]
    then
@@ -200,7 +202,7 @@ merge_line_into_file()
 
 _remove_file_if_present()
 {
-   [ -z "$1" ] && internal_fail "empty path"
+   [ -z "$1" ] && _internal_fail "empty path"
 
    # we don't want to test before hand if the file exists, because that's
    # slow. If we don't use the -f flag, then we might get stuck on a prompt
@@ -260,7 +262,7 @@ _r_make_tmp_in_dir_uuidgen()
 
    local tmpdir="$1"
    local name="$2"
-   local filetype="$3"
+   local filetype="${3:-f}"
 
    local MKDIR
    local TOUCH
@@ -282,7 +284,7 @@ _r_make_tmp_in_dir_uuidgen()
 
    while :
    do
-      uuid="`"${UUIDGEN}"`" || internal_fail "uuidgen failed"
+      uuid="`"${UUIDGEN}"`" || _internal_fail "uuidgen failed"
       RVAL="${tmpdir}/${name}-${uuid:0:${len}}"
 
       case "${filetype}" in
@@ -312,7 +314,7 @@ _r_make_tmp_in_dir()
 {
    local tmpdir="$1"
    local name="$2"
-   local filetype="$3"
+   local filetype="${3:-f}"
 
    mkdir_if_missing "${tmpdir}"
 
@@ -338,7 +340,7 @@ _r_make_tmp_in_dir()
 r_make_tmp()
 {
    local name="$1"
-   local filetype="$2"
+   local filetype="${2:-f}"
 
    local tmpdir
 
@@ -350,7 +352,8 @@ r_make_tmp()
 
       *)
          # remove trailing '/'
-         r_filepath_cleaned "${TMPDIR}"
+         tmpdir="${TMP:-${TMPDIR:-${TMP_DIR:-}}}"
+         r_filepath_cleaned "${tmpdir}"
          tmpdir="${RVAL}"
       ;;
    esac
@@ -461,7 +464,8 @@ create_symlink()
 
    local oldlink
 
-   if [ -L "${oldlink}" ]
+   oldlink=""
+   if [ -L "${stashdir}" ]
    then
       oldlink="`readlink "${stashdir}"`"
    fi
@@ -578,7 +582,7 @@ dirs_contain_same_files()
 
    if [ ! -d "${etcdir}" -o ! -e "${etcdir}" ]
    then
-      internal_fail "Both directories \"${etcdir}\" and \"${sharedir}\" need to exist"
+      _internal_fail "Both directories \"${etcdir}\" and \"${sharedir}\" need to exist"
    fi
 
    # remove any trailing slashes

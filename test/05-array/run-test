@@ -1,16 +1,19 @@
-#! /usr/bin/env bash
+#! /bin/sh
 
-if [ ! -z "${ZSH_VERSION}" ]
+
+[ "${TRACE}" = 'YES' ] && set -x && : "$0" "$@"
+
+###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
+MULLE_BASHFUNCTIONS_LIBEXEC_DIR="`mulle-bashfunctions libexec-dir`" || exit 1
+export MULLE_BASHFUNCTIONS_LIBEXEC_DIR
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-boot.sh" || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions-all.sh" || exit 1
+###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
+
+if [ ${ZSH_VERSION+x} ]
 then
-   setopt sh_word_split 
+   setopt sh_word_split
 fi
-      
-
-fail()
-{
-   echo "failed:" "$@" "(got \"${result}\", expected \"${expect}\")" >&2
-   exit 1
-}
 
 
 assoc_array_set()
@@ -44,6 +47,7 @@ test_array()
 {
     local array
 
+    array=""
     array="`array_insert "${array}" 0 "VfL"`"
     array="`array_insert "${array}" 1 '1848'`"
     array="`array_insert "${array}" 1 "Bochum"`"
@@ -51,13 +55,13 @@ test_array()
     expect="VfL
 Bochum
 1848"
-    [ "${array}" != "${expect}" ] && fail "test_array #1: >${array}< != >${expect}<"
+    [ "${array}" != "${expect}" ] && _internal_fail "test_array #1: >${array}< != >${expect}<"
 
     array="`array_remove "${array}" "Bochum"`"
 
     expect="VfL
 1848"
-    [  "${array}" != "${expect}" ] && fail "test_array #2"
+    [  "${array}" != "${expect}" ] && _internal_fail "test_array #2"
 
     :
 }
@@ -68,6 +72,7 @@ test_assoc_array()
 {
    local array
 
+   array=""
    array="`assoc_array_set "${array}" "1"  "Riemann"`"
    array="`assoc_array_set "${array}" "21" "Celozzi"`"
    array="`assoc_array_set "${array}" "2"  "Hoogland"`"
@@ -85,21 +90,21 @@ test_assoc_array()
 
    result="`assoc_array_get "${array}" "10"`"
    expect="Eisfeld"
-   [  "${result}" != "${expect}" ] && fail "test_assoc_array #1 "
+   [  "${result}" != "${expect}" ] && _internal_fail "test_assoc_array #1 "
 
    array="`assoc_array_set "${array}" "10"`"
    result="`assoc_array_get "${array}" "10"`"
    expect=''
-   [  "${result}" != "${expect}" ] && fail "test_assoc_array #2"
+   [  "${result}" != "${expect}" ] && _internal_fail "test_assoc_array #2"
 
    result="`assoc_array_get "${array}" "39"`"
    expect="Steipermann"
-   [  "${result}" != "${expect}" ] && fail "test_assoc_array #3"
+   [  "${result}" != "${expect}" ] && _internal_fail "test_assoc_array #3"
 
    array="`assoc_array_set "${array}" "39" "Stiepermann"`"
    result="`assoc_array_get "${array}" "39"`"
    expect="Stiepermann"
-   [  "${result}" != "${expect}" ] && fail "test_assoc_array #4"
+   [  "${result}" != "${expect}" ] && _internal_fail "test_assoc_array #4"
 
    :
 }
@@ -116,16 +121,6 @@ main()
 }
 
 
-init()
-{
-   MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${MULLE_BASHFUNCTIONS_LIBEXEC_DIR:-../../src}"
-
-   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions.sh" || exit 1
-   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-array.sh" || exit 1
-}
-
-
-init "$@"
 main "$@"
 
 

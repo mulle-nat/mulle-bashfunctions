@@ -1,4 +1,9 @@
-#! /usr/bin/env bash
+# shellcheck shell=bash
+# shellcheck disable=SC2236
+# shellcheck disable=SC2166
+# shellcheck disable=SC2006
+# shellcheck disable=SC2196 # egrep
+# shellcheck disable=SC2197 # fgrep
 #
 #   Copyright (c) 2017 Nat! - Mulle kybernetiK
 #   All rights reserved.
@@ -29,7 +34,7 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-if [ -z "${MULLE_VERSION_QUALIFIER_SH}" ]
+if ! [ ${MULLE_VERSION_QUALIFIER_SH+x} ]
 then
 MULLE_VERSION_QUALIFIER_SH="included"
 
@@ -127,7 +132,7 @@ versions_operation()
       ;;
 
       *)
-         internal_fail "unknown operator \"${operator}\""
+         _internal_fail "unknown operator \"${operator}\""
       ;;
    esac
 
@@ -253,7 +258,6 @@ r_versions_qualify()
 
    local versions="$1"
 
-   local expr
    local result
 
    r_versions_qualify_s "${versions}"
@@ -287,19 +291,19 @@ versions_filter()
 
    # used for error messages
    # pick newest by default
-   _choose=tail
+   _choose='tail'
 
    filter="${filter#"${filter%%[![:space:]]*}"}" # remove leading whitespace characters
 
    case "${filter}" in
       [Oo][Ll][Dd][Ee][Ss][Tt]:*)
          filter="${filter:7}"
-         _choose=head
+         _choose='head'
       ;;
 
       [Nn][Ee][Ww][Ee][Ss][Tt]:*)
          filter="${filter:7}"
-         _choose=tail
+         _choose='tail'
       ;;
    esac
 

@@ -1,4 +1,7 @@
-#! /usr/bin/env bash
+# shellcheck shell=bash
+# shellcheck disable=SC2236
+# shellcheck disable=SC2166
+# shellcheck disable=SC2006
 #
 #   Copyright (c) 2015 Nat! - Mulle kybernetiK
 #   All rights reserved.
@@ -29,7 +32,7 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-if [ -z "${MULLE_PATH_SH}" ]
+if ! [ ${MULLE_PATH_SH+x} ]
 then
 MULLE_PATH_SH="included"
 
@@ -132,7 +135,7 @@ _r_canonicalize_file_path()
 
 r_canonicalize_path()
 {
-   [ -z "$1" ] && internal_fail "empty path"
+   [ -z "$1" ] && _internal_fail "empty path"
 
    if [ -d "$1" ]
    then
@@ -187,7 +190,7 @@ _r_relative_path_between()
    local a
    local b
 
-   if [ "${MULLE_TRACE_PATHS_FLIP_X}" = 'YES' ]
+   if [ "${MULLE_TRACE_PATHS_FLIP_X:-}" = 'YES' ]
    then
       set +x
    fi
@@ -202,12 +205,12 @@ _r_relative_path_between()
 #   a="`printf "%s\n" "$1" | sed -e 's|/$||g'`"
 #   b="`printf "%s\n" "$2" | sed -e 's|/$||g'`"
 
-   [ -z "${a}" ] && internal_fail "Empty path (\$1)"
-   [ -z "${b}" ] && internal_fail "Empty path (\$2)"
+   [ -z "${a}" ] && _internal_fail "Empty path (\$1)"
+   [ -z "${b}" ] && _internal_fail "Empty path (\$2)"
 
    __r_relative_path_between "${b}" "${a}"   # flip args (historic)
 
-   if [ "${MULLE_TRACE_PATHS_FLIP_X}" = 'YES' ]
+   if [ "${MULLE_TRACE_PATHS_FLIP_X:-}" = 'YES' ]
    then
       set -x
    fi
@@ -232,30 +235,30 @@ r_relative_path_between()
 
    case "${a}" in
       "")
-         internal_fail "First path is empty"
+         _internal_fail "First path is empty"
       ;;
 
       ../*|*/..|*/../*|..)
-         internal_fail "Path \"${a}\" mustn't contain .."
+         _internal_fail "Path \"${a}\" mustn't contain .."
       ;;
 
       ./*|*/.|*/./*|.)
-         internal_fail "Filename \"${a}\" mustn't contain component \".\""
+         _internal_fail "Filename \"${a}\" mustn't contain component \".\""
       ;;
 
 
       /*)
          case "${b}" in
             "")
-               internal_fail "Second path is empty"
+               _internal_fail "Second path is empty"
             ;;
 
             ../*|*/..|*/../*|..)
-               internal_fail "Filename \"${b}\" mustn't contain \"..\""
+               _internal_fail "Filename \"${b}\" mustn't contain \"..\""
             ;;
 
             ./*|*/.|*/./*|.)
-               internal_fail "Filename \"${b}\" mustn't contain \".\""
+               _internal_fail "Filename \"${b}\" mustn't contain \".\""
             ;;
 
 
@@ -263,7 +266,7 @@ r_relative_path_between()
             ;;
 
             *)
-               internal_fail "Mixing absolute filename \"${a}\" and relative filename \"${b}\""
+               _internal_fail "Mixing absolute filename \"${a}\" and relative filename \"${b}\""
             ;;
          esac
       ;;
@@ -271,19 +274,19 @@ r_relative_path_between()
       *)
          case "${b}" in
             "")
-               internal_fail "Second path is empty"
+               _internal_fail "Second path is empty"
             ;;
 
             ../*|*/..|*/../*|..)
-               internal_fail "Filename \"${b}\" mustn't contain component \"..\"/"
+               _internal_fail "Filename \"${b}\" mustn't contain component \"..\"/"
             ;;
 
             ./*|*/.|*/./*|.)
-               internal_fail "Filename \"${b}\" mustn't contain component \".\""
+               _internal_fail "Filename \"${b}\" mustn't contain component \".\""
             ;;
 
             /*)
-               internal_fail "Mixing relative filename \"${a}\" and absolute filename \"${b}\""
+               _internal_fail "Mixing relative filename \"${a}\" and absolute filename \"${b}\""
             ;;
 
             *)
@@ -302,11 +305,12 @@ r_relative_path_between()
 #
 r_compute_relative()
 {
-   local name="$1"
+   local name="${1:-}"
 
    local depth
    local relative
 
+   relative=""
    r_path_depth "${name}"
    depth="${RVAL}"
 
@@ -316,7 +320,7 @@ r_compute_relative()
       while [ "$depth" -gt 2 ]
       do
          relative="${relative}/.."
-         depth=$(($depth - 1))
+         depth=$((depth - 1))
       done
    fi
 
@@ -477,14 +481,12 @@ _r_simplified_path()
    local result
    local remove_empty
 
-#   log_printf "${C_INFO}%b${C_RESET}\n" "$filepath"
-
+   result=""
+   last=""
    remove_empty='NO'  # remove trailing slashes
 
-   IFS="/"
-   .for i in ${filepath}
+   .foreachpathcomponent i in ${filepath}
    .do
-#      log_printf "${C_FLUFF}%b${C_RESET}\n" "$i"
       case "$i" in
          \.)
            remove_empty='YES'
@@ -532,8 +534,6 @@ _r_simplified_path()
       result="${RVAL}"
    .done
 
-   IFS="${DEFAULT_IFS}"
-   shell_enable_glob
 
    if [ -z "${result}" ]
    then
@@ -568,14 +568,14 @@ r_simplified_path()
       ;;
 
       */|*\.\.*|*\./*|*/\.)
-         if [ "${MULLE_TRACE_PATHS_FLIP_X}" = 'YES' ]
+         if [ "${MULLE_TRACE_PATHS_FLIP_X:-}" = 'YES' ]
          then
             set +x
          fi
 
          _r_simplified_path "$@"
 
-         if [ "${MULLE_TRACE_PATHS_FLIP_X}" = 'YES' ]
+         if [ "${MULLE_TRACE_PATHS_FLIP_X:-}" = 'YES' ]
          then
             set -x
          fi
@@ -615,9 +615,8 @@ r_assert_sane_path()
    r_simplified_path "$1"
 
    case "${RVAL}" in
-      \$*|~|${HOME}|..|.)
-         log_error "refuse unsafe path \"$1\""
-         exit 1
+      \$*|~|"${HOME}"|..|.)
+         fail "refuse unsafe path \"$1\""
       ;;
 
       /tmp/*)
@@ -633,6 +632,13 @@ r_assert_sane_path()
             fail "Refuse suspicious path \"$1\""
          fi
          RVAL="${filepath}"
+      ;;
+
+      *)
+         if [ "${RVAL}" = "${HOME}" ]
+         then
+            fail "refuse unsafe path \"$1\""
+         fi
       ;;
    esac
 }

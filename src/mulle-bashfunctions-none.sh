@@ -28,19 +28,19 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #
 
-if [ -z "${MULLE_BASHGLOBAL_SH}" ]
+if ! [ ${MULLE_BASHGLOBAL_SH+x} ]
 then
    MULLE_BASHGLOBAL_SH="included"
 
    DEFAULT_IFS="${IFS}" # as early as possible
 
-   if [ ! -z "${ZSH_VERSION}" ]
+   if [ ${ZSH_VERSION+x} ]
    then
      setopt sh_word_split
      setopt POSIX_ARGZERO
    fi
 
-   if [ -z "${MULLE_EXECUTABLE}" ]
+   if [ -z "${MULLE_EXECUTABLE:-}" ]
    then
       MULLE_EXECUTABLE="${BASH_SOURCE[0]:-${(%):-%x}}"
       case "${MULLE_EXECUTABLE##*/}" in 
@@ -58,12 +58,12 @@ then
    esac
 
 
-   if [ -z "${MULLE_EXECUTABLE_NAME}" ]
+   if [ -z "${MULLE_EXECUTABLE_NAME:-}" ]
    then
       MULLE_EXECUTABLE_NAME="${MULLE_EXECUTABLE##*/}"
    fi
 
-   if [ -z "${MULLE_USER_PWD}" ]
+   if [ -z "${MULLE_USER_PWD:-}" ]
    then
       MULLE_USER_PWD="${PWD}"
       export MULLE_USER_PWD
@@ -75,16 +75,16 @@ then
    MULLE_EXECUTABLE_FAIL_PREFIX="${MULLE_EXECUTABLE_NAME}"
    MULLE_EXECUTABLE_PID="$$"
 
-   if [ -z "${MULLE_UNAME}" ]
+   if [ -z "${MULLE_UNAME:-}" ]
    then
-      case "${BASH_VERSION}" in
+      case "${BASH_VERSION:-}" in
          [0123]*)
             MULLE_UNAME="`uname | tr '[:upper:]' '[:lower:]'`"
          ;;
 
          *)
             MULLE_UNAME="`uname`"
-            if [ ! -z "${ZSH_VERSION}" ]
+            if [ ${ZSH_VERSION+x} ]
             then
                MULLE_UNAME="${MULLE_UNAME:l}"
             else
@@ -101,7 +101,6 @@ then
          case "${MULLE_UNAME}" in
             *-Microsoft)
                MULLE_UNAME="windows"
-               MULLE_EXE_EXTENSION=".exe"
             ;;
   
             *)
@@ -111,8 +110,12 @@ then
       fi
    fi
 
+   if [ "${MULLE_UNAME}" = "windows" ]
+   then
+      MULLE_EXE_EXTENSION=".exe"
+   fi
 
-   if [ -z "${MULLE_HOSTNAME}" ]
+   if [ -z "${MULLE_HOSTNAME:-}" ]
    then
       case "${MULLE_UNAME}" in
          'mingw'*)
@@ -131,7 +134,7 @@ then
       esac
    fi
 
-   if [ -z "${MULLE_USERNAME}" ]
+   if [ -z "${MULLE_USERNAME:-}" ]
    then
       MULLE_USERNAME="${MULLE_USERNAME:-${USERNAME}}" # mingw
       MULLE_USERNAME="${MULLE_USERNAME:-${USER}}"
@@ -141,19 +144,19 @@ then
    fi
 fi
 
-if [ -z "${MULLE_BASHLOADER_SH}" ]
+if ! [ ${MULLE_BASHLOADER_SH+x} ]
 then
    MULLE_BASHLOADER_SH="included"
 
    r_uppercase()
    {
-      case "${BASH_VERSION}" in
+      case "${BASH_VERSION:-}" in
          [0123]*)
-            RVAL="`printf "$1" | tr '[:lower:]' '[:upper:]'`"
+            RVAL="`printf "%s" "$1" | tr '[:lower:]' '[:upper:]'`"
          ;;
 
          *)
-            if [ ! -z "${ZSH_VERSION}" ]
+            if [ ${ZSH_VERSION+x} ]
             then
                RVAL="${1:u}"
             else
@@ -170,7 +173,7 @@ then
       local filename="$2"
       local libexec_define="$3"
 
-      if [ -z "${!libexec_define}" ]
+      if ! [ ${!libexec_define+x} ]
       then
          printf -v "${libexec_define}" "%s" "`"${executable}" libexec-dir`" || exit 1
          eval export "${libexec_define}"
@@ -182,9 +185,9 @@ then
 
    include_executable_library()
    {
-      local header_define="$4"
+      local includeguard="$4"
 
-      if [ ! -z "${!header_define}" ]
+      if [ ${!includeguard+x} ]
       then
          return
       fi
@@ -192,6 +195,8 @@ then
       r_include_path "$@"
 
        . "${RVAL}" || exit 1
+
+      printf -v "${includeguard}" "YES"
    }
 
    __parse_include_specifier()
@@ -268,8 +273,6 @@ then
 
    include()
    {
-      local s="$1"
-      local namespace="$2"  # default namespace, possibly not useful
 
       local _executable
       local _filename
@@ -306,7 +309,7 @@ then
 
    __bashfunctions_loader || exit 1
 fi
-if [ -z "${MULLE_COMPATIBILITY_SH}" ]
+if ! [ ${MULLE_COMPATIBILITY_SH+x} ]
 then
 MULLE_COMPATIBILITY_SH="included"
 
@@ -336,7 +339,7 @@ shell_is_pipefail_enabled()
 
 shell_enable_extglob()
 {
-   if [ ! -z "${ZSH_VERSION}" ]
+   if [ ${ZSH_VERSION+x} ]
    then
       setopt kshglob
       setopt bareglobqual
@@ -348,7 +351,7 @@ shell_enable_extglob()
 
 shell_disable_extglob()
 {
-   if [ ! -z "${ZSH_VERSION}" ]
+   if [ ${ZSH_VERSION+x} ]
    then
       unsetopt bareglobqual
       unsetopt kshglob
@@ -360,7 +363,7 @@ shell_disable_extglob()
 
 shell_is_extglob_enabled()
 {
-   if [ ! -z "${ZSH_VERSION}" ]
+   if [ ${ZSH_VERSION+x} ]
    then
       [[ -o kshglob ]]
       return $?
@@ -372,7 +375,7 @@ shell_is_extglob_enabled()
 
 shell_enable_nullglob()
 {
-   if [ ! -z "${ZSH_VERSION}" ]
+   if [ ${ZSH_VERSION+x} ]
    then
       setopt nullglob
    else
@@ -383,7 +386,7 @@ shell_enable_nullglob()
 
 shell_disable_nullglob()
 {
-   if [ ! -z "${ZSH_VERSION}" ]
+   if [ ${ZSH_VERSION+x} ]
    then
       unsetopt nullglob
    else
@@ -394,7 +397,7 @@ shell_disable_nullglob()
 
 shell_is_nullglob_enabled()
 {
-   if [ ! -z "${ZSH_VERSION}" ]
+   if [ ${ZSH_VERSION+x} ]
    then
       [[ -o nullglob ]]
       return $?
@@ -405,7 +408,7 @@ shell_is_nullglob_enabled()
 
 shell_enable_glob()
 {
-   if [ ! -z "${ZSH_VERSION}" ]
+   if [ ${ZSH_VERSION+x} ]
    then
       unsetopt noglob
    else
@@ -416,7 +419,7 @@ shell_enable_glob()
 
 shell_disable_glob()
 {
-   if [ ! -z "${ZSH_VERSION}" ]
+   if [ ${ZSH_VERSION+x} ]
    then
       setopt noglob
    else
@@ -427,7 +430,7 @@ shell_disable_glob()
 
 shell_is_glob_enabled()
 {
-   if [ ! -z "${ZSH_VERSION}" ]
+   if [ ${ZSH_VERSION+x} ]
    then
       if [[ -o noglob ]]
       then
@@ -447,7 +450,7 @@ shell_is_glob_enabled()
 
 shell_is_function()
 {
-   if [ ! -z "${ZSH_VERSION}" ]
+   if [ ${ZSH_VERSION+x} ]
    then
       case "`type "$1" `" in
          *function*)
@@ -464,7 +467,7 @@ shell_is_function()
 
 unalias -a
 
-if [ ! -z "${ZSH_VERSION}" ]
+if [ ${ZSH_VERSION+x} ]
 then
    setopt aliases
 
@@ -473,10 +476,9 @@ then
    alias .foreachword="setopt noglob; IFS=' '$'\t'$'\n'; for"
    alias .foreachitem="setopt noglob; IFS=','; for"
    alias .foreachpath="setopt noglob; IFS=':'; for"
+   alias .foreachpathcomponent="set -f; IFS='/'; for"
    alias .foreachcolumn="setopt noglob; IFS=';'; for"
    alias .foreachfile="unsetopt noglob; unsetopt nullglob; IFS=' '$'\t'$'\n'; for"
-
-
    alias .do="do
    unsetopt noglob; unsetopt nullglob; IFS=' '$'\t'$'\n'"
    alias .done="done;unsetopt noglob; unsetopt nullglob; IFS=' '$'\t'$'\n'"
@@ -489,10 +491,9 @@ else
    alias .foreachword="set -f; IFS=' '$'\t'$'\n'; for"
    alias .foreachitem="set -f; IFS=','; for"
    alias .foreachpath="set -f; IFS=':'; for"
+   alias .foreachpathcomponent="set -f; IFS='/'; for"
    alias .foreachcolumn="set -f; IFS=';'; for"
    alias .foreachfile="set +f; shopt -s nullglob; IFS=' '$'\t'$'\n'; for"
-
-
    alias .do="do
 set +f; shopt -u nullglob; IFS=' '$'\t'$'\n'"
    alias .done="done;set +f; shopt -u nullglob; IFS=' '$'\t'$'\n'"

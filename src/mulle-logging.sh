@@ -1,4 +1,7 @@
-#! /usr/bin/env bash
+# shellcheck shell=bash
+# shellcheck disable=SC2236
+# shellcheck disable=SC2166
+# shellcheck disable=SC2006
 #
 #   Copyright (c) 2015 Nat! - Mulle kybernetiK
 #   All rights reserved.
@@ -29,19 +32,20 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-if [ -z "${MULLE_LOGGING_SH}" ]
+if ! [ ${MULLE_LOGGING_SH+x} ]
 then
 MULLE_LOGGING_SH="included"
 
 
-log_printf()
+
+_log_printf()
 {
    local format="$1" ; shift
 
 # convenient place to check something that shouldn't happen
-#   [ "$__FAIL__" != 'YES' -a ! -w /tmp/vfl/.mulle/etc/sourcetree/config -a -e /tmp/vfl/.mulle/etc/sourcetree/config ] && __FAIL__="YES" && internal_fail "fail"
+#   [ "$__FAIL__" != 'YES' -a ! -w /tmp/vfl/.mulle/etc/sourcetree/config -a -e /tmp/vfl/.mulle/etc/sourcetree/config ] && __FAIL__="YES" && _internal_fail "fail"
 
-   if [ -z "${MULLE_EXEKUTOR_LOG_DEVICE}" ]
+   if [ -z "${MULLE_EXEKUTOR_LOG_DEVICE:-}" ]
    then
       printf "${format}" "$@" >&2
    else
@@ -51,18 +55,18 @@ log_printf()
 
 
 MULLE_LOG_ERROR_PREFIX=" error: "
+MULLE_LOG_FAIL_ERROR_PREFIX=" fatal error: "
 
-log_error()
+_log_error()
 {
-   log_printf "${C_ERROR}${MULLE_EXECUTABLE_FAIL_PREFIX}${MULLE_LOG_ERROR_PREFIX}${C_ERROR_TEXT}%b${C_RESET}\n" "$*"
+   _log_printf "${C_ERROR}${MULLE_EXECUTABLE_FAIL_PREFIX}${MULLE_LOG_ERROR_PREFIX}${C_ERROR_TEXT}%b${C_RESET}\n" "$*"
 }
 
 
-MULLE_LOG_FAIL_ERROR_PREFIX=" fatal error: "
 
-log_fail()
+_log_fail()
 {
-   log_printf "${C_ERROR}${MULLE_EXECUTABLE_FAIL_PREFIX}${MULLE_LOG_FAIL_ERROR_PREFIX}${C_ERROR_TEXT}%b${C_RESET}\n" "$*"
+   _log_printf "${C_ERROR}${MULLE_EXECUTABLE_FAIL_PREFIX}${MULLE_LOG_FAIL_ERROR_PREFIX}${C_ERROR_TEXT}%b${C_RESET}\n" "$*"
 }
 
 
@@ -70,77 +74,77 @@ log_fail()
 # don't prefix with warning: just let the colors speak
 # errors are errors though
 #
-log_warning()
+_log_warning()
 {
-   if [ "${MULLE_FLAG_LOG_TERSE}" != 'YES' ]
+   if [ "${MULLE_FLAG_LOG_TERSE:-}" != 'YES' ]
    then
-      log_printf "${C_WARNING}%b${C_RESET}\n" "$*"
+      _log_printf "${C_WARNING}%b${C_RESET}\n" "$*"
    fi
 }
 
 
-log_info()
+_log_info()
 {
-   if [ "${MULLE_FLAG_LOG_TERSE}" != 'YES' ]
+   if [ "${MULLE_FLAG_LOG_TERSE:-}" != 'YES' ]
    then
-      log_printf "${C_INFO}%b${C_RESET}\n" "$*"
+      _log_printf "${C_INFO}%b${C_RESET}\n" "$*"
    fi
 }
 
 
-log_verbose()
+_log_verbose()
 {
-   if [ "${MULLE_FLAG_LOG_VERBOSE}" = 'YES' ]
+   if [ "${MULLE_FLAG_LOG_VERBOSE:-}" = 'YES' ]
    then
-      log_printf "${C_VERBOSE}%b${C_RESET}\n" "$*"
+      _log_printf "${C_VERBOSE}%b${C_RESET}\n" "$*"
    fi
 }
 
 
-log_fluff()
+_log_fluff()
 {
-   if [ "${MULLE_FLAG_LOG_FLUFF}" = 'YES' ]
+   if [ "${MULLE_FLAG_LOG_FLUFF:-}" = 'YES' ]
    then
-      log_printf "${C_FLUFF}%b${C_RESET}\n" "$*"
+      _log_printf "${C_FLUFF}%b${C_RESET}\n" "$*"
    else
       # fluff should be shown when debug is on but not fluff
-      log_debug "$@"
+      _log_debug "$@"
    fi
 }
 
 
 # setting is like fluff but different color scheme
-log_setting()
+_log_setting()
 {
-   if [ "${MULLE_FLAG_LOG_FLUFF}" = 'YES' ]
+   if [ "${MULLE_FLAG_LOG_SETTINGS:-}" = 'YES' ]
    then
-      log_printf "${C_SETTING}%b${C_RESET}\n" "$*"
+      _log_printf "${C_SETTING}%b${C_RESET}\n" "$*"
    fi
 }
 
 
 # for debugging, not for user. same as fluff
-log_debug()
+_log_debug()
 {
-   if [ "${MULLE_FLAG_LOG_DEBUG}" != 'YES' ]
+   if [ "${MULLE_FLAG_LOG_DEBUG:-}" != 'YES' ]
    then
       return
    fi
 
    case "${MULLE_UNAME}" in
       linux)
-         log_printf "${C_DEBUG}$(date "+%s.%N") %b${C_RESET}\n" "$*"
+         _log_printf "${C_DEBUG}$(date "+%s.%N") %b${C_RESET}\n" "$*"
       ;;
       *)
-         log_printf "${C_DEBUG}$(date "+%s") %b${C_RESET}\n" "$*"
+         _log_printf "${C_DEBUG}$(date "+%s") %b${C_RESET}\n" "$*"
       ;;
    esac
 }
 
 
-log_entry()
+_log_entry()
 {
-   if [ "${MULLE_FLAG_LOG_DEBUG}" != 'YES' ]
+   if [ "${MULLE_FLAG_LOG_DEBUG:-}" != 'YES' ]
    then
       return
    fi
@@ -161,37 +165,89 @@ log_entry()
       shift
    done
 
-   log_debug "${functionname} ${args}"
+   _log_debug "${functionname} ${args}"
 }
 
 
-log_trace()
+# used by executor, so we don't if here ( or ? )
+_log_trace()
 {
    case "${MULLE_UNAME}" in
       linux)
-         log_printf "${C_TRACE}$(date "+%s.%N") %b${C_RESET}\n" "$*"
+         _log_printf "${C_TRACE}$(date "+%s.%N") %b${C_RESET}\n" "$*"
          ;;
 
       *)
-         log_printf "${C_TRACE}$(date "+%s") %b${C_RESET}\n" "$*"
+         _log_printf "${C_TRACE}$(date "+%s") %b${C_RESET}\n" "$*"
       ;;
    esac
 }
 
+# you should NOT be using these log aliases with continuations.
+# e.g.
+# _log_printf "x \
+# y"
+# will fail
+#
+# If you need them use the '_' prefixed variant
+# e.g.
+# _log_printf "x \
+# y"
+# is OK
 
-log_trace2()
+alias log_debug='_log_debug'
+alias log_entry='_log_entry'
+alias log_error='_log_error'
+alias log_fluff='_log_fluff'
+alias log_info='_log_info'
+alias log_setting='_log_setting'
+alias log_trace='_log_trace'
+alias log_verbose='_log_verbose'
+alias log_warning='_log_warning'
+
+
+#
+# The log level will be in affect in two ways. For functions already parsed
+# the `if` in the function selects the print or not. For all functions
+# parsed in the future, we can comment out the unneeded log statements. This
+# will provide a large speedup.
+#
+log_set_trace_level()
 {
-   case "${MULLE_UNAME}" in
-      linux)
-         log_printf "${C_TRACE2}$(date "+%s.%N") %b${C_RESET}\n" "$*"
-         ;;
+   if [ "${MULLE_FLAG_LOG_DEBUG:-}" != 'YES' ]
+   then
+      alias log_entry=': #'
+      alias log_debug=': #'
+   fi
 
-      *)
-         log_printf "${C_TRACE2}$(date "+%s") %b${C_RESET}\n" "$*"
-      ;;
-   esac
+   if [ "${MULLE_FLAG_LOG_SETTINGS:-}" != 'YES' ]
+   then
+      alias log_setting=': #'
+   fi
+
+   if [ "${MULLE_FLAG_LOG_FLUFF:-}" != 'YES' ]
+   then
+      # fluff should be shown when debug is on but not fluff
+      if [ "${MULLE_FLAG_LOG_DEBUG:-}" = 'YES' ]
+      then
+         alias log_fluff='log_debug'
+      else
+         alias log_fluff=': #'
+      fi
+   fi
+
+   if [ "${MULLE_FLAG_LOG_VERBOSE:-}" != 'YES' ]
+   then
+      alias log_verbose=': #'
+   fi
+
+   if [ "${MULLE_FLAG_LOG_TERSE:-}" = 'YES' ]
+   then
+      alias log_info=': #'
+      alias log_warning=': #'
+   fi
+   :
 }
-
 
 #
 # some common fail log functions
@@ -203,17 +259,19 @@ log_trace2()
 # 12: #
 
 
-if [ -z "${BASH_VERSION}" ]
+if [ ${ZSH_VERSION+x} ]
 then
    # inspired by https://unix.stackexchange.com/questions/453144/functions-calling-context-in-zsh-equivalent-of-bash-caller
    function caller()
-   {
+   ( # sic!
       local i="${1:-1}"
 
+      set +u
       i=$((i+1))
       local file=${funcfiletrace[$((i))]%:*}
-      local line line=${funcfiletrace[$((i))]##*:}
+      local line=${funcfiletrace[$((i))]##*:}
       local func=${funcstack[$((i + 1))]}
+
       if [ -z "${func## }" ]
       then
          return 1
@@ -221,16 +279,12 @@ then
 
       printf "%s %s %s\n" "$line" "$func" "${file##*/}"
       return 0
-   }
+   ) # sic!
 fi
 
 
 stacktrace()
 {
-   local i=1
-   local line
-   local max
-
    # don't stack trace when tracing
    case "$-" in
       *x*)
@@ -238,10 +292,16 @@ stacktrace()
       ;;
    esac
 
+   local i
+   local line
+   local max
+
+   i=1
    max=100
+
    while line="`caller $i`"
    do
-      log_printf "${C_CYAN}%b${C_RESET}\n" "$i: #${line}"
+      _log_printf "${C_CYAN}%b${C_RESET}\n" "$i: #${line}"
       i=$((i + 1))
       [ $i -gt $max ] && break
    done
@@ -252,10 +312,10 @@ fail()
 {
    if [ ! -z "$*" ]
    then
-      log_fail "$*"
+      _log_fail "$@"
    fi
 
-   if [ "${MULLE_FLAG_LOG_DEBUG}" = 'YES' ]
+   if [ "${MULLE_FLAG_LOG_DEBUG:-}" = 'YES' ]
    then
       stacktrace
    fi
@@ -267,27 +327,26 @@ fail()
 MULLE_INTERNAL_ERROR_PREFIX=" *** internal error ***:"
 
 
-internal_fail()
+_internal_fail()
 {
-   log_printf "${C_ERROR}${MULLE_EXECUTABLE_FAIL_PREFIX}\
-${MULLE_INTERNAL_ERROR_PREFIX}${C_ERROR_TEXT}%b${C_RESET}\n" "$*"
+   _log_printf "${C_ERROR}${MULLE_EXECUTABLE_FAIL_PREFIX}${MULLE_INTERNAL_ERROR_PREFIX}${C_ERROR_TEXT}%b${C_RESET}\n" "$*"
    stacktrace
    exit 1
 }
 
 
-# now that we have internal_fail defined we can rewrite _fatal
+# now that we have _internal_fail defined we can rewrite _fatal
 # unset -f _fatal
 _fatal()
 {
-   internal_fail "$@"
+   _internal_fail "$@"
 }
 
 
 # Escape sequence and resets, should use tput here instead of ANSI
 logging_reset()
 {
-   printf "${C_RESET}" >&2
+   printf "%b" "${C_RESET}" >&2
 }
 
 
@@ -305,13 +364,13 @@ logging_initialize_color()
    # https://no-color.org/
 
    # fix for Xcode
-   case "${TERM}" in
+   case "${TERM:-}" in
       dumb)
          MULLE_NO_COLOR=YES
       ;;
    esac
 
-   if [ -z "${NO_COLOR}" -a "${MULLE_NO_COLOR}" != 'YES' ] && [ ! -f /dev/stderr ]
+   if [ -z "${NO_COLOR:-}" -a "${MULLE_NO_COLOR:-}" != 'YES' ] && [ ! -f /dev/stderr ]
    then
       C_RESET="\033[0m"
 
@@ -325,7 +384,7 @@ logging_initialize_color()
       C_FAINT="\033[2m"
       C_SPECIAL_BLUE="\033[38;5;39;40m"
 
-      if [ "${MULLE_LOGGING_TRAP}" != 'NO' ]
+      if [ "${MULLE_LOGGING_TRAP:-}" != 'NO' ]
       then
          logging_trap_install
       fi
@@ -344,26 +403,6 @@ logging_initialize_color()
    C_DEBUG="${C_SPECIAL_BLUE}"
 
    C_ERROR_TEXT="${C_RESET}${C_BR_RED}${C_BOLD}"
-}
-
-
-_r_lowercase()
-{
-   # ksh bails on ,, during parse
-   case "${BASH_VERSION}" in
-      [4-9]*|[1-9][0-9]*)
-         RVAL="${1,,}"
-         return
-      ;;
-   esac
-
-   if [ ! -z "${ZSH_VERSION}" ]
-   then
-      RVAL="${1:l}"
-      return
-   fi
-
-   RVAL="`printf "$1" | tr '[:upper:]' '[:lower:]'`"
 }
 
 

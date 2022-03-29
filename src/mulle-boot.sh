@@ -1,11 +1,16 @@
+# shellcheck shell=bash
+# shellcheck disable=SC2236
+# shellcheck disable=SC2166
+# shellcheck disable=SC2006
 #
 # Prelude to be placed at top of each script. Rerun this script either in
 # bash or zsh, if not already running in either (which can happen!)
 # Allows script to run on systems that either have bash (linux) or
 # zsh (macOS) only by default.
 #
-if [ "$1" != --no-auto-shell ]
+if [ "${1:-}" != --no-auto-shell ]
 then
+   # bourne shell does not know "! -v" for checking for undefined
    if [ -z "${BASH_VERSION}" -a -z "${ZSH_VERSION}" ]
    then
       exe_shell="`command -v "bash" `"
@@ -44,7 +49,7 @@ EOF
 
       exec "${exe_shell:-bash}" -c ". ${script} --no-auto-shell ${args}" "${script}"
    fi
-   if [ ! -z "${BASH_VERSION}" ]
+   if [ ${BASH_VERSION+x} ]
    then
       set +o posix
    fi
@@ -57,7 +62,7 @@ fi
 # mingw via a .BAT or so. Correct this now
 #
 case "$PATH" in
-   '\\'*)
+   "\\"*)
       PATH="${PATH//\\/\/}"
    ;;
 esac

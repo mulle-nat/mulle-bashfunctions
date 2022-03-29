@@ -1,4 +1,7 @@
-#! /usr/bin/env bash
+# shellcheck shell=bash
+# shellcheck disable=SC2236
+# shellcheck disable=SC2166
+# shellcheck disable=SC2006
 #
 #   Copyright (c) 2021 Nat! - Mulle kybernetiK
 #   All rights reserved.
@@ -29,7 +32,7 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-if [ -z "${MULLE_COMPATIBILITY_SH}" ]
+if ! [ ${MULLE_COMPATIBILITY_SH+x} ]
 then
 MULLE_COMPATIBILITY_SH="included"
 
@@ -59,7 +62,7 @@ shell_is_pipefail_enabled()
 
 shell_enable_extglob()
 {
-   if [ ! -z "${ZSH_VERSION}" ]
+   if [ ${ZSH_VERSION+x} ]
    then
       setopt kshglob
       setopt bareglobqual
@@ -71,7 +74,7 @@ shell_enable_extglob()
 
 shell_disable_extglob()
 {
-   if [ ! -z "${ZSH_VERSION}" ]
+   if [ ${ZSH_VERSION+x} ]
    then
       unsetopt bareglobqual
       unsetopt kshglob
@@ -83,7 +86,7 @@ shell_disable_extglob()
 
 shell_is_extglob_enabled()
 {
-   if [ ! -z "${ZSH_VERSION}" ]
+   if [ ${ZSH_VERSION+x} ]
    then
       [[ -o kshglob ]]
       return $?
@@ -95,7 +98,7 @@ shell_is_extglob_enabled()
 
 shell_enable_nullglob()
 {
-   if [ ! -z "${ZSH_VERSION}" ]
+   if [ ${ZSH_VERSION+x} ]
    then
       setopt nullglob
    else
@@ -106,7 +109,7 @@ shell_enable_nullglob()
 
 shell_disable_nullglob()
 {
-   if [ ! -z "${ZSH_VERSION}" ]
+   if [ ${ZSH_VERSION+x} ]
    then
       unsetopt nullglob
    else
@@ -117,7 +120,7 @@ shell_disable_nullglob()
 
 shell_is_nullglob_enabled()
 {
-   if [ ! -z "${ZSH_VERSION}" ]
+   if [ ${ZSH_VERSION+x} ]
    then
       [[ -o nullglob ]]
       return $?
@@ -128,7 +131,7 @@ shell_is_nullglob_enabled()
 
 shell_enable_glob()
 {
-   if [ ! -z "${ZSH_VERSION}" ]
+   if [ ${ZSH_VERSION+x} ]
    then
       unsetopt noglob
    else
@@ -139,7 +142,7 @@ shell_enable_glob()
 
 shell_disable_glob()
 {
-   if [ ! -z "${ZSH_VERSION}" ]
+   if [ ${ZSH_VERSION+x} ]
    then
       setopt noglob
    else
@@ -150,7 +153,7 @@ shell_disable_glob()
 
 shell_is_glob_enabled()
 {
-   if [ ! -z "${ZSH_VERSION}" ]
+   if [ ${ZSH_VERSION+x} ]
    then
       if [[ -o noglob ]]
       then
@@ -170,7 +173,7 @@ shell_is_glob_enabled()
 
 shell_is_function()
 {
-   if [ ! -z "${ZSH_VERSION}" ]
+   if [ ${ZSH_VERSION+x} ]
    then
       case "`type "$1" `" in
          *function*)
@@ -201,7 +204,7 @@ shell_is_function()
 ##
 unalias -a
 
-if [ ! -z "${ZSH_VERSION}" ]
+if [ ${ZSH_VERSION+x} ]
 then
    ## zsh
    setopt aliases
@@ -211,10 +214,9 @@ then
    alias .foreachword="setopt noglob; IFS=' '$'\t'$'\n'; for"
    alias .foreachitem="setopt noglob; IFS=','; for"
    alias .foreachpath="setopt noglob; IFS=':'; for"
+   alias .foreachpathcomponent="set -f; IFS='/'; for"
    alias .foreachcolumn="setopt noglob; IFS=';'; for"
    alias .foreachfile="unsetopt noglob; unsetopt nullglob; IFS=' '$'\t'$'\n'; for"
-
-
    alias .do="do
    unsetopt noglob; unsetopt nullglob; IFS=' '$'\t'$'\n'"
    alias .done="done;unsetopt noglob; unsetopt nullglob; IFS=' '$'\t'$'\n'"
@@ -228,10 +230,9 @@ else
    alias .foreachword="set -f; IFS=' '$'\t'$'\n'; for"
    alias .foreachitem="set -f; IFS=','; for"
    alias .foreachpath="set -f; IFS=':'; for"
+   alias .foreachpathcomponent="set -f; IFS='/'; for"
    alias .foreachcolumn="set -f; IFS=';'; for"
    alias .foreachfile="set +f; shopt -s nullglob; IFS=' '$'\t'$'\n'; for"
-
-
    alias .do="do
 set +f; shopt -u nullglob; IFS=' '$'\t'$'\n'"
    alias .done="done;set +f; shopt -u nullglob; IFS=' '$'\t'$'\n'"
@@ -250,7 +251,8 @@ alias .continue="continue"
 #
 
 #  set -e # more pain then gain in the end
-#  set -u # doesn't work with my style
+#  set -u # weirds up the code a lot with ${y+x} and ${x:-} needed almost
+#         # everywhere
 shell_enable_extglob
 shell_enable_pipefail
 

@@ -1,4 +1,7 @@
-#! /usr/bin/env bash
+# shellcheck shell=bash
+# shellcheck disable=SC2236
+# shellcheck disable=SC2166
+# shellcheck disable=SC2006
 #
 #   Copyright (c) 2018 Nat! - Mulle kybernetiK
 #   All rights reserved.
@@ -31,19 +34,19 @@
 #
 
 # double inclusion of this file is OK!
-if [ -z "${MULLE_BASHLOADER_SH}" ]
+if ! [ ${MULLE_BASHLOADER_SH+x} ]
 then
    MULLE_BASHLOADER_SH="included"
 
    r_uppercase()
    {
-      case "${BASH_VERSION}" in
+      case "${BASH_VERSION:-}" in
          [0123]*)
-            RVAL="`printf "$1" | tr '[:lower:]' '[:upper:]'`"
+            RVAL="`printf "%s" "$1" | tr '[:lower:]' '[:upper:]'`"
          ;;
 
          *)
-            if [ ! -z "${ZSH_VERSION}" ]
+            if [ ${ZSH_VERSION+x} ]
             then
                RVAL="${1:u}"
             else
@@ -60,7 +63,7 @@ then
       local filename="$2"
       local libexec_define="$3"
 
-      if [ -z "${!libexec_define}" ]
+      if ! [ ${!libexec_define+x} ]
       then
          printf -v "${libexec_define}" "%s" "`"${executable}" libexec-dir`" || exit 1
          eval export "${libexec_define}"
@@ -75,9 +78,9 @@ then
 #      local executable="$1"
 #      local filename="$2"
 #      local libexec_define="$3"
-      local header_define="$4"
+      local includeguard="$4"
 
-      if [ ! -z "${!header_define}" ]
+      if [ ${!includeguard+x} ]
       then
          return
       fi
@@ -85,6 +88,8 @@ then
       r_include_path "$@"
 
        . "${RVAL}" || exit 1
+
+      printf -v "${includeguard}" "YES"
    }
 
    # local _executable
@@ -183,8 +188,8 @@ then
    #
    include()
    {
-      local s="$1"
-      local namespace="$2"  # default namespace, possibly not useful
+   #   local s="$1"
+   #   local namespace="${2:-}"  # default namespace, possibly not useful
 
       local _executable
       local _filename

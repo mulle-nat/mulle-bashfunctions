@@ -9,7 +9,7 @@ export MULLE_BASHFUNCTIONS_LIBEXEC_DIR
 . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions.sh" || exit 1
 ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
 
-if [ ! -z "${ZSH_VERSION}" ]
+if [ ${ZSH_VERSION+x} ]
 then
    setopt sh_word_split
 fi
@@ -108,14 +108,5 @@ main()
 }
 
 
-init()
-{
-   MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${MULLE_BASHFUNCTIONS_LIBEXEC_DIR:-../../src}"
-
-   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions.sh" || exit 1
-}
-
-
-init "$@"
 main "$@"
 

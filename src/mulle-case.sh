@@ -1,4 +1,7 @@
-#! /usr/bin/env bash
+# shellcheck shell=bash
+# shellcheck disable=SC2236
+# shellcheck disable=SC2166
+# shellcheck disable=SC2006
 #
 #   Copyright (c) 2015 Nat! - Mulle kybernetiK
 #   All rights reserved.
@@ -29,7 +32,7 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-if [ -z "${MULLE_CASE_SH}" ]
+if ! [ ${MULLE_CASE_SH+x} ]
 then
 MULLE_CASE_SH="included"
 
@@ -54,14 +57,12 @@ _r_tweaked_de_camel_case()
    local collect
 
    local c
-   local d
 
    s="${s//ObjC/Objc}"
 
    state='start'
    while [ ! -z "${s}" ]
    do
-      d="${c}"
       c="${s:0:1}"
       s="${s:1}"
 

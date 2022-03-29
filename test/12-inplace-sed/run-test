@@ -1,9 +1,18 @@
 #! /usr/bin/env bash
 
-if [ ! -z "${ZSH_VERSION}" ]
+###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
+MULLE_BASHFUNCTIONS_LIBEXEC_DIR="`mulle-bashfunctions libexec-dir`" || exit 1
+export MULLE_BASHFUNCTIONS_LIBEXEC_DIR
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-boot.sh" || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions.sh" || exit 1
+###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
+
+if [ ${ZSH_VERSION+x} ]
 then
    setopt sh_word_split
 fi
+
+
 
 run_test()
 {
@@ -80,7 +89,7 @@ test_inplace_sed()
 
    local tmpfile
 
-   r_make_tmp_file || exit 1
+   r_make_tmp_file "test-sed" || exit 1
    tmpfile="${RVAL}"
 
    cat <<EOF > "${tmpfile}"
@@ -115,14 +124,4 @@ main()
   log_info "----- ALL PASSED -----"
 }
 
-
-init()
-{
-   MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${MULLE_BASHFUNCTIONS_LIBEXEC_DIR:-../../src}"
-
-   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions.sh" || exit 1
-}
-
-
-init "$@"
 main "$@"

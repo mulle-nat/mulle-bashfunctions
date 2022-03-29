@@ -1,4 +1,7 @@
-#! /usr/bin/env bash
+# shellcheck shell=bash
+# shellcheck disable=SC2236
+# shellcheck disable=SC2166
+# shellcheck disable=SC2006
 #
 #   Copyright (c) 2017 Nat! - Mulle kybernetiK
 #   All rights reserved.
@@ -29,7 +32,7 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-if [ -z "${MULLE_STRING_SH}" ]
+if ! [ ${MULLE_STRING_SH+x} ]
 then
 MULLE_STRING_SH="included"
 
@@ -209,6 +212,7 @@ r_remove_line()
 
    local delim
 
+   delim=""
    RVAL=
 
    .foreachline line in ${lines}
@@ -231,6 +235,7 @@ r_remove_line_once()
 
    local delim
 
+   delim=""
    RVAL=
 
    .foreachline line in ${lines}
@@ -257,6 +262,7 @@ r_remove_last_line()
    RVAL="$(sed '$d' <<< "$1")"  # remove last line
 }
 
+
 #
 # can't have linefeeds as delimiter
 # e.g. find_item "a,b,c" b -> 0
@@ -269,9 +275,9 @@ find_item()
    local search="$2"
    local delim="${3:-,}"
 
-   shell_is_extglob_enabled || internal_fail "need extglob enabled"
+   shell_is_extglob_enabled || _internal_fail "need extglob enabled"
 
-   if [ ! -z "${ZSH_VERSION}" ]
+   if [ ${ZSH_VERSION+x} ]
    then
       case "${delim}${line}${delim}" in
          *"${delim}${~search}${delim}"*)
@@ -305,6 +311,7 @@ find_empty_line_zsh()
 
    return 1
 }
+
 
 # zsh:
 # this is faster than calling fgrep externally
@@ -349,7 +356,7 @@ find_line_zsh()
 find_line()
 {
    # ZSH is apparently super slow in pattern matching
-   if [ ! -z "${ZSH_VERSION}" ]
+   if [ ${ZSH_VERSION+x} ]
    then
       find_line_zsh "$@"
       return $?
@@ -378,9 +385,9 @@ ${lines}
 
    rval=1
 
-   shell_is_extglob_enabled || internal_fail "extglob must be enabled"
+   shell_is_extglob_enabled || _internal_fail "extglob must be enabled"
 
-   if [ ! -z "${ZSH_VERSION}" ]
+   if [ ${ZSH_VERSION+x} ]
    then
       case "${escaped_lines}" in
          *"\\n${~pattern}\\n"*)
@@ -469,6 +476,7 @@ r_reverse_lines()
    local line
    local delim
 
+   delim=""
    RVAL=
 
    IFS=$'\n'
@@ -519,7 +527,8 @@ r_filepath_concat()
    local sep
    local fallback
 
-   fallback=
+   s=""
+   fallback=""
 
    for i in "$@"
    do
@@ -587,14 +596,14 @@ filepath_concat()
 
 r_upper_firstchar()
 {
-   case "${BASH_VERSION}" in
+   case "${BASH_VERSION:-}" in
       [0123]*)
-         RVAL="`printf "${1:0:1}" | tr '[:lower:]' '[:upper:]'`"
+         RVAL="`printf "%s" "${1:0:1}" | tr '[:lower:]' '[:upper:]'`"
          RVAL="${RVAL}${1:1}"
       ;;
 
       *)
-         if [ ! -z "${ZSH_VERSION}" ]
+         if [ ${ZSH_VERSION+x} ]
          then
             RVAL="${1:0:1}"
             RVAL="${RVAL:u}${1:1}"
@@ -616,13 +625,13 @@ r_capitalize()
 
 r_uppercase()
 {
-   case "${BASH_VERSION}" in
+   case "${BASH_VERSION:-}" in
       [0123]*)
-         RVAL="`printf "$1" | tr '[:lower:]' '[:upper:]'`"
+         RVAL="`printf "%s" "$1" | tr '[:lower:]' '[:upper:]'`"
       ;;
 
       *)
-         if [ ! -z "${ZSH_VERSION}" ]
+         if [ ${ZSH_VERSION+x} ]
          then
             RVAL="${1:u}"
          else
@@ -635,13 +644,13 @@ r_uppercase()
 
 r_lowercase()
 {
-   case "${BASH_VERSION}" in
+   case "${BASH_VERSION:-}" in
       [0123]*)
-         RVAL="`printf "$1" | tr '[:upper:]' '[:lower:]'`"
+         RVAL="`printf "%s" "$1" | tr '[:upper:]' '[:lower:]'`"
       ;;
 
       *)
-         if [ ! -z "${ZSH_VERSION}" ]
+         if [ ${ZSH_VERSION+x} ]
          then
             RVAL="${1:l}"
          else
@@ -652,6 +661,10 @@ r_lowercase()
 }
 
 
+#
+# replace non-identifier characters with '_'
+# so foo|bar becomes foo_bar
+#
 r_identifier()
 {
    # works in bash 3.2
@@ -919,6 +932,7 @@ _r_prefix_with_unquoted_string()
    local e_prefix
    local head
 
+   head=""
    while :
    do
       prefix="${s%%${c}*}"             # a${
@@ -965,6 +979,8 @@ _r_expand_string()
    local default_value
    local head
    local found
+
+   head=""
 
    # ex: "a${b:-c${d:-e}}g"
    while [ ${#_s} -ne 0 ]
@@ -1059,7 +1075,7 @@ _r_expand_string()
 
       if [ "${_expand}" = 'YES' ]
       then
-         if [ ! -z "${ZSH_VERSION}" ]
+         if [ ${ZSH_VERSION+x} ]
          then
             value="${(P)identifier:-${default_value}}"
          else

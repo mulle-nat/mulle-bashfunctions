@@ -1,5 +1,8 @@
-#! /usr/bin/env bash
-#
+# shellcheck shell=bash
+# shellcheck disable=SC2236
+# shellcheck disable=SC2166
+# shellcheck disable=SC2006
+##
 #   Copyright (c) 2016 Nat! - Mulle kybernetiK
 #   All rights reserved.
 #
@@ -29,7 +32,7 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-if [ -z "${MULLE_ARRAY_SH}" ]
+if ! [ ${MULLE_ARRAY_SH+x} ]
 then
 MULLE_ARRAY_SH="included"
 
@@ -42,7 +45,7 @@ function array_value_check()
 
    case "${value}" in
       *$'\n'*)
-         internal_fail "\"${value}\" has unescaped linefeeds"
+         _internal_fail "\"${value}\" has unescaped linefeeds"
       ;;
    esac
 }
@@ -76,7 +79,6 @@ r_insert_line_at_index()
    array_value_check "${value}"
 
    local line
-   local added='NO'
    local rval
 
    RVAL=
@@ -140,7 +142,7 @@ r_lines_in_range()
 #   local j="$3"
 #   local replacement="$4"
 #
-#   [ ${i} -gt ${j} ] && internal_fail "i greater than j"
+#   [ ${i} -gt ${j} ] && _internal_fail "i greater than j"
 #
 #   local line
 #   local index
@@ -168,8 +170,8 @@ r_lines_in_range()
 #
 #   IFS="${DEFAULT_IFS}" ; shell_enable_glob
 #
-#   [ ${i} -ge ${index} ] && internal_fail "i $i invalid"
-#   [ ${j} -ge ${index} ] && internal_fail "j $j invalid"
+#   [ ${i} -ge ${index} ] && _internal_fail "i $i invalid"
+#   [ ${j} -ge ${index} ] && _internal_fail "j $j invalid"
 #
 #   RVAL="${result}"
 #}
@@ -183,14 +185,14 @@ function assoc_array_key_check()
 {
    local key="$1"
 
-   [ -z "${key}" ] && internal_fail "key is empty"
+   [ -z "${key}" ] && _internal_fail "key is empty"
 
    local identifier
 
    r_identifier "${key}"
    identifier="${RVAL}"
 
-   [ "${identifier}" != "${key}" -a "${identifier}" != "_${key}" ] && internal_fail "\"${key}\" has non-identifier characters"
+   [ "${identifier}" != "${key}" -a "${identifier}" != "_${key}" ] && _internal_fail "\"${key}\" has non-identifier characters"
 }
 
 
@@ -225,6 +227,7 @@ function _r_assoc_array_remove()
    local line
    local delim
 
+   delim=""
    RVAL=
 
    .foreachline line in ${array}
@@ -291,7 +294,7 @@ r_assoc_array_set()
 {
    local array="$1"
    local key="$2"
-   local value="$3"
+   local value="${3:-}"
 
    if [ -z "${value}" ]
    then

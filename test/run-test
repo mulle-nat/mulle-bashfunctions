@@ -1,6 +1,6 @@
 #! /bin/sh
 
-[ "${TRACE}" = 'YES' ] && set -x && : "$0" "$@"
+[ "${TRACE:-}" = 'YES' ] && set -x && : "$0" "$@"
 
 ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
 MULLE_BASHFUNCTIONS_LIBEXEC_DIR="`mulle-bashfunctions libexec-dir`" || exit 1
@@ -52,9 +52,9 @@ main()
 {
    local i
 
-   local OPTION_LENIENT
+   local OPTION_LENIENT='NO'
 
-   case "$1" in
+   case "${1:-}" in
       -l|--lenient)
          OPTION_LENIENT=YES
          shift

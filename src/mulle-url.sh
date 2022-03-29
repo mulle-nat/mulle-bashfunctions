@@ -1,4 +1,7 @@
-#! /usr/bin/env bash
+# shellcheck shell=bash
+# shellcheck disable=SC2236
+# shellcheck disable=SC2166
+# shellcheck disable=SC2006
 #
 #   Copyright (c) 2015-2017 Nat! - Mulle kybernetiK
 #   All rights reserved.
@@ -28,7 +31,7 @@
 #   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #
-if [ -z "${MULLE_URL_SH}" ]
+if ! [ ${MULLE_URL_SH+x} ]
 then
 MULLE_URL_SH="included"
 
@@ -150,7 +153,11 @@ url_parse()
    log_entry "url_parse" "$@"
 
    local url="$1"
-   local s 
+
+   if [ ${ZSH_VERSION+x} ]
+   then
+      setopt local_options BASH_REMATCH
+   fi
 
    case "${url}" in
       *://*|/*)
@@ -213,6 +220,11 @@ r_url_get_path()
    log_entry "r_url_get_path" "$@"
 
    local url="$1"
+
+   if [ ${ZSH_VERSION+x} ]
+   then
+      setopt local_options BASH_REMATCH
+   fi
 
    RVAL=
    case "${url}" in

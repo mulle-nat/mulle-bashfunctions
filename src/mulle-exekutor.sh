@@ -1,4 +1,7 @@
-#! /usr/bin/env bash
+# shellcheck shell=bash
+# shellcheck disable=SC2236
+# shellcheck disable=SC2166
+# shellcheck disable=SC2006
 #
 #   Copyright (c) 2017 Nat! - Mulle kybernetiK
 #   All rights reserved.
@@ -29,7 +32,7 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-if [ -z "${MULLE_EXEKUTOR_SH}" ]
+if ! [ ${MULLE_EXEKUTOR_SH+x} ]
 then
 MULLE_EXEKUTOR_SH="included"
 
@@ -45,13 +48,17 @@ exekutor_print_arrow()
 {
    local arrow
 
-   [ -z "${MULLE_EXECUTABLE_PID}" ] && internal_fail "MULLE_EXECUTABLE_PID not set"
+   [ -z "${MULLE_EXECUTABLE_PID}" ] && _internal_fail "MULLE_EXECUTABLE_PID not set"
 
-   if [ -z "${MULLE_EXEKUTOR_LOG_DEVICE}"  \
-        -a ! -z "${BASHPID}" \
-        -a "${MULLE_EXECUTABLE_PID}" != "${BASHPID}" ]
+   local pid
+
+   pid="${BASHPID:-$$}"
+
+   if [ -z "${MULLE_EXEKUTOR_LOG_DEVICE:-}"  \
+        -a ${pid} -ne 0 \
+        -a "${MULLE_EXECUTABLE_PID}" != "${pid}" ]
    then
-      arrow="=[${BASHPID:-0}]=>"
+      arrow="=[${pid}]=>"
    else
       arrow="==>"
    fi
@@ -93,7 +100,7 @@ eval_exekutor_print()
 
    while [ $# -ne 0 ]
    do
-      printf "%s" " `echo \"$1\"`"  # what was the point of that ?
+      printf " %s" "$1"  # what was the point of that ?
       shift
    done
    printf '\n'
@@ -104,9 +111,9 @@ exekutor_trace()
 {
    local printer="$1"; shift
 
-   if [ "${MULLE_FLAG_LOG_EXEKUTOR}" = 'YES' ]
+   if [ "${MULLE_FLAG_LOG_EXEKUTOR:-}" = 'YES' ]
    then
-      if [ -z "${MULLE_EXEKUTOR_LOG_DEVICE}" ]
+      if [ -z "${MULLE_EXEKUTOR_LOG_DEVICE:-}" ]
       then
          ${printer} "$@" >&2
       else
@@ -122,9 +129,9 @@ exekutor_trace_output()
    local redirect="$1"; shift
    local output="$1"; shift
 
-   if [ "${MULLE_FLAG_LOG_EXEKUTOR}" = 'YES' ]
+   if [ "${MULLE_FLAG_LOG_EXEKUTOR:-}" = 'YES' ]
    then
-      if [ -z "${MULLE_EXEKUTOR_LOG_DEVICE}" ]
+      if [ -z "${MULLE_EXEKUTOR_LOG_DEVICE:-}" ]
       then
          ${printer} "$@" "${redirect}" "${output}" >&2
       else
@@ -138,14 +145,16 @@ exekutor()
 {
    exekutor_trace "exekutor_print" "$@"
 
-   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = 'YES' ]
+   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN:-}" = 'YES' ]
    then
       return
    fi
 
    "$@"
-
    MULLE_EXEKUTOR_RVAL=$?
+
+   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-127}" ] && stacktrace
+
    return ${MULLE_EXEKUTOR_RVAL}
 }
 
@@ -158,8 +167,10 @@ rexekutor()
    exekutor_trace "exekutor_print" "$@"
 
    "$@"
-
    MULLE_EXEKUTOR_RVAL=$?
+
+   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-127}" ] && stacktrace
+
    return ${MULLE_EXEKUTOR_RVAL}
 }
 
@@ -168,7 +179,7 @@ eval_exekutor()
 {
    exekutor_trace "eval_exekutor_print" "$@"
 
-   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = 'YES' ]
+   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN:-}" = 'YES' ]
    then
       return
    fi
@@ -176,7 +187,7 @@ eval_exekutor()
    eval "$@"
    MULLE_EXEKUTOR_RVAL=$?
 
-   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-18}" ] && stacktrace
+   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-127}" ] && stacktrace
 
    return ${MULLE_EXEKUTOR_RVAL}
 }
@@ -193,7 +204,7 @@ eval_rexekutor()
    eval "$@"
    MULLE_EXEKUTOR_RVAL=$?
 
-   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-18}" ] && stacktrace
+   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-127}" ] && stacktrace
 
    return ${MULLE_EXEKUTOR_RVAL}
 }
@@ -203,16 +214,15 @@ _eval_exekutor()
 {
    exekutor_trace "eval_exekutor_print" "$@"
 
-   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = 'YES' ]
+   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN:-}" = 'YES' ]
    then
       return
    fi
 
    eval "$@"
-
    MULLE_EXEKUTOR_RVAL=$?
 
-   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-18}" ] && stacktrace
+   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-127}" ] && stacktrace
 
    return ${MULLE_EXEKUTOR_RVAL}
 }
@@ -225,16 +235,15 @@ redirect_exekutor()
 
    exekutor_trace_output "exekutor_print" '>' "${output}" "$@"
 
-   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = 'YES' ]
+   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN:-}" = 'YES' ]
    then
       return
    fi
 
    ( "$@" ) > "${output}"
-
    MULLE_EXEKUTOR_RVAL=$?
 
-   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-18}" ] && stacktrace
+   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-127}" ] && stacktrace
 
    return ${MULLE_EXEKUTOR_RVAL}
 }
@@ -247,7 +256,7 @@ redirect_eval_exekutor()
 
    exekutor_trace_output "eval_exekutor_print" '>' "${output}" "$@"
 
-   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = 'YES' ]
+   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN:-}" = 'YES' ]
    then
       return
    fi
@@ -256,7 +265,7 @@ redirect_eval_exekutor()
 
    MULLE_EXEKUTOR_RVAL=$?
 
-   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-18}" ] && stacktrace
+   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-127}" ] && stacktrace
 
    return ${MULLE_EXEKUTOR_RVAL}
 }
@@ -269,7 +278,7 @@ redirect_append_exekutor()
 
    exekutor_trace_output "exekutor_print" '>>' "${output}" "$@"
 
-   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = 'YES' ]
+   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN:-}" = 'YES' ]
    then
       return
    fi
@@ -278,7 +287,7 @@ redirect_append_exekutor()
 
    MULLE_EXEKUTOR_RVAL=$?
 
-   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-18}" ] && stacktrace
+   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-127}" ] && stacktrace
 
    return ${MULLE_EXEKUTOR_RVAL}
 }
@@ -291,7 +300,7 @@ _redirect_append_eval_exekutor()
 
    exekutor_trace_output "eval_exekutor_print" '>>' "${output}" "$@"
 
-   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = 'YES' ]
+   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN:-}" = 'YES' ]
    then
       return
    fi
@@ -300,7 +309,7 @@ _redirect_append_eval_exekutor()
 
    MULLE_EXEKUTOR_RVAL=$?
 
-   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-18}" ] && stacktrace
+   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-127}" ] && stacktrace
 
    return ${MULLE_EXEKUTOR_RVAL}
 }
@@ -314,18 +323,23 @@ _append_tee_exekutor()
 
    exekutor_trace_output "eval_exekutor_print" '>>' "${output}" "$@"
 
-   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = 'YES' ]
+   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN:-}" = 'YES' ]
    then
       return
    fi
 
-   ( "$@" ) 2>&1 | tee -a "${teeoutput}" "${output}"
+   if [ ${ZSH_VERSION+x} ]
+   then
+      ( "$@" ) 2>&1 | tee -a "${teeoutput}" "${output}"
+      MULLE_EXEKUTOR_RVAL=${pipestatus[1]}
+   else
+      ( "$@" ) 2>&1 | tee -a "${teeoutput}" "${output}"
+      MULLE_EXEKUTOR_RVAL=${PIPESTATUS[0]}
+   fi
 
-   MULLE_EXEKUTOR_RVAL=${PIPESTATUS[0]}
+   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-127}" ] && stacktrace
 
-   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-18}" ] && stacktrace
-
-   return ${MULLE_EXEKUTOR_RVAL}
+   return "${MULLE_EXEKUTOR_RVAL}"
 }
 
 
@@ -337,18 +351,23 @@ _append_tee_eval_exekutor()
 
    exekutor_trace_output "eval_exekutor_print" '>>' "${output}" "$@"
 
-   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN}" = 'YES' ]
+   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN:-}" = 'YES' ]
    then
       return
    fi
 
-   ( eval "$@" ) 2>&1 | tee -a "${teeoutput}" "${output}"
+   if [ ${ZSH_VERSION+x} ]
+   then
+      ( eval "$@" ) 2>&1 | tee -a "${teeoutput}" "${output}"
+      MULLE_EXEKUTOR_RVAL=${pipestatus[1]}
+   else
+      ( eval "$@" ) 2>&1 | tee -a "${teeoutput}" "${output}"
+      MULLE_EXEKUTOR_RVAL=${PIPESTATUS[0]}
+   fi
 
-   MULLE_EXEKUTOR_RVAL=${PIPESTATUS[0]}
+   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-127}" ] && stacktrace
 
-   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-18}" ] && stacktrace
-
-   return ${MULLE_EXEKUTOR_RVAL}
+   return "${MULLE_EXEKUTOR_RVAL}"
 }
 
 
@@ -361,7 +380,7 @@ logging_tee_exekutor()
    local teeoutput="$1"; shift
 
    # if we are tracing, we don't want to see this twice
-   if [ "${MULLE_FLAG_LOG_EXEKUTOR}" != 'YES' ]
+   if [ "${MULLE_FLAG_LOG_EXEKUTOR:-}" != 'YES' ]
    then
       exekutor_print "$@" >> "${teeoutput}"
    fi
@@ -380,7 +399,7 @@ logging_tee_eval_exekutor()
    local teeoutput="$1"; shift
 
    # if we are tracing, we don't want to see this twice
-   if [ "${MULLE_FLAG_LOG_EXEKUTOR}" != 'YES' ]
+   if [ "${MULLE_FLAG_LOG_EXEKUTOR:-}" != 'YES' ]
    then
       eval_exekutor_print "$@" >> "${teeoutput}"
    fi
@@ -396,7 +415,7 @@ logging_redirekt_exekutor()
 {
    local output="$1"; shift
 
-   if [ "${MULLE_FLAG_LOG_EXEKUTOR}" != 'YES' ]
+   if [ "${MULLE_FLAG_LOG_EXEKUTOR:-}" != 'YES' ]
    then
       exekutor_print "$@" >> "${output}"
    fi
@@ -408,7 +427,7 @@ logging_redirect_eval_exekutor()
 {
    local output="$1"; shift
 
-   if [ "${MULLE_FLAG_LOG_EXEKUTOR}" != 'YES' ]
+   if [ "${MULLE_FLAG_LOG_EXEKUTOR:-}" != 'YES' ]
    then
       eval_exekutor_print "$@" >> "${output}"
    fi
@@ -428,7 +447,7 @@ rexecute_column_table_or_cat()
    local cmd
    local column_cmds="mulle-column column cat"
 
-   if [ -z "${COLUMN}" ]
+   if ! [ ${COLUMN+x} ]
    then
       .for cmd in ${column_cmds}
       .do
