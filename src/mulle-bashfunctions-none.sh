@@ -173,21 +173,41 @@ then
       local filename="$2"
       local libexec_define="$3"
 
-      if ! [ ${!libexec_define+x} ]
+      local value
+
+      if [ ${ZSH_VERSION+x} ]
       then
-         printf -v "${libexec_define}" "%s" "`"${executable}" libexec-dir`" || exit 1
+         value="${(P)libexec_define}"
+      else
+         value="${!libexec_define}"
+      fi
+
+      if [ -z "${value}" ]
+      then
+         value="`"${executable}" libexec-dir`"
+         printf -v "${libexec_define}" "%s" "${value}" || exit 1
          eval export "${libexec_define}"
       fi
 
-      RVAL="${!libexec_define}/${filename}"
+      RVAL="${value}/${filename}"
    }
+
 
 
    include_executable_library()
    {
       local includeguard="$4"
 
-      if [ ${!includeguard+x} ]
+      local value
+
+      if [ ${ZSH_VERSION+x} ]
+      then
+         value="${(P)includeguard}"
+      else
+         value="${!includeguard}"
+      fi
+
+      if [ ! -z "${value}" ]
       then
          return
       fi

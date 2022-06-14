@@ -1,3 +1,8 @@
+## 4.1.0
+
+* renamed `r_de_camel_case_upcase_identifier` to `r_smart_upcase_identifier` because it does something slightly different now
+
+
 # 4.0.0
 
 * option -T is -lT now

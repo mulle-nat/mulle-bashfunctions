@@ -3164,8 +3164,6 @@ mkdir_if_missing()
       return 0
    fi
 
-   log_fluff "Creating directory \"$1\" (${PWD#${MULLE_USER_PWD}/})"
-
    local rval
 
    exekutor mkdir -p "$1"
@@ -3173,6 +3171,7 @@ mkdir_if_missing()
 
    if [ "${rval}" -eq 0 ]
    then
+      log_fluff "Created directory \"$1\" (${PWD#${MULLE_USER_PWD}/})"
       return 0
    fi
 
@@ -4084,20 +4083,32 @@ r_tweaked_de_camel_case()
 }
 
 
-r_de_camel_case_upcase_identifier()
+r_de_camel_case_identifier()
 {
    r_tweaked_de_camel_case "$1"
    r_identifier "${RVAL}"
+}
+
+
+r_smart_downcase_identifier()
+{
+   r_de_camel_case_identifier "$1"
+   r_lowercase "${RVAL}"
+}
+
+
+r_smart_upcase_identifier()
+{
+   r_uppercase "$1"
+   r_identifier "${RVAL}"
+
+   if [ "${RVAL}" = "$1" ]
+   then
+      return
+   fi
+
+   r_de_camel_case_identifier "$1"
    r_uppercase "${RVAL}"
-
-   case "${RVAL}" in
-      [A-Za-z_]*)
-      ;;
-
-      *)
-         RVAL="_${RVAL}"
-      ;;
-   esac
 }
 
 fi

@@ -134,15 +134,46 @@ _r_tweaked_de_camel_case()
 
 r_tweaked_de_camel_case()
 {
-   # need this for [A-B] to be case sensitive, dont'ask
+   # need this for [A-B] to be case sensitive, don't ask
    # https://stackoverflow.com/questions/10695029/why-isnt-the-case-statement-case-sensitive-when-nocasematch-is-off
    LC_ALL=C _r_tweaked_de_camel_case "$@"
 }
 
 
+r_de_camel_case_identifier()
+{
+   r_tweaked_de_camel_case "$1"
+   r_identifier "${RVAL}"
+}
+
+
+r_smart_downcase_identifier()
+{
+   r_de_camel_case_identifier "$1"
+   r_lowercase "${RVAL}"
+}
+
+
 #
 # make ID_FOO_R from idFooR
-#
+# but don't make FOO__XXX from FOO_XXX
+r_smart_upcase_identifier()
+{
+   r_uppercase "$1"
+   r_identifier "${RVAL}"
+
+   if [ "${RVAL}" = "$1" ]
+   then
+      return
+   fi
+
+   r_de_camel_case_identifier "$1"
+   r_uppercase "${RVAL}"
+}
+
+
+# backwards compatibility
+
 r_de_camel_case_upcase_identifier()
 {
    r_tweaked_de_camel_case "$1"
@@ -159,7 +190,6 @@ r_de_camel_case_upcase_identifier()
       ;;
    esac
 }
-
 fi
 
 :
