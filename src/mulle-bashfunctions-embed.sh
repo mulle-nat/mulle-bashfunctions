@@ -1197,6 +1197,7 @@ r_slash_concat()
    r_remove_duplicate "${RVAL}" "/"
 }
 
+
 r_list_remove()
 {
    local sep="${3:- }"
@@ -1328,6 +1329,7 @@ find_item()
    fi      
    return 1
 }
+
 
 find_empty_line_zsh()
 {
@@ -3311,6 +3313,11 @@ _remove_file_if_present()
 {
    [ -z "$1" ] && _internal_fail "empty path"
 
+   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN:-}" = 'YES' ]
+   then
+      return
+   fi
+
    if ! rm -f "$1" 2> /dev/null
    then
       exekutor chmod u+w "$1"  || fail "Failed to make $1 writable"
@@ -3754,6 +3761,21 @@ function array_value_check()
 }
 
 
+r_add_line_lf()
+{
+   local lines="$1"
+   local line="$2"
+
+   line="${line}"$'\n'
+
+   if [ -z "${lines:0:1}" ]
+   then
+      RVAL="${line}"
+   fi
+   RVAL="${lines}${line}"
+}
+
+
 r_get_line_at_index()
 {
    local array="$1"
@@ -4111,6 +4133,23 @@ r_smart_upcase_identifier()
    r_uppercase "${RVAL}"
 }
 
+
+
+r_de_camel_case_upcase_identifier()
+{
+   r_tweaked_de_camel_case "$1"
+   r_identifier "${RVAL}"
+   r_uppercase "${RVAL}"
+
+   case "${RVAL}" in
+      [A-Za-z_]*)
+      ;;
+
+      *)
+         RVAL="_${RVAL}"
+      ;;
+   esac
+}
 fi
 
 :

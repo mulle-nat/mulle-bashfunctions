@@ -51,6 +51,21 @@ function array_value_check()
 }
 
 
+r_add_line_lf()
+{
+   local lines="$1"
+   local line="$2"
+
+   line="${line}"$'\n'
+
+   if [ -z "${lines:0:1}" ]
+   then
+      RVAL="${line}"
+   fi
+   RVAL="${lines}${line}"
+}
+
+
 r_get_line_at_index()
 {
    local array="$1"

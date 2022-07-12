@@ -1382,6 +1382,7 @@ r_slash_concat()
    r_remove_duplicate "${RVAL}" "/"
 }
 
+
 r_list_remove()
 {
    local sep="${3:- }"
@@ -1513,6 +1514,7 @@ find_item()
    fi      
    return 1
 }
+
 
 find_empty_line_zsh()
 {
@@ -3495,6 +3497,11 @@ merge_line_into_file()
 _remove_file_if_present()
 {
    [ -z "$1" ] && _internal_fail "empty path"
+
+   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN:-}" = 'YES' ]
+   then
+      return
+   fi
 
    if ! rm -f "$1" 2> /dev/null
    then

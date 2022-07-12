@@ -23,3 +23,5 @@ CPackSourceConfig.cmake
 cmake_install.cmake
 fcking-zsh*
 Makefile
+.mulle-make-build-dir
+release-entry-0.21.md

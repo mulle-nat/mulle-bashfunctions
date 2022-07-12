@@ -36,7 +36,7 @@
 #
 [ "${TRACE}" = 'YES' -o "${MULLE_BASHFUNCTIONS_ENV_TRACE}" = 'YES' ] && set -x && : "$0" "$@"
 
-MULLE_BASHFUNCTIONS_VERSION="4.1.0"
+MULLE_BASHFUNCTIONS_VERSION="4.1.1"
 
 #
 # Prelude to be placed at top of each script. Rerun this script either in

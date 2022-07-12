@@ -153,6 +153,7 @@ r_slash_concat()
    r_remove_duplicate "${RVAL}" "/"
 }
 
+
 # remove a value from a list
 r_list_remove()
 {
@@ -184,6 +185,7 @@ r_space_concat()
 }
 
 
+# this suppresses empty lines
 r_add_line()
 {
    local lines="$1"
@@ -293,6 +295,7 @@ find_item()
    fi      
    return 1
 }
+
 
 #
 # find_line is fairly critical for mulle-sourcetree walk, which

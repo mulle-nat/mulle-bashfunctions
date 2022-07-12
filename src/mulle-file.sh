@@ -204,6 +204,11 @@ _remove_file_if_present()
 {
    [ -z "$1" ] && _internal_fail "empty path"
 
+   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN:-}" = 'YES' ]
+   then
+      return
+   fi
+
    # we don't want to test before hand if the file exists, because that's
    # slow. If we don't use the -f flag, then we might get stuck on a prompt
    # though. We don't want an error message, so -f is also fine. 

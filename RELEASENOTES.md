@@ -1,3 +1,8 @@
+### 4.1.1
+
+* * add `r_de_camel_case_upcase_identifier` back for backwards compatibility
+* fix `_remove_file_if_present` ignoring `MULLE_FLAG_EXEKUTOR_DRY_RUN`
+
 ## 4.1.0
 
 * renamed `r_de_camel_case_upcase_identifier` to `r_smart_upcase_identifier` because it does something slightly different now

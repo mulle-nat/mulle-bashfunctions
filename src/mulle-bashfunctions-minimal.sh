@@ -1382,6 +1382,7 @@ r_slash_concat()
    r_remove_duplicate "${RVAL}" "/"
 }
 
+
 r_list_remove()
 {
    local sep="${3:- }"
@@ -1513,6 +1514,7 @@ find_item()
    fi      
    return 1
 }
+
 
 find_empty_line_zsh()
 {
