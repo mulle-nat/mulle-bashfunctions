@@ -38,33 +38,39 @@ if ! [ ${MULLE_VERSION_QUALIFIER_SH+x} ]
 then
 MULLE_VERSION_QUALIFIER_SH="included"
 
-###
-### THIS IS OLD CODE from mulle-fetch, that got superseded by mulle-semver
-###
-tags_grep_versions()
-{
-   sed -n -e '/^[0-9]*\.[0-9]*\.[0-9]*/p' \
-          -e 's/^.*[a-zA-Z_-]\([0-9]*\.[0-9]*\.[0-9]*\)$/\1/p'
-}
-
+# RESET
+# NOCOLOR
+#
+#    This is some old code that got superseded by mulle-semver. Some
+#    of the same functionality is used by mulle-bash to query for compatible
+#    versions. No functions are publically documented here.
+#
+# TITLE INTRO
+# COLOR
+#
 
 #
-# sort them in numeric order so 10.1.2, 9.1.0, 9.22.0, 9.3.0
-# becomes 10.1.2, 9.22.0, 9.3.0, 9.1.0 when sorting reverse (sortflags="r")
-# or 9.1.0, 9.3.0, 9.22.0, 10.1.2 with the default sort
+# versions_sort <sortflags>
 #
-versions_sort()
+#    Sort stdin version numbers in numeric order. So with the default sort
+#       10.1.2, 9.1.0, 9.22.0, 9.3.0 ->  9.1.0, 9.3.0, 9.22.0, 10.1.2
+#    or when sorting reverse (sortflags="r")
+#       10.1.2, 9.1.0, 9.22.0, 9.3.0 ->  10.1.2, 9.22.0, 9.3.0, 9.1.0
+#
+_versions_sort()
 {
    local sortflags="$1"
 
    sort -u -t. -k "1,1n${sortflags}" -k "2,2n${sortflags}" -k "3,3n${sortflags}"
 }
 
-
 #
-# Plop our version in, sort and pick the ones after ours
+# _versions_find_next <version> <version> <sortflags>
 #
-versions_find_next()
+#
+#    Plop our version in, sort and pick the ones after ours
+#
+_versions_find_next()
 {
    local versions="$1"
    local version="$2"
@@ -80,7 +86,7 @@ versions_find_next()
    fi
 
    # Now sort again and pick the one after ours
-   versions="`versions_sort ${sortflags} <<< "${versions}" `"
+   versions="`_versions_sort ${sortflags} <<< "${versions}" `"
 
    r_escaped_sed_pattern "${version}"
 
@@ -93,10 +99,12 @@ versions_find_next()
 
 
 #
-# will filter versions according to operation and version
-# the result will be sorted in ascending order
+# _versions_operation <versions> <operation> <version>
 #
-versions_operation()
+#    will filter versions according to operation and version
+#    the result will be sorted in ascending order
+#
+_versions_operation()
 {
    local versions="$1"
    local operation="$2"
@@ -105,20 +113,20 @@ versions_operation()
    case "${operation}" in
       '>=')
          fgrep -x "${version}" <<< "${versions}"
-         versions_find_next "${versions}" "${version}"
+         _versions_find_next "${versions}" "${version}"
       ;;
 
       '>')
-         versions_find_next "${versions}" "${version}"
+         _versions_find_next "${versions}" "${version}"
       ;;
 
       '<=')
-         versions_find_next "${versions}" "${version}" "r" | versions_sort
+         _versions_find_next "${versions}" "${version}" "r" | _versions_sort
          fgrep -x "${version}" <<< "${versions}"
       ;;
 
       '<')
-         versions_find_next "${versions}" "${version}" "r" | versions_sort
+         _versions_find_next "${versions}" "${version}" "r" | _versions_sort
       ;;
 
       '==')
@@ -126,7 +134,7 @@ versions_operation()
       ;;
 
       '!=')
-         versions_sort <<< "${versions}"  | \
+         _versions_sort <<< "${versions}"  | \
             fgrep -x -v "${version}" | \
             "${_choose}" -1
       ;;
@@ -144,7 +152,7 @@ versions_operation()
 # A small parser
 #
 
-r_versions_qualify_s()
+_r_versions_qualify_s()
 {
 #  log_entry "r_versions_qualify_s" "${_s}" "$@"
 
@@ -157,7 +165,7 @@ r_versions_qualify_s()
    case "${_s}" in
       "("*)
          _s="${_s:1}"
-         r_versions_qualify "${versions}"
+         _r_versions_qualify "${versions}"
 
          _s="${_s#"${_s%%[![:space:]]*}"}" # remove leading whitespace characters
          if [ "${_closer}" != 'YES' ]
@@ -208,12 +216,13 @@ r_versions_qualify_s()
    _s="${_s#"${_s%%[![:space:]]*}"}" # remove leading whitespace characters
    version="${_s%%[ )]*}"
    _s="${_s#"${version}"}"
+
    #log_entry tags_match "${versions}" "${key}"
-   RVAL="`versions_operation "${versions}" "${operator}" "${version}"`" || exit 1
+   RVAL="`_versions_operation "${versions}" "${operator}" "${version}"`" || exit 1
 }
 
 
-r_versions_qualify_i()
+_r_versions_qualify_i()
 {
 #  log_entry "r_versions_qualify_i" "${_s}" "$@"
    local versions="$1"
@@ -238,12 +247,12 @@ r_versions_qualify_i()
       ;;
 
       ")")
-         echo "${result}"
+         RVAL="${result}"
          return 0
       ;;
 
       "")
-         echo "${result}"
+         RVAL="${result}"
          return 0
       ;;
    esac
@@ -252,7 +261,7 @@ r_versions_qualify_i()
 }
 
 
-r_versions_qualify()
+_r_versions_qualify()
 {
 #  log_entry "r_versions_qualify" "${_s}" "$@"
 
@@ -260,7 +269,7 @@ r_versions_qualify()
 
    local result
 
-   r_versions_qualify_s "${versions}"
+   _r_versions_qualify_s "${versions}"
    result="${RVAL}"
 
    while :
@@ -271,7 +280,7 @@ r_versions_qualify()
             break
          ;;
       esac
-      r_versions_qualify_i "${versions}" "${result}"
+      _r_versions_qualify_i "${versions}" "${result}"
       result="${RVAL}"
    done
 
@@ -280,7 +289,12 @@ r_versions_qualify()
 
 
 #
+# versions_filter <versions> <filter>
 #
+#   Filter a list of <versions> with filter, picking out the "best" version
+#   that matches <filter>
+#
+#   Filter syntax:  >= 1.0.1 AND < 1.0.2
 #
 versions_filter()
 {
@@ -322,7 +336,7 @@ versions_filter()
    # used to traverse the string
    _s="${filter}"
 
-   r_versions_qualify "${versions}"
+   _r_versions_qualify "${versions}"
    if [ ! -z "${RVAL}" ]
    then
       "${_choose}" -1 <<< "${RVAL}"
@@ -331,63 +345,72 @@ versions_filter()
    return 0
 }
 
-
-tags_filter()
-{
-   log_entry "tags_filter" "$@"
-
-   local tags="$1"
-   local filter="$2"
-
-   local versions
-   local version
-
-   versions="`tags_grep_versions <<< "${tags}" `" || exit 1
-
-   version="`versions_filter "${versions}" "${filter}" `" || exit 1
-   if [ -z "${version}" ]
-   then
-      RVAL=""
-      return 0
-   fi
-
-   #
-   # map version number back to tags
-   #
-   local pattern
-
-   r_escaped_grep_pattern "${version}"
-   pattern="^${RVAL}$|[a-zA-Z_-]${RVAL}\$"
-
-   egrep "${pattern}" <<< "${tags}" | head -1
-}
-
-
-is_tags_filter()
-{
-   log_entry "is_tags_filter" "$@"
-
-   local filter="$1"
-
-   filter="${filter#"${filter%%[![:space:]]*}"}" # remove leading whitespace characters
-   case "${filter}" in
-      [Oo][Ll][Dd][Ee][Ss][Tt]:*)
-         return 0
-      ;;
-
-      [Nn][Ee][Ww][Ee][Ss][Tt]:*)
-         return 0
-      ;;
-   esac
-
-   case "${filter}" in
-      *' '[Aa][Nn][Dd]' '*|*' '[Oo][Rr]' '*|*'<'*|*'>'*|*'='*)
-         return 0
-      ;;
-   esac
-
-   return 1
-}
-
+# ###
+# ### THIS IS OLD CODE from mulle-fetch, that got superseded by mulle-semver
+# ###
+# tags_grep_versions()
+# {
+#    sed -n -e '/^[0-9]*\.[0-9]*\.[0-9]*/p' \
+#           -e 's/^.*[a-zA-Z_-]\([0-9]*\.[0-9]*\.[0-9]*\)$/\1/p'
+# }
+#
+#
+# # tags_filter()
+# {
+#    log_entry "tags_filter" "$@"
+#
+#    local tags="$1"
+#    local filter="$2"
+#
+#    local versions
+#    local version
+#
+#    versions="`tags_grep_versions <<< "${tags}" `" || exit 1
+#
+#    version="`versions_filter "${versions}" "${filter}" `" || exit 1
+#    if [ -z "${version}" ]
+#    then
+#       RVAL=""
+#       return 0
+#    fi
+#
+#    #
+#    # map version number back to tags
+#    #
+#    local pattern
+#
+#    r_escaped_grep_pattern "${version}"
+#    pattern="^${RVAL}$|[a-zA-Z_-]${RVAL}\$"
+#
+#    egrep "${pattern}" <<< "${tags}" | head -1
+# }
+#
+#
+# is_tags_filter()
+# {
+#    log_entry "is_tags_filter" "$@"
+#
+#    local filter="$1"
+#
+#    filter="${filter#"${filter%%[![:space:]]*}"}" # remove leading whitespace characters
+#    case "${filter}" in
+#       [Oo][Ll][Dd][Ee][Ss][Tt]:*)
+#          return 0
+#       ;;
+#
+#       [Nn][Ee][Ww][Ee][Ss][Tt]:*)
+#          return 0
+#       ;;
+#    esac
+#
+#    case "${filter}" in
+#       *' '[Aa][Nn][Dd]' '*|*' '[Oo][Rr]' '*|*'<'*|*'>'*|*'='*)
+#          return 0
+#       ;;
+#    esac
+#
+#    return 1
+# }
+#
 fi
 :

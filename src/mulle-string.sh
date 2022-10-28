@@ -39,19 +39,205 @@ MULLE_STRING_SH="included"
 [ -z "${MULLE_BASHGLOBAL_SH}" ]    && _fatal "mulle-bashglobal.sh must be included before mulle-file.sh"
 [ -z "${MULLE_COMPATIBILITY_SH}" ] && _fatal "mulle-compatibility.sh must be included before mulle-string.sh"
 
+
+# RESET
+# NOCOLOR
+#
+#    Assortment of various string functions.
+#
+#    Functions prefixed "r_" return the result in the global variable RVAL.
+#    The return value 0 indicates success.
+#
+# TITLE INTRO
+# COLOR
+
+
+
+# ####################################################################
+#                            Conversion
+# ####################################################################
+#
+# RESET
+# NOCOLOR
+#
+#    conversion function do simple conversions such as turning a string
+#    uppercase or removing whitespace. The value in these functions is
+#    portability across zsh and older bash versions.
+#
+# SUBTITLE Conversion
+# COLOR
+
+#
+# r_trim_whitespace <string>
+#
+#   Remove surrounding whitespace from a <string>. Does not touch whitespace in
+#   the string.
+#   "  VfL Bochum   1848  " -> "VfL Bochum   1848"
+#
+function r_trim_whitespace()
+{
+   # taken from:
+   # https://stackoverflow.com/questions/369758/how-to-trim-whitespace-from-a-bash-variable
+   RVAL="$*"
+   RVAL="${RVAL#"${RVAL%%[![:space:]]*}"}"
+   RVAL="${RVAL%"${RVAL##*[![:space:]]}"}"
+}
+
+
+
+
+#
+# r_upper_firstchar <s>
+#
+#    Turn the first character of <s> into uppercase.
+#    Example: "vfl Bochum" -> "Vfl Bochum"
+#
+function r_upper_firstchar()
+{
+   case "${BASH_VERSION:-}" in
+      [0123]*)
+         RVAL="`printf "%s" "${1:0:1}" | tr '[:lower:]' '[:upper:]'`"
+         RVAL="${RVAL}${1:1}"
+      ;;
+
+      *)
+         if [ ${ZSH_VERSION+x} ]
+         then
+            RVAL="${1:0:1}"
+            RVAL="${RVAL:u}${1:1}"
+         else
+            RVAL="${1^}"
+         fi
+      ;;
+   esac
+}
+
+
+#
+# r_capitalize <s> ...
+#
+#    Turn the first character of <s> into uppercase. The remaining characters
+#    become lowercase.
+#    Example: "VFL Bochum" -> "Vfl bochum"
+#
+function r_capitalize()
+{
+   r_lowercase "$@"
+   r_upper_firstchar "${RVAL}"
+}
+
+
+#
+# r_uppercase <s>
+#
+#    Turn all character of <s> into uppercase.
+#    Example: "VFL Bochum" -> "VFL BOCHUM"
+#
+function r_uppercase()
+{
+   case "${BASH_VERSION:-}" in
+      [0123]*)
+         RVAL="`printf "%s" "$1" | tr '[:lower:]' '[:upper:]'`"
+      ;;
+
+      *)
+         if [ ${ZSH_VERSION+x} ]
+         then
+            RVAL="${1:u}"
+         else
+            RVAL="${1^^}"
+         fi
+      ;;
+   esac
+}
+
+#
+# r_lowercase <s>
+#
+#    Turn all character of <s> into uppercase.
+#    Example: "VfL Bochum" -> "vfl bochum"
+#
+function r_lowercase()
+{
+   case "${BASH_VERSION:-}" in
+      [0123]*)
+         RVAL="`printf "%s" "$1" | tr '[:upper:]' '[:lower:]'`"
+      ;;
+
+      *)
+         if [ ${ZSH_VERSION+x} ]
+         then
+            RVAL="${1:l}"
+         else
+            RVAL="${1,,}"
+         fi
+      ;;
+   esac
+}
+
+
+#
+# r_identifier <s>
+#
+#   replace any non-identifier characters in <s> with '_'
+#   Example: foo|bar becomes foo_bar
+#
+function r_identifier()
+{
+   # works in bash 3.2
+   # may want to disambiguate mulle-scion and MulleScion with __
+   # but it looks surprising for mulle--testallocator
+   #
+   RVAL="${1//-/_}" # __
+   RVAL="${RVAL//[^a-zA-Z0-9]/_}"
+   case "${RVAL}" in
+      [0-9]*)
+         RVAL="_${RVAL}"
+      ;;
+   esac
+}
+
+
 # ####################################################################
 #                            Concatenation
 # ####################################################################
 #
+# RESET
+# NOCOLOR
+#
+#    concat functions append two strings, possibly separated by a separator
+#    string. Care is taken, that an empty string does not produce a leading
+#    or dangling separator. Some functions go a step further and remove
+#    duplicate and leading/dangling separators, which are considered ugly.
+#
+#    append functions do not use a separator.
+#
+# SUBTITLE Concatenation
+# COLOR
 
-# no separator
-r_append()
+#
+# r_append <s1> <s2>
+#
+#   Concatenates two strings. Same as "${s1}${s2}"
+#   "a" "b" -> "ab"
+#
+function r_append()
 {
    RVAL="${1}${2}"
 }
 
-
-r_concat()
+#
+# r_concat <s1> <s2> [separator]
+#
+#    Concatenates two strings with a separator inbetween.
+#    If one or both strings are empty, the separator is ommitted.
+#    This function does not remove duplicate separators.
+#
+#   "a" "b"       -> "a b"
+#   "" "a"        -> "a"
+#   "a " " b" "-" -> "a - b"
+#
+function r_concat()
 {
    local separator="${3:- }"
 
@@ -69,24 +255,51 @@ r_concat()
 }
 
 
-concat()
+#
+# r_remove_duplicate <s1> [separator]
+#
+#    Removes all duplicate separators. The default separator is " ".
+#    "//x///y//" -> "/x/y/"
+#
+r_remove_duplicate()
 {
-   r_concat "$@"
-   printf "%s\n" "$RVAL"
-}
+   local s="$1"
+   local separator="${2:- }"
 
+   local escaped
+   local dualescaped
+   local replacement
 
-# https://stackoverflow.com/questions/369758/how-to-trim-whitespace-from-a-bash-variable
-r_trim_whitespace()
-{
-   RVAL="$*"
-   RVAL="${RVAL#"${RVAL%%[![:space:]]*}"}"
-   RVAL="${RVAL%"${RVAL##*[![:space:]]}"}"
+   printf -v escaped '%q' "${separator}"
+
+   dualescaped="${escaped//\//\/\/}"
+   replacement="${separator}"
+   case "${separator}" in
+      */*)
+         replacement="${escaped}"
+      ;;
+   esac
+
+   local old
+
+   RVAL="${s}"
+   old=''
+   while [ "${RVAL}" != "${old}" ]
+   do
+      old="${RVAL}"
+      RVAL="${RVAL//${dualescaped}${dualescaped}/${replacement}}"
+   done
 }
 
 
 #
-# works for a "common" set of separators
+# r_remove_ugly <s1> [separator]
+#
+#    Removes separators from front and back. Removes duplicate separators from
+#    the middle. Works for a "common" set of separators.
+#    Mainly used to clean up filepaths.
+#
+#    "//x//y//"   -> "x/y"
 #
 r_remove_ugly()
 {
@@ -121,41 +334,85 @@ r_remove_ugly()
 }
 
 #
-# this is "cross-platform" because the paths on MINGW are converted to
-# '/' already
+# r_colon_concat <s1> <s2>
 #
-
-# use for PATHs
-r_colon_concat()
+#    concatenate strings, separating them with a ':'
+#    use for PATHs. This function removes duplicate ':' as well as leading
+#    and trailing ':'
+#
+function r_colon_concat()
 {
    r_concat "$1" "$2" ":"
    r_remove_ugly "${RVAL}" ":"
 }
 
-# use for lists w/o empty elements
-r_comma_concat()
+#
+# r_comma_concat <s1> <s2>
+#
+#    concatenate strings, separating them with a ','
+#    use for lists w/o empty elements. This function removes duplicate ','
+#    as well as leading and trailing ':'.
+#
+function r_comma_concat()
 {
    r_concat "$1" "$2" ","
    r_remove_ugly "${RVAL}" ","
 }
 
-# use for CSV
-r_semicolon_concat()
+#
+# r_semicolon_concat <s1> <s2>
+#
+#    concatenate strings, separating them with a ';'
+#    use for CSV. This function does not remove duplicate ';' or leading or
+#    trailing ones.
+#
+function r_semicolon_concat()
 {
    r_concat "$1" "$2" ";"
 }
 
 
-# use for filepaths
-r_slash_concat()
+#
+# r_slash_concat <s1> <s2>
+#
+#    concatenate strings, separating them with a '/'.
+#    Use for filepaths, as this is "cross-platform", because the paths on
+#    MINGW are converted already from '\' to '/'.
+#    This function removes duplicate '/' but leaves trailing and leading '/'
+#    intact.
+#
+function r_slash_concat()
 {
    r_concat "$1" "$2" "/"
    r_remove_duplicate "${RVAL}" "/"
 }
 
 
-# remove a value from a list
-r_list_remove()
+
+
+# ####################################################################
+#                            Lists
+# ####################################################################
+#
+# RESET
+# NOCOLOR
+#
+#    A "list" is a string that consist of substrings (items), separated by a
+#    separator string. A special sort of "list" uses the linefeed ($'\n') as
+#    the item separator. Here the item is called a "line" and the list is
+#    called "lines". There is extensive support for handling such line lists.
+#
+# SUBTITLE Lists
+# COLOR
+
+#
+# r_list_remove <list> <value> [separator]
+#
+#   remove a value from a list.
+#   Example:
+#   r_list_remove "a b c" "b" will return "a c"
+#
+function r_list_remove()
 {
    local sep="${3:- }"
 
@@ -165,28 +422,37 @@ r_list_remove()
 }
 
 
-r_colon_remove()
+#
+# r_list_remove <list> <value>
+#
+#    remove value from a colon separated list
+#
+function r_colon_remove()
 {
    r_list_remove "$1" "$2" ":"
 }
 
 
-r_comma_remove()
+#
+# r_comma_remove <list> <value>
+#
+#    Remove value from a comma separated list.
+#
+function r_comma_remove()
 {
    r_list_remove "$1" "$2" ","
 }
 
 
-# use for building sentences, where space is a separator and
-# not indenting or styling
-r_space_concat()
-{
-   concat_no_double_separator "$1" "$2" | string_remove_ugly_separators
-}
-
-
-# this suppresses empty lines
-r_add_line()
+#
+# r_add_line <lines> <line>
+#
+#   Add a <line> to a <lines> which consists of zero, one or multiple
+#   substrings separated by linefeeds.
+#
+#   this function suppresses empty lines
+#
+function r_add_line()
 {
    local lines="$1"
    local line="$2"
@@ -205,7 +471,15 @@ r_add_line()
 }
 
 
-r_remove_line()
+#
+# r_remove_line <lines> <search>
+#
+#    Remove a line from a string that contains zero, one or multiple
+#    substrings separated by linefeeds.
+#
+#    Multiple occurences will be deleted
+#
+function r_remove_line()
 {
    local lines="$1"
    local search="$2"
@@ -228,7 +502,15 @@ r_remove_line()
 }
 
 
-r_remove_line_once()
+#
+# r_remove_line_once <lines> <search>
+#
+#    Remove a line from a string that contains zero, one or multiple
+#    substrings separated by linefeeds.
+#
+#    Only one occurence will be deleted
+#
+function  r_remove_line_once()
 {
    local lines="$1"
    local search="$2"
@@ -253,25 +535,44 @@ r_remove_line_once()
 }
 
 
-r_get_last_line()
+#
+# r_get_last_line <lines>
+#
+#    Retrieve the last line from a string that contains zero, one or multiple
+#    substrings separated by linefeeds.
+#
+function  r_get_last_line()
 {
   RVAL="$(sed -n '$p' <<< "$1")" # get last line
 }
 
 
-r_remove_last_line()
+#
+# r_remove_last_line <lines>
+#
+#    Remove the last line from a string that contains zero, one or multiple
+#    substrings separated by linefeeds.
+#
+function r_remove_last_line()
 {
    RVAL="$(sed '$d' <<< "$1")"  # remove last line
 }
 
 
 #
-# can't have linefeeds as delimiter
-# e.g. find_item "a,b,c" b -> 0
-#      find_item "a,b,c" d -> 1
-#      find_item "a,b,c" "," -> 1
+# find_item <s> <search> [separator]
 #
-find_item()
+#    Check if a search string is contained as a substring of a string s. The
+#    string consists of separated by separator, which by default is the ','.
+#
+#    Returns 0 if found, 1 if not found
+#
+#    can't have linefeeds as delimiter
+#    e.g. find_item "a,b,c" b -> 0
+#         find_item "a,b,c" d -> 1
+#         find_item "a,b,c" "," -> 1
+#
+function find_item()
 {
    local line="$1"
    local search="$2"
@@ -302,7 +603,7 @@ find_item()
 # is the slowest operation and most used operation. Don't dick
 # around with this without profiling!
 #
-find_empty_line_zsh()
+_find_empty_line_zsh()
 {
    local lines="$1"
 
@@ -320,8 +621,8 @@ find_empty_line_zsh()
 # this is faster than calling fgrep externally
 # this is faster than while read line <<< lines
 # this is faster than case ${lines} in 
-#f
-find_line_zsh()
+#
+_find_line_zsh()
 {
    local lines="$1"
    local search="$2"
@@ -333,7 +634,7 @@ find_line_zsh()
          return 0
       fi
 
-      find_empty_line_zsh "${lines}"
+      _find_empty_line_zsh "${lines}"
       return $?
    fi
 
@@ -351,17 +652,25 @@ find_line_zsh()
 }
 
 
-# bash:
-# this is faster than calling fgrep externally
-# this is faster than while read line <<< lines
-# this is faster than for line in lines
 #
-find_line()
+# find_line <lines> <line> [separator]
+#
+#    Check if a substring <line> is contained in the <lines> string, which
+#    consists of substrings separated by linefeed.
+#
+#    Returns 0 if found, 1 if not found
+#
+function find_line()
 {
+   # bash:
+   # this is faster than calling fgrep externally
+   # this is faster than while read line <<< lines
+   # this is faster than for line in lines
+   #
    # ZSH is apparently super slow in pattern matching
    if [ ${ZSH_VERSION+x} ]
    then
-      find_line_zsh "$@"
+      _find_line_zsh "$@"
       return $?
    fi
 
@@ -409,7 +718,12 @@ ${lines}
 }
 
 
-r_count_lines()
+#
+# r_count_lines <lines>
+#
+#    Count the number of lines contained in <lines>.
+#
+function r_count_lines()
 {
    local array="$1"
 
@@ -424,10 +738,14 @@ r_count_lines()
 }
 
 
+
 #
-# this removes any previous occurrence, its very costly
+# r_add_unique_line <lines> <line>
 #
-r_add_unique_line()
+#    Add <line> to <lines>, but ensures that this does not introduce a
+#    new duplicate.
+#
+function r_add_unique_line()
 {
    local lines="$1"
    local line="$2"
@@ -449,30 +767,47 @@ ${line}"
 }
 
 
-
-r_remove_duplicate_lines()
+#
+# r_remove_duplicate_lines <lines>
+#
+#    Remove any duplicate strings in <lines>
+#
+function r_remove_duplicate_lines()
 {
    RVAL="`awk '!x[$0]++' <<< "$@"`"
 }
 
 
-remove_duplicate_lines()
+#
+# remove_duplicate_lines <lines> ...
+#
+#    Remove any duplicate strings in <lines>. Print result to stdout.
+#
+function remove_duplicate_lines()
 {
    awk '!x[$0]++' <<< "$@"
 }
 
 
-remove_duplicate_lines_stdin()
+#
+# remove_duplicate_lines_stdin
+#
+#   Remove any duplicate strings in stdin. Print result to stdout.
+#
+function remove_duplicate_lines_stdin()
 {
    awk '!x[$0]++'
 }
 
 
 #
-# for very many lines use
-# `sed -n '1!G;h;$p' <<< "${lines}"`"
+# r_reverse_lines <lines>
 #
-r_reverse_lines()
+#    Reverse the order of <lines>.
+#    For very many lines use
+#    `sed -n '1!G;h;$p' <<< "${lines}"`"
+#
+function r_reverse_lines()
 {
    local lines="$1"
 
@@ -491,225 +826,50 @@ r_reverse_lines()
    IFS="${DEFAULT_IFS}"
 }
 
-
-#
-# makes somewhat prettier filenames, removing superflous "."
-# and trailing '/'
-# DO NOT USE ON URLs
-#
-r_filepath_cleaned()
-{
-   RVAL="$1"
-
-   [ -z "${RVAL}" ] && return
-
-   local old
-
-   old=''
-
-   # remove excess //, also inside components
-   # remove excess /./, also inside components
-   while [ "${RVAL}" != "${old}" ]
-   do
-      old="${RVAL}"
-      RVAL="${RVAL//\/.\///}"
-      RVAL="${RVAL//\/\///}"
-   done
-
-   if [ -z "${RVAL}" ] 
-   then
-      RVAL="${1:0:1}"
-   fi
-}
-
-
-r_filepath_concat()
-{
-   local i
-   local s
-   local sep
-   local fallback
-
-   s=""
-   fallback=""
-
-   for i in "$@"
-   do
-      sep="/"
-
-      r_filepath_cleaned "${i}"
-      i="${RVAL}"
-
-      case "$i" in
-         "")
-            continue
-         ;;
-
-         "."|"./")
-            if [ -z "${fallback}" ]
-            then
-               fallback="./"
-            fi
-            continue
-         ;;
-      esac
-
-      case "$i" in
-         "/"|"/.")
-            if [ -z "${fallback}" ]
-            then
-               fallback="/"
-            fi
-            continue
-         ;;
-      esac
-
-      if [ -z "${s}" ]
-      then
-         s="${fallback}$i"
-      else
-         case "${i}" in
-            /*)
-               s="${s}${i}"
-            ;;
-
-            *)
-               s="${s}/${i}"
-            ;;
-         esac
-      fi
-   done
-
-   if [ ! -z "${s}" ]
-   then
-      r_filepath_cleaned "${s}"
-   else
-      RVAL="${fallback:0:1}" # / make ./ . again
-   fi
-}
-
-
-filepath_concat()
-{
-   r_filepath_concat "$@"
-
-   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
-}
-
-
-r_upper_firstchar()
-{
-   case "${BASH_VERSION:-}" in
-      [0123]*)
-         RVAL="`printf "%s" "${1:0:1}" | tr '[:lower:]' '[:upper:]'`"
-         RVAL="${RVAL}${1:1}"
-      ;;
-
-      *)
-         if [ ${ZSH_VERSION+x} ]
-         then
-            RVAL="${1:0:1}"
-            RVAL="${RVAL:u}${1:1}"
-         else
-            RVAL="${1^}"
-         fi
-      ;;
-   esac
-}
-
-
-r_capitalize()
-{
-   r_lowercase "$@"
-   r_upper_firstchar "${RVAL}"
-}
-
-
-
-r_uppercase()
-{
-   case "${BASH_VERSION:-}" in
-      [0123]*)
-         RVAL="`printf "%s" "$1" | tr '[:lower:]' '[:upper:]'`"
-      ;;
-
-      *)
-         if [ ${ZSH_VERSION+x} ]
-         then
-            RVAL="${1:u}"
-         else
-            RVAL="${1^^}"
-         fi
-      ;;
-   esac
-}
-
-
-r_lowercase()
-{
-   case "${BASH_VERSION:-}" in
-      [0123]*)
-         RVAL="`printf "%s" "$1" | tr '[:upper:]' '[:lower:]'`"
-      ;;
-
-      *)
-         if [ ${ZSH_VERSION+x} ]
-         then
-            RVAL="${1:l}"
-         else
-            RVAL="${1,,}"
-         fi
-      ;;
-   esac
-}
-
-
-#
-# replace non-identifier characters with '_'
-# so foo|bar becomes foo_bar
-#
-r_identifier()
-{
-   # works in bash 3.2
-   # may want to disambiguate mulle-scion and MulleScion with __
-   # but it looks surprising for mulle--testallocator
-   #
-   RVAL="${1//-/_}" # __
-   RVAL="${RVAL//[^a-zA-Z0-9]/_}"
-   case "${RVAL}" in
-      [0-9]*)
-         RVAL="_${RVAL}"
-      ;;
-   esac
-}
-
-
 # ####################################################################
 #                            Strings
 # ####################################################################
+#
+
+#
+# is_yes <s>
+#
+#    this non-localized variant detects 0/1 yes/no on/off y/n and
+#    upper lowercase variante and returns 0 for YES, 1 for NO or empty
+#    and 4 for all other values
 #
 is_yes()
 {
    local s
 
    case "$1" in
-      [yY][eE][sS]|Y|1)
+      [yY][eE][sS]|[yY]|1|[oO][nN])
          return 0
       ;;
-      [nN][oO]|[nN]|0|"")
+      [nN][oO]|[nN]|0|[oO][fF][fF]|"")
          return 1
       ;;
 
       *)
-         return 255
+         return 4
       ;;
    esac
 }
 
 
 # ####################################################################
-#                            Escaping
+#                            Escape
 # ####################################################################
+
+#
+# RESET
+# NOCOLOR
+#
+#    "esape" functions prefer arbitarty strings for processing with the
+#    external tools like `sed` or internal use in `eval`.
+#
+# SUBTITLE Conversion
+# COLOR
 #
 
 #
@@ -737,8 +897,14 @@ is_yes()
 # }
 
 
-# this is heaps faster than the sed code
-r_escaped_grep_pattern()
+#
+# r_escaped_grep_pattern <s>
+#
+#    escape a string for use as a grep search pattern
+#
+#    this is heaps faster than the sed code
+#
+function r_escaped_grep_pattern()
 {
    local s="$1"
 
@@ -756,8 +922,14 @@ r_escaped_grep_pattern()
 }
 
 
-# assumed that / is used like in sed -e 's/x/y/'
-r_escaped_sed_pattern()
+#
+# r_escaped_sed_pattern <s>
+#
+#    escape a string for use as a sed search pattern
+#
+#    assumed that / is used like in sed -e 's/x/y/'
+#
+function r_escaped_sed_pattern()
 {
    local s="$1"
 
@@ -774,8 +946,14 @@ r_escaped_sed_pattern()
 }
 
 
-# assumed that / is used like in sed -e 's/x/y/'
-r_escaped_sed_replacement()
+#
+# r_escaped_sed_replacement <s>
+#
+#   escape a string for use as a sed replacement pattern
+#
+#   assumed that / is used like in sed -e 's/x/y/'
+#
+function r_escaped_sed_replacement()
 {
    local s="$1"
 
@@ -787,23 +965,40 @@ r_escaped_sed_replacement()
 }
 
 
-r_escaped_spaces()
+#
+# r_escaped_spaces <s>
+#
+#    escape spaces in a string with "\ "
+#
+function r_escaped_spaces()
 {
    RVAL="${1// /\\ }"
 }
 
 
-r_escaped_backslashes()
+#
+# r_escaped_backslashes <s>
+#
+#    escape backslashes in a string with "\\"
+#
+function r_escaped_backslashes()
 {
    RVAL="${1//\\/\\\\}"
 }
 
 
-# it's assumed you want to put contents into
-# singlequotes e.g.
-#   r_escaped_singlequotes "say 'hello'"
-#   x='${RVAL}'
-r_escaped_singlequotes()
+#
+# r_escaped_singlequotes <s>
+#
+#    escape singlequotes in a string with '"'"'
+#    which works nicely in shell scripts
+#
+#    it's assumed you want to put contents into
+#    singlequotes e.g.
+#      r_escaped_singlequotes "say 'hello'"
+#      x='${RVAL}'
+#
+function r_escaped_singlequotes()
 {
    local quote
 
@@ -812,23 +1007,38 @@ r_escaped_singlequotes()
 }
 
 
-# does not add surrounding "" 
-r_escaped_doublequotes()
+#
+# r_escaped_doublequotes <s>
+#
+#    escape " with \"
+#    does not add surrounding ""
+#
+function r_escaped_doublequotes()
 {
    RVAL="${*//\\/\\\\}"
    RVAL="${RVAL//\"/\\\"}"
 }
 
-
-# does not remove surrounding "" though
-r_unescaped_doublequotes()
+#
+# r_unescaped_doublequotes <s>
+#
+#    unescape \" to "
+#
+#    does not remove surrounding "" though
+#
+function r_unescaped_doublequotes()
 {
    RVAL="${*//\\\"/\"}"
    RVAL="${RVAL//\\\\/\\}"
 }
 
 
-r_escaped_shell_string()
+#
+# r_escaped_shell_string <s>
+#
+#    escape a string for evaluation by the shell
+#
+function r_escaped_shell_string()
 {
    printf -v RVAL '%q' "$*"
 }
@@ -838,89 +1048,68 @@ r_escaped_shell_string()
 #                          Prefix / Suffix
 # ####################################################################
 #
-string_has_prefix()
+#
+# RESET
+# NOCOLOR
+#
+#    "fix" functions do simple string tests. One night argue, that use of these
+#     functions makes shell scripts more readable.
+#
+# SUBTITLE Prefix/Suffix
+# COLOR
+#
+
+#
+# string_has_prefix <s> <prefix>
+#
+#    Check if <s> starts with <prefix>
+#
+#    Returns 0 if yes, 1 if NO
+#
+#    Example: if string_has_prefix "VfL Bochum" "VfL"
+#             then
+#                echo "as expected"
+#             fi
+function string_has_prefix()
 {
   [ "${1#$2}" != "$1" ]
 }
 
 
-string_has_suffix()
+#
+# string_has_suffix <s> <suffix>
+#
+#
+#    Check if <s> starts with <suffix>
+#
+#    Returns 0 if yes, 1 if NO
+#
+#    Example: if string_has_suffix "VfL Bochum" "chum"
+#             then
+#                echo "as expected"
+#             fi
+function string_has_suffix()
 {
   [ "${1%$2}" != "$1" ]
 }
 
 
-# much faster than calling "basename"
-r_basename()
-{
-   local filename="$1"
-
-   while :
-   do
-      case "${filename}" in
-         /)
-           RVAL="/"
-           return
-         ;;
-
-         */)
-            filename="${filename%?}"
-         ;;
-
-         *)
-            RVAL="${filename##*/}"
-            return
-         ;;
-      esac
-   done
-}
-
-
-r_dirname()
-{
-   local filename="$1"
-
-   local last
-
-   while :
-   do
-      case "${filename}" in
-         /)
-            RVAL="${filename}"
-            return
-         ;;
-
-         */)
-            filename="${filename%?}"
-            continue
-         ;;
-      esac
-      break
-   done
-
-   # need to escape filename here as it may contain wildcards
-   printf -v last '%q' "${filename##*/}"
-   RVAL="${filename%${last}}"
-
-   while :
-   do
-      case "${RVAL}" in
-         /)
-           return
-         ;;
-
-         */)
-            RVAL="${RVAL%?}"
-         ;;
-
-         *)
-            RVAL="${RVAL:-.}"
-            return
-         ;;
-      esac
-   done
-}
-
+# ####################################################################
+#                          Expansion
+# ####################################################################
+#
+#
+# RESET
+# NOCOLOR
+#
+#    Expand variables like the shell into strings. e.g.
+#    "username: ${USERNAME}" becomes "username: nat". The chief advantage over
+#    shell `eval` is, that it is safer, as no commands are run such as they
+#    would in: "username: `id`" for example.
+#
+# SUBTITLE Expansion
+# COLOR
+#
 
 #
 # get prefix leading up to character 'c', but if 'c' is quoted deal with it
@@ -1095,7 +1284,16 @@ _r_expand_string()
 }
 
 
-r_expanded_string()
+#
+# r_expanded_string <s> [flag]
+#
+#    Expand variables of the form ${varname} contained in <s>. You can also add
+#    a default value with ${varname:-default}. If flag is set to NO, only the
+#    default value is used during expansion.
+#    Example: year=1848 ; r_expanded_string "VfL Bochum ${year}"
+#             echo "${RVAL}"  # expect "VfL Bochum 1848"
+#
+function r_expanded_string()
 {
    local string="$1"
    local expand="${2:-YES}"

@@ -30,6 +30,14 @@ expect_output()
 }
 
 
+concat()
+{
+   r_concat "$@"
+
+   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
+}
+
+
 # use for lists w/o empty elements
 comma_concat()
 {

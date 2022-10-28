@@ -334,19 +334,19 @@ then
 MULLE_COMPATIBILITY_SH="included"
 
 
-shell_enable_pipefail()
+function shell_enable_pipefail()
 {
    set -o pipefail
 }
 
 
-shell_disable_pipefail()
+function shell_disable_pipefail()
 {
    set +o pipefail
 }
 
 
-shell_is_pipefail_enabled()
+function shell_is_pipefail_enabled()
 {
    case "$-" in
       *f*)
@@ -357,7 +357,7 @@ shell_is_pipefail_enabled()
 }
 
 
-shell_enable_extglob()
+function shell_enable_extglob()
 {
    if [ ${ZSH_VERSION+x} ]
    then
@@ -369,7 +369,7 @@ shell_enable_extglob()
 }
 
 
-shell_disable_extglob()
+function shell_disable_extglob()
 {
    if [ ${ZSH_VERSION+x} ]
    then
@@ -381,7 +381,7 @@ shell_disable_extglob()
 }
 
 
-shell_is_extglob_enabled()
+function shell_is_extglob_enabled()
 {
    if [ ${ZSH_VERSION+x} ]
    then
@@ -393,7 +393,7 @@ shell_is_extglob_enabled()
 }
 
 
-shell_enable_nullglob()
+function shell_enable_nullglob()
 {
    if [ ${ZSH_VERSION+x} ]
    then
@@ -404,7 +404,7 @@ shell_enable_nullglob()
 }
 
 
-shell_disable_nullglob()
+function shell_disable_nullglob()
 {
    if [ ${ZSH_VERSION+x} ]
    then
@@ -415,7 +415,7 @@ shell_disable_nullglob()
 }
 
 
-shell_is_nullglob_enabled()
+function shell_is_nullglob_enabled()
 {
    if [ ${ZSH_VERSION+x} ]
    then
@@ -426,7 +426,7 @@ shell_is_nullglob_enabled()
 }
 
 
-shell_enable_glob()
+function shell_enable_glob()
 {
    if [ ${ZSH_VERSION+x} ]
    then
@@ -437,7 +437,7 @@ shell_enable_glob()
 }
 
 
-shell_disable_glob()
+function shell_disable_glob()
 {
    if [ ${ZSH_VERSION+x} ]
    then
@@ -448,7 +448,7 @@ shell_disable_glob()
 }
 
 
-shell_is_glob_enabled()
+function shell_is_glob_enabled()
 {
    if [ ${ZSH_VERSION+x} ]
    then
@@ -468,7 +468,7 @@ shell_is_glob_enabled()
 }
 
 
-shell_is_function()
+function shell_is_function()
 {
    if [ ${ZSH_VERSION+x} ]
    then

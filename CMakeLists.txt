@@ -120,6 +120,7 @@ execute_process( COMMAND chmod a-w "src/mulle-bashfunctions-all.sh"
 
 
 set( SCRIPTS
+mulle-bash
 mulle-bashfunctions
 )
 

@@ -37,6 +37,25 @@ then
 MULLE_LOGGING_SH="included"
 
 
+# RESET
+# NOCOLOR
+#
+#    "logging" supplies functions for logging and error handling. It is
+#    also responsible for colorization. You can turn off colorization with
+#    the environment variable NO_COLOR.
+#
+#    Some _log_functions, have an alias without the leading underscore.
+#    Use the alias in unless your error message is longer than one line and
+#    you are using continuations (\). That would break the alias.
+#
+#    The advantage of the alias is, that it can be eliminated, if output is
+#    not needed. This may speed up your script as log_verbose "PWD=`pwd`"
+#    would not execute `pwd`. In contrast _log_verbose  "PWD=`pwd`" will
+#    execute `pwd`but then forego the output.
+#
+# TITLE INTRO
+# COLOR
+#
 
 _log_printf()
 {
@@ -57,6 +76,11 @@ _log_printf()
 MULLE_LOG_ERROR_PREFIX=" error: "
 MULLE_LOG_FAIL_ERROR_PREFIX=" fatal error: "
 
+#
+# _log_error
+#
+#    _log_error prints out an error message. It can not be squelched
+#
 _log_error()
 {
    _log_printf "${C_ERROR}${MULLE_EXECUTABLE_FAIL_PREFIX}${MULLE_LOG_ERROR_PREFIX}${C_ERROR_TEXT}%b${C_RESET}\n" "$*"
@@ -71,11 +95,15 @@ _log_fail()
 
 
 #
-# don't prefix with warning: just let the colors speak
-# errors are errors though
+# _log_warning
+#
+#    _log_warning prints out a warning message.
+#    Warnings will not be shown in terse mode (-t).
 #
 _log_warning()
 {
+   # don't prefix with warning: just let the colors speak
+   # errors are errors though
    if [ "${MULLE_FLAG_LOG_TERSE:-}" != 'YES' ]
    then
       _log_printf "${C_WARNING}%b${C_RESET}\n" "$*"
@@ -83,6 +111,12 @@ _log_warning()
 }
 
 
+#
+# _log_info
+#
+#    _log_info prints out an informational message. Infos will not be shown in
+#    terse mode (-t).
+#
 _log_info()
 {
    if [ "${MULLE_FLAG_LOG_TERSE:-}" != 'YES' ]
@@ -92,6 +126,11 @@ _log_info()
 }
 
 
+#
+# _log_verbose
+#
+#    _log_verbose prints out a message in verbose mode (-v).
+#
 _log_verbose()
 {
    if [ "${MULLE_FLAG_LOG_VERBOSE:-}" = 'YES' ]
@@ -101,6 +140,11 @@ _log_verbose()
 }
 
 
+#
+# _log_fluff
+#
+#    _log_fluff prints out a message in increased verbose mode (-vv).
+#
 _log_fluff()
 {
    if [ "${MULLE_FLAG_LOG_FLUFF:-}" = 'YES' ]
@@ -113,9 +157,14 @@ _log_fluff()
 }
 
 
-# setting is like fluff but different color scheme
+#
+# _log_setting
+#
+#    _log_setting prints out a message in "log settings" (-ls) mode only.
+#
 _log_setting()
 {
+   # setting is like fluff but different color scheme
    if [ "${MULLE_FLAG_LOG_SETTINGS:-}" = 'YES' ]
    then
       _log_printf "${C_SETTING}%b${C_RESET}\n" "$*"
@@ -123,9 +172,14 @@ _log_setting()
 }
 
 
-# for debugging, not for user. same as fluff
+#
+# _log_debug
+#
+#    _log_debug prints out a message in "log debug" (-ld) mode only.
+#
 _log_debug()
 {
+   # for debugging, not for user. same as fluff
    if [ "${MULLE_FLAG_LOG_DEBUG:-}" != 'YES' ]
    then
       return
@@ -142,6 +196,13 @@ _log_debug()
 }
 
 
+#
+# _log_entry
+#
+#    _log_entry prints out a message in "log debug" (-ld) mode only.
+#    Use this at the beggining of a function definition for improved
+#    debug-ability.
+#
 _log_entry()
 {
    if [ "${MULLE_FLAG_LOG_DEBUG:-}" != 'YES' ]
@@ -169,7 +230,7 @@ _log_entry()
 }
 
 
-# used by executor, so we don't if here ( or ? )
+# used by exekutor, so we don't if here ( or ? )
 _log_trace()
 {
    case "${MULLE_UNAME}" in
@@ -195,14 +256,77 @@ _log_trace()
 # y"
 # is OK
 
+#
+# log_debug
+#
+#    log_debug is an alias for _log_debug. It prints out a message in
+#    "log debug" (-ld) mode only.
+#
 alias log_debug='_log_debug'
+
+#
+# log_entry
+#
+#    log_entry is an alias for _log_entry. It prints out a message in
+#    "log debug" (-ld) mode only.
+#    Use log_entry at the beginning of a function definition for improved
+#    debug-ability.
+#
 alias log_entry='_log_entry'
+
+#
+# log_error
+#
+#    log_error prints out an error message. It is an alias for _log_error.
+#    log_error can not be squelched.
+#
 alias log_error='_log_error'
+
+#
+# log_fluff
+#
+#    log_fluff prints out a message in increased verbose mode (-vv).
+#    log_fluff is an alias for _log_fluff.
+#
 alias log_fluff='_log_fluff'
+
+#
+# log_info
+#
+#    log_fluff prints out a message unless in in "terse mode" (-t)
+#    log_info is an alias for _log_info.
+#
 alias log_info='_log_info'
+
+#
+# log_setting
+#
+#    Alias for _log_setting. log_setting prints out a message in
+#    "log settings" (-ls) mode only.
+#
+#
 alias log_setting='_log_setting'
+
+#
+# log_trace
+#
+#    Alias for _log_trace. log_trace can not be squelched.
+#
 alias log_trace='_log_trace'
+
+#
+# log_verbose
+#
+#    Alias for _log_verbose. log_verbose prints out a message in verbose
+#    mode (-v).
+#
 alias log_verbose='_log_verbose'
+
+#
+# log_warning
+#
+#    Alias for _log_warning. log_warning will not print in "terse mode" (-t)
+#
 alias log_warning='_log_warning'
 
 
@@ -214,6 +338,18 @@ alias log_warning='_log_warning'
 #
 log_set_trace_level()
 {
+   # reset to default
+   alias log_debug='_log_debug'
+   alias log_entry='_log_entry'
+   alias log_error='_log_error'
+   alias log_fluff='_log_fluff'
+   alias log_info='_log_info'
+   alias log_setting='_log_setting'
+   alias log_trace='_log_trace'
+   alias log_verbose='_log_verbose'
+   alias log_warning='_log_warning'
+
+
    if [ "${MULLE_FLAG_LOG_DEBUG:-}" != 'YES' ]
    then
       alias log_entry=': #'
@@ -308,7 +444,12 @@ stacktrace()
 }
 
 
-fail()
+#
+# fail
+#
+#    The mulle-bashfunctions error and exit function.
+#
+function fail()
 {
    if [ ! -z "$*" ]
    then
@@ -327,7 +468,13 @@ fail()
 MULLE_INTERNAL_ERROR_PREFIX=" *** internal error ***:"
 
 
-_internal_fail()
+#
+# _internal_fail
+#
+#    The mulle-bashfunctions error and exit function with stacktrace.
+#    Use this function in assert-like functionality.
+#
+function _internal_fail()
 {
    _log_printf "${C_ERROR}${MULLE_EXECUTABLE_FAIL_PREFIX}${MULLE_INTERNAL_ERROR_PREFIX}${C_ERROR_TEXT}%b${C_RESET}\n" "$*"
    stacktrace

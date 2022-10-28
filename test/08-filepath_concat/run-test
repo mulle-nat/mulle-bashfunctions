@@ -38,6 +38,14 @@ fail()
 }
 
 
+filepath_concat()
+{
+   r_filepath_concat "$@"
+
+   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
+}
+
+
 test_filepath_concat()
 {
    local output

@@ -1,0 +1,777 @@
+#! /bin/sh
+#
+#   Copyright (c) 2022 Nat! - Mulle kybernetiK
+#   All rights reserved.
+#
+#   Redistribution and use in source and binary forms, with or without
+#   modification, are permitted provided that the following conditions are met:
+#
+#   Redistributions of source code must retain the above copyright notice, this
+#   list of conditions and the following disclaimer.
+#
+#   Redistributions in binary form must reproduce the above copyright notice,
+#   this list of conditions and the following disclaimer in the documentation
+#   and/or other materials provided with the distribution.
+#
+#   Neither the name of Mulle kybernetiK nor the names of its contributors
+#   may be used to endorse or promote products derived from this software
+#   without specific prior written permission.
+#
+#   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+#   AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+#   IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+#   ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+#   LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+#   CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+#   SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+#   INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+#   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+#   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+#   POSSIBILITY OF SUCH DAMAGE.
+#
+# shellcheck shell=bash
+# shellcheck disable=SC2236
+# shellcheck disable=SC2166
+# shellcheck disable=SC2006
+
+[ "${TRACE}" = 'YES' -o "${MULLE_BASH_TRACE}" = 'YES' ] && set -x && : "$0" "$@"
+
+
+_fatal()
+{
+   echo "fatal error ($0): $*" >&2
+   exit 1
+}
+
+
+# ***
+# *** STAGE 1 : Boot into bash or zsh
+# ***           We are in sh (or something like this)
+# ***
+
+#
+# Prelude to be placed at top of each script. Rerun this script either in
+# bash or zsh, if not already running in either (which can happen!)
+# Allows script to run on systems that either have bash (linux) or
+# zsh (macOS) only by default.
+#
+# Unfortunately you can't have an interactive shell with -c, so we can't have
+# an interactive mulle-bash with mulle-bashfunctions preloaded. Work around
+# is to load them manually with . `mulle-bashfunctions load`
+#
+if [ "${1:-}" != --no-auto-shell ]
+then
+   # bourne shell does not know "! -v" for checking for undefined
+   if [ -z "${BASH_VERSION}" -a -z "${ZSH_VERSION}" ]
+   then
+      exe_shell="`command -v "bash" `"
+      exe_shell="${exe_shell:-`command -v "zsh" `}"
+
+      script="$0"
+
+      #
+      # Quote incoming arguments for shell expansion
+      #
+      args=""
+      for arg in "$@"
+      do
+         # True bourne sh doesn't know ${a//b/c} and <<<
+         case "${arg}" in
+            *\'*)
+               # Use cat instead of echo to avoid possible echo -n
+               # problems. Escape single quotes in string.
+               arg="`cat <<EOF | sed -e s/\'/\'\\\"\'\\\"\'/g
+${arg}
+EOF
+`"
+            ;;
+         esac
+         if [ -z "${args}" ]
+         then
+            args="'${arg}'"
+         else
+            args="${args} '${arg}'"
+         fi
+      done
+
+      #
+      # bash/zsh will use arg after -c <arg> as $0, convenient!
+      #
+      exec "${exe_shell:-bash}" -c ". ${script} --no-auto-shell ${args}" "${script}"
+   fi
+   if [ ${BASH_VERSION+x} ]
+   then
+      set +o posix
+   fi
+else
+   shift  # get rid of --no-auto-shell
+fi
+
+#
+# leading backslash ? looks like we're getting called from
+# mingw via a .BAT or so. Correct this now
+#
+case "$PATH" in
+   "\\"*)
+      PATH="${PATH//\\/\/}"
+   ;;
+esac
+
+
+
+# ***
+# *** STAGE 2 : Determine requirements for mulle-bashfunctions library to use.
+# ***           We are in bash! (or zsh)
+# ***
+
+
+#
+# this is "our" version
+# the actual loaded MULLE_BASHFUNCTIONS_VERSION may differ (and change this
+# though)
+#
+MULLE_BASHFUNCTIONS_VERSION="5.0.0"
+
+MULLE_EXECUTABLE="$1"
+
+
+#
+# allow symlinks like mulle-bash[-variant].[version]
+#
+MULLE_BASHFUNCTIONS_VARIANT="${0##*/}" # get filename
+MULLE_BASHFUNCTIONS_VARIANT="${MULLE_BASHFUNCTIONS_VARIANT#mulle-bash}"
+MULLE_BASHFUNCTIONS_VARIANT="${MULLE_BASHFUNCTIONS_VARIANT#-}"    # get variant part
+
+MULLE_BASHFUNCTIONS_VERSION_QUALIFIER="${MULLE_BASHFUNCTIONS_VARIANT#*.}" # get all extensions
+MULLE_BASHFUNCTIONS_VARIANT="${MULLE_BASHFUNCTIONS_VARIANT%.*}"   # strip extension
+
+
+if [ $# -eq 0 ]
+then
+   _fatal "mulle-bash can't be run interactively."$'\n'"Run \`mulle-bashfunctions help\` for help."
+fi
+
+if [ "$1" = "libexec-dir" ]
+then
+   MULLE_BASHFUNCTIONS_VERSION_QUALIFIER="${2:-}"
+else
+   if [ -z "${MULLE_BASHFUNCTIONS_VARIANT}" -o -z "${MULLE_BASHFUNCTIONS_VERSION_QUALIFIER}" ]
+   then
+      if [ ! -r "$1" ]
+      then
+         _fatal "Can't open \"$1\", need absolute or relative path"
+      fi
+
+      #
+      # check lines for a '#! MULLE_BASHFUNCTIONS_VERSION_QUALIFIER comment,
+      # if there is one take this version to find libexec-dir
+      #
+      while :
+      do
+         IFS=$'n' read -r line
+         case "${line}" in
+            \#\!*)
+            ;;
+
+            *)
+               _fatal "\"$1\" is not a usable shell script as #! is missing"
+            ;;
+         esac
+
+         done=
+         while [ "${done}" != 'YES' ]
+         do
+            IFS=$'n' read -r line
+            case "${line}" in
+               \#\!*MULLE_BASHFUNCTIONS_VERSION_QUALIFIER*=*)
+                  version="${line#\#\!}"     # remove #!
+                  version="${version%%#*}"   # remove any comments
+                  version="${version#*MULLE_BASHFUNCTIONS_VERSION_QUALIFIER*=}" # remove
+                  version="${version%%\ }"   # remove spaces
+                  version="${version##\ }"   # remove spaces
+                  MULLE_BASHFUNCTIONS_VERSION_QUALIFIER=${version}  # remove whitespace
+               ;;
+
+               \#\!*MULLE_BASHFUNCTIONS_VARIANT*=*)
+                  variant="${line#\#\!}"     # remove #!
+                  variant="${variant%%#*}"   # remove any comments
+                  variant="${variant#*MULLE_BASHFUNCTIONS_VARIANT*=}" # remove
+                  variant="${variant%%\ }"   # remove spaces
+                  variant="${variant##\ }"   # remove spaces
+                  MULLE_BASHFUNCTIONS_VARIANT="-${variant}"  # remove whitespace
+               ;;
+
+               *)
+                  done='YES'
+               ;;
+            esac
+         done
+
+         unset done
+         unset line
+
+         break
+      done < "$1"
+   fi
+fi
+
+
+# ***
+# ***  Ungainly temporary library code follows, skip to STAGE 3
+# ***
+
+r_add_line()
+{
+   local lines="$1"
+   local line="$2"
+
+   if [ ! -z "${lines:0:1}" ]
+   then
+      if [ ! -z "${line:0:1}" ]
+      then
+         RVAL="${lines}"$'\n'"${line}"
+      else
+         RVAL="${lines}"
+      fi
+   else
+      RVAL="${line}"
+   fi
+}
+
+
+r_escaped_sed_pattern()
+{
+   local s="$1"
+
+   s="${s//\\/\\\\}"
+   s="${s//\[/\\[}"
+   s="${s//\]/\\]}"
+   s="${s//\//\\/}"
+   s="${s//\$/\\$}"
+   s="${s//\*/\\*}"
+   s="${s//\./\\.}"
+   s="${s//\^/\\^}"
+
+   RVAL="$s"
+}
+
+
+r_dirname()
+{
+   RVAL="$1"
+
+   while :
+   do
+      case "${RVAL}" in
+         /)
+            return
+         ;;
+
+         */)
+            RVAL="${RVAL%?}"
+            continue
+         ;;
+      esac
+      break
+   done
+
+   local last
+
+   last="${RVAL##*/}"
+   RVAL="${RVAL%${last}}"
+
+   while :
+   do
+      case "${RVAL}" in
+         /)
+           return
+         ;;
+
+         */)
+            RVAL="${RVAL%?}"
+         ;;
+
+         *)
+            RVAL="${RVAL:-.}"
+            return
+         ;;
+      esac
+   done
+}
+
+
+r_prepend_path_if_relative()
+{
+   case "$2" in
+      /*)
+         RVAL="$2"
+      ;;
+
+      *)
+         RVAL="$1/$2"
+      ;;
+   esac
+}
+
+
+r_resolve_symlinks()
+{
+   local filepath
+
+   RVAL="$1"
+
+   if filepath="`readlink "${RVAL}"`"
+   then
+      r_dirname "${RVAL}"
+      r_prepend_path_if_relative "${RVAL}" "${filepath}"
+      r_resolve_symlinks "${RVAL}"
+   fi
+}
+
+
+#
+# sort them in numeric order so 10.1.2, 9.1.0, 9.22.0, 9.3.0
+# becomes 10.1.2, 9.22.0, 9.3.0, 9.1.0 when sorting reverse (sortflags="r")
+# or 9.1.0, 9.3.0, 9.22.0, 10.1.2 with the default sort
+#
+versions_sort()
+{
+   local sortflags="$1"
+
+   sort -u -t. -k "1,1n${sortflags}" -k "2,2n${sortflags}" -k "3,3n${sortflags}"
+}
+
+
+#
+# Plop our version in, sort and pick the ones after ours
+#
+versions_find_next()
+{
+   local versions="$1"
+   local version="$2"
+   local sortflags="$3"
+
+   #
+   # If ours is not in there yet, plop it in
+   #
+   if ! fgrep -q -s -x "${version}" <<< "${versions}"
+   then
+      r_add_line "${versions}" "${version}"
+      versions="${RVAL}"
+   fi
+
+   # Now sort again and pick the one after ours
+   versions="`versions_sort ${sortflags} <<< "${versions}" `"
+
+   r_escaped_sed_pattern "${version}"
+
+   # delete all lines up to pattern, then implicitly print and quit
+   # sed -e "0,/^${RVAL}\$/d" -e '{q;}' <<< "${versions}"
+
+   # want a list of applicable versions
+   sed -e "0,/^${RVAL}\$/d" <<< "${versions}"
+}
+
+
+#
+# will filter versions according to operation and version
+# the result will be sorted in ascending order
+#
+versions_operation()
+{
+   local versions="$1"
+   local operation="$2"
+   local version="$3"
+
+   case "${operation}" in
+      '>=')
+         fgrep -x "${version}" <<< "${versions}"
+         versions_find_next "${versions}" "${version}"
+      ;;
+
+      '>')
+         versions_find_next "${versions}" "${version}"
+      ;;
+
+      '<=')
+         versions_find_next "${versions}" "${version}" "r" | versions_sort
+         fgrep -x "${version}" <<< "${versions}"
+      ;;
+
+      '<')
+         versions_find_next "${versions}" "${version}" "r" | versions_sort
+      ;;
+
+      '==')
+         fgrep -x "${version}" <<< "${versions}"
+      ;;
+
+      '!=')
+         versions_sort <<< "${versions}"  | \
+            fgrep -x -v "${version}" | \
+            "${_choose}" -1
+      ;;
+
+      *)
+         _internal__fatal "unknown operator \"${operator}\""
+      ;;
+   esac
+
+   return 0
+}
+
+
+#
+# A small parser
+#
+
+r_versions_qualify_s()
+{
+#  log_entry "r_versions_qualify_s" "${_s}" "$@"
+
+   local versions="$1"
+
+   local operator
+   local version
+
+   _s="${_s#"${_s%%[![:space:]]*}"}" # remove leading whitespace characters
+   case "${_s}" in
+      "("*)
+         _s="${_s:1}"
+         r_versions_qualify "${versions}"
+
+         _s="${_s#"${_s%%[![:space:]]*}"}" # remove leading whitespace characters
+         if [ "${_closer}" != 'YES' ]
+         then
+            if [ "${_s:0:1}" != ")" ]
+            then
+               _fatal "Closing ) missing at \"${_s}\" of versions qualifier \"${_qualifier}\""
+            fi
+            _s="${_s:1}"
+         fi
+         return
+      ;;
+
+      '>='*|'<='*|'=='*|'!='*)
+         operator="${_s:0:2}"
+         _s="${_s:2}"
+      ;;
+
+      '<>'*)
+         operator='!='
+         _s="${_s:2}"
+      ;;
+
+      '<'*|'>'*)
+         operator="${_s:0:1}"
+         _s="${_s:1}"
+      ;;
+
+      '='*)
+         operator='=='
+         _s="${_s:1}"
+      ;;
+
+      [0-9]*)
+         operator='>='
+      ;;
+
+      "")
+         _fatal "Missing expression after versions qualifier \"${_qualifier}\""
+      ;;
+
+      *)
+         _fatal "Unknown command at \"${_s}\" of versions qualifier \"${_qualifier}\""
+      ;;
+   esac
+
+   ## fall thru for common operation code
+   _s="${_s#"${_s%%[![:space:]]*}"}" # remove leading whitespace characters
+   version="${_s%%[ )]*}"
+   _s="${_s#"${version}"}"
+   #log_entry tags_match "${versions}" "${key}"
+   RVAL="`versions_operation "${versions}" "${operator}" "${version}"`" || exit 1
+}
+
+
+r_versions_qualify_i()
+{
+#  log_entry "r_versions_qualify_i" "${_s}" "$@"
+   local versions="$1"
+   local result="$2"
+
+   _s="${_s#"${_s%%[![:space:]]*}"}" # remove leading whitespace characters
+   case "${_s}" in
+      [Aa][Nn][Dd]*)
+         _s="${_s:3}"
+         r_versions_qualify "${versions}"
+         RVAL="`fgrep -x -f <( echo "${result}") <<< "${RVAL}" `"
+         return 0
+      ;;
+
+      [Oo][Rr]*)
+         _s="${_s:2}"
+         r_versions_qualify "${versions}"
+         r_add_line "${result}" "${RVAL}"
+
+         RVAL="`sort -u <<< "${RVAL}"`"
+         return 0
+      ;;
+
+      ")")
+         echo "${result}"
+         return 0
+      ;;
+
+      "")
+         echo "${result}"
+         return 0
+      ;;
+   esac
+
+   _fatal "Unexpected expression at ${_s} of versions qualifier \"${_qualifier}\""
+}
+
+
+r_versions_qualify()
+{
+#  log_entry "r_versions_qualify" "${_s}" "$@"
+
+   local versions="$1"
+
+   local result
+
+   r_versions_qualify_s "${versions}"
+   result="${RVAL}"
+
+   while :
+   do
+      _s="${_s#"${_s%%[![:space:]]*}"}" # remove leading whitespace characters
+      case "${_s}" in
+         ")"*|"")
+            break
+         ;;
+      esac
+      r_versions_qualify_i "${versions}" "${result}"
+      result="${RVAL}"
+   done
+
+   RVAL="${result}"
+}
+
+
+#
+#
+#
+versions_filter()
+{
+   local versions="$1"
+   local filter="$2"
+
+   local _choose
+
+   # used for error messages
+   # pick newest by default
+   _choose='tail'
+
+   filter="${filter#"${filter%%[![:space:]]*}"}" # remove leading whitespace characters
+
+   case "${filter}" in
+      [Oo][Ll][Dd][Ee][Ss][Tt]:*)
+         filter="${filter:7}"
+         _choose='head'
+      ;;
+
+      [Nn][Ee][Ww][Ee][Ss][Tt]:*)
+         filter="${filter:7}"
+         _choose='tail'
+      ;;
+   esac
+
+   local _qualifier
+
+   _qualifier="${filter}"
+
+   if [ -z "${filter}" ]
+   then
+      filter=">= 0.0.0"
+   fi
+
+   local _s
+   local _closer
+
+   # used to traverse the string
+   _s="${filter}"
+
+   r_versions_qualify "${versions}"
+   if [ ! -z "${RVAL}" ]
+   then
+      "${_choose}" -1 <<< "${RVAL}"
+   fi
+
+   return 0
+}
+
+
+#
+# this r_get_libexec_dir is actually more powerful than that
+# in mulle-init.sh
+#
+r_get_libexec_dir()
+{
+   local executablepath="$1"
+   local subdir="$2"
+   local matchfile="$3"
+   local qualifier="$4"
+
+   local exedirpath
+   local prefix
+
+   case "${executablepath}" in
+      \.*|/*|~*)
+      ;;
+
+      *)
+         executablepath="`command -v "${executablepath}"`"
+      ;;
+   esac
+
+   r_resolve_symlinks "${executablepath}"
+   executablepath="${RVAL}"
+
+   r_dirname "${executablepath}"
+   exedirpath="${RVAL}"
+
+   r_dirname "${exedirpath}"
+   prefix="${RVAL}"
+
+   local libexec_dir
+
+   libexec_dir="${prefix}/libexec/${subdir}"
+
+   if [ ! -z "${qualifier}" ]
+   then
+      versions="`( cd "${libexec_dir}" ; ls -1d [0-9]*.[0-9]*.[0-9]* ) 2> /dev/null`"
+      if [ -z "${versions}" ]
+      then
+         versions="${MULLE_BASHFUNCTIONS_VERSION}"
+      fi
+
+      version="`versions_filter "${versions}" "${qualifier}" `"
+      if [ -z "${version}" ]
+      then
+         _fatal "No installed mulle-bashfunctions versions match ${qualifier}"
+      fi
+      libexec_dir="${libexec_dir}/${version}"
+   fi
+
+
+   if [ ! -f "${libexec_dir}/${matchfile}" ]
+   then
+      libexec_dir="${exedirpath}/src"
+   fi
+
+   case "${libexec_dir}" in
+      /*|~*)
+         RVAL="${libexec_dir}"
+      ;;
+
+      .)
+         RVAL="$PWD"
+      ;;
+
+      *)
+         RVAL="$PWD/${libexec_dir}"
+      ;;
+   esac
+
+   if [ ! -f "${RVAL}/${matchfile}" ]
+   then
+      _fatal "%s\n" "$0 fatal error: Could not find \"${subdir}\" libexec (${PWD#${MULLE_USER_PWD}/})"
+   fi
+}
+
+
+# ***
+# *** STAGE 3 : Figure out MULLE_BASHFUNCTIONS_LIBEXEC_DIR on this machine.
+# ***
+
+if [ -z "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR:-}" ]
+then
+   r_get_libexec_dir "$0" \
+                     "mulle-bashfunctions" \
+                     "mulle-bashfunctions${MULLE_BASHFUNCTIONS_VARIANT}.sh" \
+                     "${MULLE_BASHFUNCTIONS_VERSION_QUALIFIER}"
+
+   if [ -z "${RVAL}" ]
+   then
+      _fatal "Could not find mulle-bashfunctions libexec directory (PWD: $PWD)"
+   fi
+   MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${RVAL}"
+fi
+
+if [ "$1" = "libexec-dir" ]
+then
+   printf "%s\n" "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}"
+   exit 0
+fi
+
+
+# get rid of all these functions, so mulle-bashfunctions can silenty load
+# better versions
+
+unset -f r_add_line
+unset -f r_dirname
+unset -f r_escaped_sed_pattern
+unset -f r_get_libexec_dir
+unset -f r_prepend_path_if_relative
+unset -f r_resolve_symlinks
+unset -f r_versions_qualify
+unset -f r_versions_qualify_i
+unset -f r_versions_qualify_s
+unset -f versions_filter
+unset -f versions_find_next
+unset -f versions_operation
+unset -f versions_sort
+
+
+# ***
+# *** STAGE 4 : Load mulle-bashfunctions library
+# ***
+
+
+if ! . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions${MULLE_BASHFUNCTIONS_VARIANT}.sh"
+then
+   _fatal "Failed to load \"${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions${MULLE_BASHFUNCTIONS_VARIANT}.sh\""
+fi
+
+unset -f _fatal
+
+[ ${MULLE_BASHLOADER_SH+x} ] ||  _fatal "Internal inconsistency error"
+
+
+# ***
+# *** STAGE 5 : Clear some global state
+# ***
+
+
+MULLE_FLAG_MAGNUM_FORCE='NO'
+
+# technical flags
+MULLE_TRACE=
+MULLE_FLAG_EXEKUTOR_DRY_RUN='NO'
+MULLE_FLAG_LOG_DEBUG='NO'
+MULLE_FLAG_LOG_EXEKUTOR='NO'
+MULLE_FLAG_LOG_FLUFF='NO'
+MULLE_FLAG_LOG_SETTINGS='NO'
+MULLE_FLAG_LOG_VERBOSE='NO'
+MULLE_TRACE_POSTPONE='NO'
+
+
+# ***
+# *** STAGE 6 : Execute actual shell script
+# ***
+
+shift
+
+. "${MULLE_EXECUTABLE}" "$@"

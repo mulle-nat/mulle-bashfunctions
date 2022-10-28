@@ -39,7 +39,7 @@ MULLE_ARRAY_SH="included"
 [ -z "${MULLE_LOGGING_SH}" ] && _fatal "mulle-logging.sh must be included before mulle-array.sh"
 
 
-function array_value_check()
+_array_value_check()
 {
    local value="$1"
 
@@ -51,7 +51,12 @@ function array_value_check()
 }
 
 
-r_add_line_lf()
+#
+# r_add_line_lf <array> <line>
+#
+#    Add a line to <array>. You can add empty lines.
+#
+function r_add_line_lf()
 {
    local lines="$1"
    local line="$2"
@@ -65,8 +70,12 @@ r_add_line_lf()
    RVAL="${lines}${line}"
 }
 
-
-r_get_line_at_index()
+#
+# r_get_line_at_index <array> <index>
+#
+#    Retrieve a line from <array> at <index>
+#
+function r_get_line_at_index()
 {
    local array="$1"
    local i="${2:-0}"
@@ -85,13 +94,18 @@ r_get_line_at_index()
 }
 
 
-r_insert_line_at_index()
+#
+# r_insert_line_at_index <array> <index> <line>
+#
+#    Insert a <line> into <array> at <index>
+#
+function r_insert_line_at_index()
 {
    local array="$1"
    local i="$2"
    local value="$3"
 
-   array_value_check "${value}"
+   _array_value_check "${value}"
 
    local line
    local rval
@@ -120,8 +134,12 @@ r_insert_line_at_index()
 }
 
 
-
-r_lines_in_range()
+#
+# r_lines_in_range <array> <index> <count>
+#
+#     Return <count> lines in <array> starting at <index>
+#
+function r_lines_in_range()
 {
    local array="$1"
    local i="$2"
@@ -196,7 +214,7 @@ r_lines_in_range()
 # assoc array contents can contain any characters except newline
 # assoc array keys should be identifiers
 #
-function assoc_array_key_check()
+_assoc_array_key_check()
 {
    local key="$1"
 
@@ -211,30 +229,30 @@ function assoc_array_key_check()
 }
 
 
-function assoc_array_value_check()
+_assoc_array_value_check()
 {
-   array_value_check "$@"
+   _array_value_check "$@"
 }
 
 
-function _r_assoc_array_add()
+_r_assoc_array_add()
 {
    local array="$1"
    local key="$2"
    local value="$3"
 
-   assoc_array_key_check "${key}"
-   assoc_array_value_check "${value}"
+   _assoc_array_key_check "${key}"
+   _assoc_array_value_check "${value}"
 
 # DEBUG code
 #   key="`_assoc_array_key_check "$2"`"
-#   value="`array_value_check "$3"`"
+#   value="`_array_value_check "$3"`"
 
    r_add_line "${array}" "${key}=${value}"
 }
 
 
-function _r_assoc_array_remove()
+_r_assoc_array_remove()
 {
    local array="$1"
    local key="$2"
@@ -260,7 +278,12 @@ function _r_assoc_array_remove()
 }
 
 
-r_assoc_array_get()
+#
+# r_assoc_array_get <array> <key>
+#
+#    Retrieve value for <key> stored in <array>.
+#
+function r_assoc_array_get()
 {
    local array="$1"
    local key="$2"
@@ -289,7 +312,12 @@ r_assoc_array_get()
 }
 
 
-assoc_array_all_keys()
+#
+# assoc_array_all_keys <array>
+#
+#    Output to stdout all keys stored in <array>.
+#
+function assoc_array_all_keys()
 {
    local array="$1"
 
@@ -297,7 +325,12 @@ assoc_array_all_keys()
 }
 
 
-assoc_array_all_values()
+#
+# assoc_array_all_values <array>
+#
+#    Output to stdout all values contained in <array>.
+#
+function assoc_array_all_values()
 {
    local array="$1"
 
@@ -305,7 +338,12 @@ assoc_array_all_values()
 }
 
 
-r_assoc_array_set()
+#
+# r_assoc_array_set <array> <key> <value>
+#
+#    Set <value> for <key> in <array>
+#
+function r_assoc_array_set()
 {
    local array="$1"
    local key="$2"
@@ -333,11 +371,14 @@ r_assoc_array_set()
 
 
 #
-# merge second array into first array
-# meaning if key in second array exists it overwrites
-# the value in the first array
+# assoc_array_merge_with_array <array1> <array2>
 #
-assoc_array_merge_with_array()
+#    Merge second array into first array
+#    meaning if key in second array exists it overwrites
+#    the value in the first array.
+#    The result is printed to stdout.
+#
+function assoc_array_merge_with_array()
 {
    local array1="$1"
    local array2="$2"
@@ -347,11 +388,14 @@ assoc_array_merge_with_array()
 
 
 #
-# add second array into first array
-# meaning only keys in second array that don't exists in the
-# first are added
+# assoc_array_augment_with_array <array1> <array2>
 #
-assoc_array_augment_with_array()
+#    Add second array into first array.
+#    Meaning only keys in second array that don't exists in the
+#    first are added.
+#    The result is printed to stdout.
+#
+function assoc_array_augment_with_array()
 {
    local array1="$1"
    local array2="$2"

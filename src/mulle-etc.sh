@@ -42,7 +42,14 @@ MULLE_ETC_SH="included"
 # contain user edits. The unchanged files are symlinked, so that only the
 # etc folder is used, but the unchanged contents are still upgradable
 #
-etc_prepare_for_write_of_file()
+
+
+#
+# etc_prepare_for_write_of_file <filename>
+#
+#    Removes <filename> it is a symlink, otherwise doesn't.
+#
+function etc_prepare_for_write_of_file()
 {
    log_entry "etc_prepare_for_write_of_file" "$@"
 
@@ -55,7 +62,12 @@ etc_prepare_for_write_of_file()
 }
 
 
-etc_make_file_from_symlinked_file()
+#
+# etc_make_file_from_symlinked_file <dstfile>
+#
+#    Turn a symlink into a file with the contents of the symlink destination.
+#
+function etc_make_file_from_symlinked_file()
 {
    log_entry "etc_make_file_from_symlinked_file" "$@"
 
@@ -100,7 +112,18 @@ etc_make_file_from_symlinked_file()
 }
 
 
-etc_symlink_or_copy_file()
+#
+# etc_symlink_or_copy_file <srcfile> <dstdir> [filename] [symlink]
+#
+#    Copy or symlink a <srcfile> to directory <dstdir>. You may choose a
+#    a different <filename> for the destination.
+#    You can force the use of symlinks, with "YES" for <symlink>. Use "NO" for
+#    copy, or leave empty for the default actions (which is to use symlinks,
+#    if available on the platform)
+#
+#    If the destination exists, this function does returns with 1.
+#
+function etc_symlink_or_copy_file()
 {
    log_entry "etc_symlink_or_copy_file" "$@"
 
@@ -125,7 +148,8 @@ etc_symlink_or_copy_file()
 
    if [ -e "${dstfile}" ]
    then
-      fail "\"${dstfile}\" already exists"
+      log_error "\"${dstfile}\" already exists"
+      return 1
    fi
 
    r_mkdir_parent_if_missing "${dstfile}"
@@ -166,7 +190,16 @@ etc_symlink_or_copy_file()
 }
 
 
-etc_setup_from_share_if_needed()
+#
+# etc_setup_from_share_if_needed <etc> <share> [symlink]
+#
+#    Setup an <etc> directory from <share>. This will by done by coping or
+#    by generating symlinks in <etc>.
+#    You can force the use of symlinks, with "YES" for <symlink>. Use "NO" for
+#    copy, or leave empty for the default actions (which is to use symlinks,
+#    if available on the platform)
+#
+function etc_setup_from_share_if_needed()
 {
    log_entry "etc_setup_from_share_if_needed" "$@"
 
@@ -210,7 +243,12 @@ etc_setup_from_share_if_needed()
 }
 
 
-etc_remove_if_possible()
+#
+# etc_remove_if_possible <etc> <share>
+#
+#    Remove <etc> directory, if it's contents are identical to <share>
+#
+function etc_remove_if_possible()
 {
    log_entry "etc_remove_if_possible" "$@"
 
@@ -230,10 +268,17 @@ etc_remove_if_possible()
 
 
 #
-# walk through etc symlinks, cull those that point to knowwhere
-# replace files with symlinks, whose content is identical to share
+# etc_repair_files <share> <etc> [glob] [add] [symlink]
 #
-etc_repair_files()
+#    Walk through etc symlinks, cull those that point to knowhere.
+#    Replace files with symlinks, whose content is identical to those in share.
+#    On platforms with no symlinks, the files will be copied.
+#
+#    glob    : set to non-empty to perform a glob test
+#    add     : set to "YES" to add new files to <etc>
+#    symlink : set to "NO", "YES or "" (default)
+#
+function etc_repair_files()
 {
    log_entry "etc_repair_files" "$@"
 

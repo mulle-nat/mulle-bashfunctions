@@ -41,13 +41,19 @@ MULLE_FILE_SH="included"
 [ -z "${MULLE_EXEKUTOR_SH}" ]   && _fatal "mulle-exekutor.sh must be included before mulle-file.sh"
 
 
-
-
 # ####################################################################
 #                        Files and Directories
 # ####################################################################
 #
-mkdir_if_missing()
+
+#
+# mkdir_if_missing <directory>
+#
+#    Create <directory>, if not already there. If this can't be done, because
+#    of permissions maybe or because there is a file under this name there,
+#    mkdir_if_missing will print an error and exit!
+#
+function mkdir_if_missing()
 {
    [ -z "$1" ] && _internal_fail "empty path"
 
@@ -85,18 +91,33 @@ mkdir_if_missing()
 }
 
 
-r_mkdir_parent_if_missing()
+#
+# r_mkdir_parent_if_missing <filename>
+#
+#    Ensure that <directory> is there to write to <filename>.
+#    If this can't be done, r_mkdir_parent_if_missing will print an error and
+#    exit!
+#
+#    Returns the name of the directory in all cases.
+#    Returns 1 if the directory need not be created.
+#
+function r_mkdir_parent_if_missing()
 {
-   local dstdir="$1"
+   local filename="$1"
 
-   r_dirname "${dstdir}"
-   case "${RVAL}" in
+   local dirname
+
+   r_dirname "${filename}"
+   dirname="${RVAL}"
+
+   case "${dirname}" in
       ""|\.)
       ;;
 
       *)
-         mkdir_if_missing "${RVAL}"
-         return $?
+         mkdir_if_missing "${dirname}"
+         RVAL="${dirname}"
+         return 0
       ;;
    esac
 
@@ -104,14 +125,12 @@ r_mkdir_parent_if_missing()
 }
 
 
-# need this still for mulle-objc-lista
-mkdir_parent_if_missing()
-{
-   r_mkdir_parent_if_missing "$@"
-}
-
-
-dir_is_empty()
+#
+# dir_is_empty <directory>
+#
+#    Returns 0 if there are no files in <directory>
+#
+function dir_is_empty()
 {
    [ -z "$1" ] && _internal_fail "empty path"
 
@@ -127,6 +146,13 @@ dir_is_empty()
 }
 
 
+#
+# rmdir_safer <directory>
+#
+#    Tries valiantly to remove directory. If the directory isn't there, that's
+#    no problem. r_assert_sane_path is used to check, that the user isn't
+#    accidentally deleting some system path.
+#
 rmdir_safer()
 {
    [ -z "$1" ] && _internal_fail "empty path"
@@ -140,6 +166,11 @@ rmdir_safer()
 }
 
 
+#
+# rmdir_if_empty <directory>
+#
+#    Remove <director> if it is unsed. Exits on failure.
+#
 rmdir_if_empty()
 {
    [ -z "$1" ] && _internal_fail "empty path"
@@ -181,13 +212,25 @@ _create_file_if_missing()
 }
 
 
-create_file_if_missing()
+#
+# create_file_if_missing <filename>
+#
+#    Create a file, if none exists already. Will create directories as needed.
+#    Will exit on failure. The file will contain the string
+#    '# intentionally blank file'
+#
+function create_file_if_missing()
 {
    _create_file_if_missing "$1" "# intentionally blank file"
 }
 
 
-merge_line_into_file()
+#
+# merge_line_into_file <line> <file>
+#
+#    Add <line> to <file>, if that line isn't present yet in file.
+#
+function merge_line_into_file()
 {
   local line="$1"
   local filepath="$2"
@@ -227,6 +270,12 @@ _remove_file_if_present()
 }
 
 
+#
+# remove_file_if_present <file>
+#
+#    Valiantly attempt to remove <file> if present. Exit on failure.
+#    Returns 1 if the file didn't exist.
+#
 remove_file_if_present()
 {
    # -e or -f does not pick out symlinks on macOS, we need the test for the
@@ -278,19 +327,18 @@ _r_make_tmp_in_dir_uuidgen()
    [ -z "${MKDIR}" ] && fail "No \"mkdir\" found in PATH ($PATH)"
    [ -z "${TOUCH}" ] && fail "No \"touch\" found in PATH ($PATH)"
 
+   # algorithm hinges on the fact that uuid is well globally
+   # unique, so don't shorten it.
    local uuid
    local fluke
-   local len
 
-   len=4
    fluke=0
    RVAL=''
-
 
    while :
    do
       uuid="`"${UUIDGEN}"`" || _internal_fail "uuidgen failed"
-      RVAL="${tmpdir}/${name}-${uuid:0:${len}}"
+      RVAL="${tmpdir}/${name}-${uuid}"
 
       case "${filetype}" in
          *d*)
@@ -304,7 +352,6 @@ _r_make_tmp_in_dir_uuidgen()
 
       if [ ! -e "${RVAL}" ]
       then
-         len=$((len + 1 ))
          fluke=$((fluke + 1 ))
          if [ "${fluke}" -gt 20 ]
          then
@@ -342,7 +389,16 @@ _r_make_tmp_in_dir()
 }
 
 
-r_make_tmp()
+#
+# r_make_tmp <name> <filetype>
+#
+#    Create a temporary file, or dirctory if <filetype> is "d".
+#    You can leave name empty, in which case the name of the script will
+#    be used.
+#
+#    Exits on failure.
+#
+function r_make_tmp()
 {
    local name="$1"
    local filetype="${2:-f}"
@@ -368,12 +424,31 @@ r_make_tmp()
 }
 
 
-r_make_tmp_file()
+#
+# r_make_tmp <name>
+#
+#    Create a temporary file.
+#    You can leave name empty, in which case the name of the script will
+#    be used.
+#
+#    Exits on failure.
+#
+function r_make_tmp_file()
 {
    r_make_tmp "$1" "f"
 }
 
-r_make_tmp_directory()
+
+#
+# r_make_tmp_directory <name>
+#
+#    Create a temporary directory.
+#    You can leave name empty, in which case the name of the script will
+#    be used.
+#
+#    Exits on failure.
+#
+function r_make_tmp_directory()
 {
    r_make_tmp "$1" "d"
 }
@@ -384,7 +459,13 @@ r_make_tmp_directory()
 # ####################################################################
 #
 
-r_resolve_all_path_symlinks()
+#
+# r_resolve_all_path_symlinks <filepath>
+#
+#    Resolve all symlinks in filepath. The end result is supposed to be the
+#    canonical location on the filesystem.
+#
+function r_resolve_all_path_symlinks()
 {
    local filepath="$1"
 
@@ -415,11 +496,99 @@ r_resolve_all_path_symlinks()
 }
 
 
+
+_r_canonicalize_dir_path()
+{
+   RVAL="`
+   (
+     cd "$1" 2>/dev/null &&
+     pwd -P
+   )`"
+}
+
+
+_r_canonicalize_file_path()
+{
+   local component
+   local directory
+
+   r_basename "$1"
+   component="${RVAL}"
+   r_dirname "$1"
+   directory="${RVAL}"
+
+   if ! _r_canonicalize_dir_path "${directory}"
+   then
+      return 1
+   fi
+
+   RVAL="${RVAL}/${component}"
+   return 0
+}
+
+
 #
-# canonicalizes existing paths
-# fails for files / directories that do not exist
+# r_canonicalize_path <path>
 #
-r_realpath()
+#    Get the canonical path for path, which means all symlinks are resolved.
+#
+#    /tmp/foo.sh.xx -> /var/tmp/foo.sh.xx
+#
+function r_canonicalize_path()
+{
+   [ -z "$1" ] && _internal_fail "empty path"
+
+   r_resolve_symlinks "$1"
+   if [ -d "${RVAL}" ]
+   then
+      _r_canonicalize_dir_path "${RVAL}"
+   else
+      _r_canonicalize_file_path "${RVAL}"
+   fi
+}
+
+
+#
+# r_physicalpath <filepath>
+#
+#    Find the physicalpath for <filepath>, which can be a directory, a file
+#    or symlink.
+#
+function r_physicalpath()
+{
+   if [ -d "$1" ]
+   then
+      RVAL="`( cd "$1" && pwd -P ) 2>/dev/null `"
+      return $?
+   fi
+
+   local dir
+   local file
+
+   r_dirname "$1"
+   dir="${RVAL}"
+
+   r_basename "$1"
+   file="${RVAL}"
+
+   if ! r_physicalpath "${dir}"
+   then
+      RVAL=
+      return 1
+   fi
+
+   r_filepath_concat "${RVAL}" "${file}"
+}
+
+
+#
+# r_realpath <filepath>
+#
+#    Resolve all symlinks in filepath. The end result is supposed to be the
+#    canonical location on the filesystem.
+#    Thid function fails for files / directories that do not exist though.
+#
+function r_realpath()
 {
    [ -e "$1" ] || fail "only use r_realpath on existing files ($1)"
 
@@ -428,28 +597,38 @@ r_realpath()
 }
 
 #
-# the target of the symlink must exist
+# create_symlink <source> <symlink> [absolute]
 #
-create_symlink()
+#    Create a <symlink> link to <source>. Set [absolute] to YES, to get
+#    an absolute symlink (e.g. /usr/local/foo) instead of a relative
+#    symlink (e.g. ../../usr/local/foo)
+#
+function create_symlink()
 {
-   local url="$1"       # URL of the clone
-   local stashdir="$2"  # stashdir of this clone (absolute or relative to $PWD)
-   local absolute="$3"
+   local source="$1"       # URL of the clone
+   local symlink="$2"      # symlink of this clone (absolute or relative to $PWD)
+   local absolute="${3:-NO}"
 
-   [ -e "${url}" ]        || fail "${C_RESET}${C_BOLD}${url}${C_ERROR} does not exist (${PWD#${MULLE_USER_PWD}/})"
+   [ -e "${source}" ]     || fail "${C_RESET}${C_BOLD}${source}${C_ERROR} does not exist (${PWD#${MULLE_USER_PWD}/})"
    [ ! -z "${absolute}" ] || fail "absolute must be YES or NO"
 
-   r_absolutepath "${url}"
+   # doesn't work if mkdir isn't made
+   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN:-}" = 'YES' ]
+   then
+      return
+   fi
+
+   r_absolutepath "${source}"
    r_realpath "${RVAL}"
-   url="${RVAL}"        # resolve symlinks
+   source="${RVAL}"        # resolve symlinks
 
    # need to do this otherwise the symlink fails
 
    local directory
    # local srcname
-   # r_basename "${url}"
+   # r_basename "${source}"
    # srcname="${RVAL}"
-   r_dirname "${stashdir}"
+   r_dirname "${symlink}"
    directory="${RVAL}"
 
    mkdir_if_missing "${directory}"
@@ -463,22 +642,22 @@ create_symlink()
    #
    if [ "${absolute}" = 'NO' ]
    then
-      r_symlink_relpath "${url}" "${directory}"
-      url="${RVAL}"
+      r_symlink_relpath "${source}" "${directory}"
+      source="${RVAL}"
    fi
 
    local oldlink
 
    oldlink=""
-   if [ -L "${stashdir}" ]
+   if [ -L "${symlink}" ]
    then
-      oldlink="`readlink "${stashdir}"`"
+      oldlink="`readlink "${symlink}"`"
    fi
 
-   if [ -z "${oldlink}" -o "${oldlink}" != "${url}" ]
+   if [ -z "${oldlink}" -o "${oldlink}" != "${source}" ]
    then
-      exekutor ln -s -f "${url}" "${stashdir}" >&2 || \
-         fail "failed to setup symlink \"${stashdir}\" (to \"${url}\")"
+      exekutor ln -s -f "${source}" "${symlink}" >&2 || \
+         fail "failed to setup symlink \"${symlink}\" (to \"${source}\")"
    fi
 }
 
@@ -488,7 +667,13 @@ create_symlink()
 # ####################################################################
 #
 #
-modification_timestamp()
+
+#
+# modification_timestamp <file>
+#
+#    Get the modification time of the file. Output to stdout.
+#
+function modification_timestamp()
 {
    case "${MULLE_UNAME}" in
       linux|mingw)
@@ -502,16 +687,30 @@ modification_timestamp()
 }
 
 
-# http://askubuntu.com/questions/152001/how-can-i-get-octal-file-permissions-from-command-line
-lso()
+#
+# lso <file>
+#
+#    Get the octal permission code (e.g. 755) of one or multiple files.
+#
+#    Uses `awk`
+#
+function lso()
 {
+# http://askubuntu.com/questions/152001/how-can-i-get-octal-file-permissions-from-command-line
    ls -aldG "$@" | \
    awk '{k=0;for(i=0;i<=8;i++)k+=((substr($1,i+2,1)~/[rwx]/)*2^(8-i));if(k)printf(" %0o ",k);print }' | \
    awk '{print $1}'
 }
 
 
-file_is_binary()
+
+#
+# file_is_binary <file>
+#
+#    Check if the file is considered "binary" by the system.
+#    Returns 0 if binary.
+#
+function file_is_binary()
 {
    local result
 
@@ -520,7 +719,12 @@ file_is_binary()
 }
 
 
-file_size_in_bytes()
+#
+# file_size_in_bytes <file>
+#
+#    Get the file size. Output to stdout.
+#
+function file_size_in_bytes()
 {
    if [ ! -f "$1" ]
    then
@@ -544,10 +748,12 @@ file_size_in_bytes()
 # ####################################################################
 
 #
-# this does not check for hidden files, ignores directories
-# optionally give filetype f or d as second agument
+# dir_has_files <directory> <filetype>
 #
-dir_has_files()
+#    This does not check for hidden files, ignores directories
+#    optionally given <filetype> "f" or "d" as the second argument.
+#
+function dir_has_files()
 {
    local dirpath="$1"; shift
 
@@ -578,7 +784,14 @@ dir_has_files()
 }
 
 
-dirs_contain_same_files()
+#
+# dirs_contain_same_files <dir1> <dir2>
+#
+#    Check if both directories contain the same files. Return 0 if so, return 2
+#    of not so. This command actually checks the contents of the files, not
+#    just the filenames.
+#
+function dirs_contain_same_files()
 {
    log_entry "dirs_contain_same_files" "$@"
 
@@ -628,28 +841,15 @@ dirs_contain_same_files()
 #                         Inplace sed (that works)
 # ####################################################################
 
+# inplace_sed <file> ...
 #
-# inplace sed for darwin/freebsd is broken, if there is a 'q' command.
+#    This command runs a sed command on a specific <file>. The <file> is then
+#    replaced with the output of the command.
 #
-# e.g. echo "1" > a ; sed -i.bak -e '/1/d;q' a
+#    Basically it's the same as `sed -i.bak ...`, but it's tricky on various
+#    platforms and incompatible seds. So use inplace_sed for portability.
 #
-# So we have to do a lot here
-#
-# eval_sed()
-# {
-#    while [ $# -ne 0 ]
-#    do
-#       r_escaped_shell_string "$1"
-#       r_concat "${args}" "${RVAL}"
-#       args="${RVAL}"
-#       shift
-#    done
-#
-#    eval 'sed' "${args}"
-# }
-
-
-inplace_sed()
+function inplace_sed()
 {
    local tmpfile
    local args
@@ -657,6 +857,25 @@ inplace_sed()
 #   local permissions
 
    local rval 
+
+   # inplace sed for darwin/freebsd is broken, if there is a 'q' command.
+   #
+   # e.g. echo "1" > a ; sed -i.bak -e '/1/d;q' a
+   #
+   # So we have to do a lot here
+   #
+   # eval_sed()
+   # {
+   #    while [ $# -ne 0 ]
+   #    do
+   #       r_escaped_shell_string "$1"
+   #       r_concat "${args}" "${RVAL}"
+   #       args="${RVAL}"
+   #       shift
+   #    done
+   #
+   #    eval 'sed' "${args}"
+   # }
 
    case "${MULLE_UNAME}" in
       darwin|freebsd)

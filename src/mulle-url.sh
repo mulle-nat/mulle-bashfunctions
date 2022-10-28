@@ -36,8 +36,25 @@ then
 MULLE_URL_SH="included"
 
 
-# works nicely if there are few characters that need encoding
-r_url_encode()
+# RESET
+# NOCOLOR
+#
+#    parse URLs and retrieve components of an URL
+#
+#    Functions prefixed "r_" return the result in the global variable RVAL.
+#    The return value 0 indicates success.
+# TITLE INTRO
+# COLOR
+
+
+#
+# r_url_encode <url>
+#
+#    Escape unsafe characters of <url> as %XX hex.
+#    Works nicely if there are few characters that need encoding.
+#    "foo bar" -> "foo%20bar"
+#
+function r_url_encode()
 {
    local s="$1"
 
@@ -64,49 +81,53 @@ r_url_encode()
 }
 
 
-r_url_remove_scheme()
+#
+# r_url_remove_scheme <url>
+#
+#    Remove scheme: from <url>. Doesn't work nicely,
+#    if there is no scheme in the URL
+#    https://www.foo.com/bar?x#22 -> //www.foo.com/bar?x#22
+#
+function r_url_remove_scheme()
 {
    RVAL="${1#*:}"
 }
 
 
-r_url_remove_query()
+#
+# r_url_remove_query <url>
+#
+#    Remove query part from <url>.
+#    https://www.foo.com/bar?x#22 -> https://www.foo.com/bar
+#
+function r_url_remove_query()
 {
    RVAL="${1%\?*}"
 }
 
 
-r_url_remove_fragment()
+#
+# r_url_remove_fragment <url>
+#
+#   Remove fragment part from <url>.
+#   https://www.foo.com/bar?x#22 -> https://www.foo.com/bar?x
+#
+function r_url_remove_fragment()
 {
    RVAL="${1%#*}"
 }
 
-
-url_remove_scheme()
-{
-   sed 's/^[^:]*:\(.*\)/\1/'
-}
-
-
-url_remove_query()
-{
-   sed 's/^\([^?]*\)?.*/\1/'
-}
-
-
-url_remove_fragment()
-{
-   sed 's/^\([^#]*\)#.*/\1/'
-}
-
-
 #
-# zip not a proper file compression but an archive format like tar
-# tgz is the same
+# url_has_file_compression_extension <url>
 #
-url_has_file_compression_extension()
+#    Heuristic to figure out if an <url> has a file compression extension.
+#    zip is not a proper file compression but an archive format (like tar).
+#    tgz is the same, so they are not covered.
+#
+function url_has_file_compression_extension()
 {
-   case "$1" in
+   r_url_remove_query "$1"
+   case "${RVAL}" in
       *.z|*.gz|*.bz2|*.xz)
          return 0
       ;;
@@ -115,15 +136,28 @@ url_has_file_compression_extension()
 }
 
 
-r_url_remove_file_compression_extension()
+#
+# r_url_remove_file_compression_extension <url>
+#
+#    Remove the single file compression extension from <url>
+#
+#    zip is not a proper file compression but an archive format like tar
+#    tgz is the same, so they are not covered.
+#
+function r_url_remove_file_compression_extension()
 {
-   RVAL="${1%.z}"
-   [ "${RVAL}" != "$1" ] && return
-   RVAL="${1%.gz}"
-   [ "${RVAL}" != "$1" ] && return
-   RVAL="${1%.bz2}"
-   [ "${RVAL}" != "$1" ] && return
-   RVAL="${1%.xz}"
+   local url="$1"
+
+   r_url_remove_query "${url}"
+   url="${RVAL}"
+
+   RVAL="${url%.z}"
+   [ "${RVAL}" != "$url" ] && return
+   RVAL="${url%.gz}"
+   [ "${RVAL}" != "$url" ] && return
+   RVAL="${url%.bz2}"
+   [ "${RVAL}" != "$url" ] && return
+   RVAL="${url%.xz}"
 }
 
 
@@ -140,15 +174,22 @@ readonly MULLE_URI_REGEX='^(([^:/?#]+):)?(//((([^:/?#]+)@)?([^:/?#]+)(:([0-9]+))
 
 
 #
-# local _scheme
-# local _userinfo
-# local _host
-# local _port
-# local _path
-# local _query
-# local _fragment
+# url_parse <url>
 #
-url_parse()
+#    Parse <url> into "global" variables. Before calling this function, define
+#    a local variable block like this:
+#
+#    local _scheme
+#    local _userinfo
+#    local _host
+#    local _port
+#    local _path
+#    local _query
+#    local _fragment
+#
+#    url_parse "${URL}"
+#
+function url_parse()
 {
    log_entry "url_parse" "$@"
 
@@ -215,7 +256,13 @@ url_parse()
 }
 
 
-r_url_get_path()
+#
+# r_url_get_path <url>
+#
+#    Get path off <url>. <url> can also just be a pathname for a file
+#    https://www.foo.com/bar?x#22 -> "/bar"
+#
+function r_url_get_path()
 {
    log_entry "r_url_get_path" "$@"
 

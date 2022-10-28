@@ -39,13 +39,37 @@ then
 MULLE_VERSION_SH="included"
 
 
-r_get_version_major()
+# RESET
+# NOCOLOR
+#
+#    "version" functions handle a simplified form of "semantic versioning".
+#    The version format is <major>.<minor>.<patch>, where patch can be
+#    8 bits wide (0-255), minor is 12 bits wide (0-4095) and major is also
+#    12 bits wide (0-4095).
+#
+#    A "version-value" is therefore ((major << 20) | (minor << 8) | patch)
+#
+# TITLE INTRO
+# COLOR
+#
+
+#
+# r_get_version_major <version>
+#
+#    Pick major out of major.minor.patch <version>
+#
+function r_get_version_major()
 {
    RVAL="${1%%\.*}"
 }
 
 
-r_get_version_minor()
+#
+# r_get_version_major <version>
+#
+#    Pick minor out of major.minor.patch <version>
+#
+function r_get_version_minor()
 {
    RVAL="${1#*\.}"
    if [ "${RVAL}" = "$1" ]
@@ -56,8 +80,14 @@ r_get_version_minor()
    fi
 }
 
-# make sure 1.8 returns 0
-r_get_version_patch()
+
+#
+# r_get_version_patch <version>
+#
+#    Pick patch out of major.minor.patch  version.
+#    Ensures that 1.8 returns 0.
+#
+function r_get_version_patch()
 {
    local prev
 
@@ -73,43 +103,6 @@ r_get_version_patch()
 
 
 #
-# version must be <= min_major.min_minor
-#
-check_version()
-{
-   local version="$1"
-   local min_major="$2"
-   local min_minor="$3"
-
-   if [ -z "${version}" ]
-   then
-      return 1
-   fi
-
-   local major
-   local minor
-
-   r_get_version_major "${version}"
-   major="${RVAL}"
-
-   if [ "${major}" -lt "${min_major}" ]
-   then
-      return 0
-   fi
-
-   if [ "${major}" -ne "${min_major}" ]
-   then
-      return 1
-   fi
-
-   r_get_version_minor "${version}"
-   minor="${RVAL}"
-
-   [ "${minor}" -le "${min_minor}" ]
-}
-
-
-#
 # Gimme major, minor, patch
 # version is like ((major << 20) | (minor << 8) | (patch))
 #
@@ -120,9 +113,13 @@ _r_version_value()
 
 
 #
-# Gimme "${major}.${minor}.${patch}"
+# r_version_value <version>
 #
-r_version_value()
+#    Parses <version> as major.minor.patch and computes a 32 bit version-value.
+#    This function can deal with missing components and sets them to 0.
+#    Cleans out junk.
+#
+function r_version_value()
 {
    local major
    local minor
@@ -139,13 +136,24 @@ r_version_value()
 }
 
 
-r_version_value_distance()
+#
+# r_version_value_distance <version-value1> <version-value2>
+#
+#    Computes the distance between two 32 bit version values.
+#
+_r_version_value_distance()
 {
    RVAL="$(($2 - $1))"
 }
 
 
-r_version_distance()
+#
+# r_version_value_distance <version1> <version2>
+#
+#    Computes the version value distance between version values.
+#    The return value in RVAL is the 32 bit distance.
+#
+function r_version_distance()
 {
    local value1
    local value2
@@ -155,17 +163,20 @@ r_version_distance()
    r_version_value "$2"
    value2="${RVAL}"
 
-   r_version_value_distance "${value1}" "${value2}"
+   _r_version_value_distance "${value1}" "${value2}"
 }
 
 
-# pass in the result of `version_distance found requested
 #
-# When do we fail ? Assume we have version 2.3.4.
-#   Fail for requests for different major
-#   Fail for request for any version > 2.3.4
+# _is_compatible_version_value_distance <version-value>
 #
-is_compatible_version_value_distance()
+#    pass in the result of r_version_distance
+#
+#    When do we fail ? Assume we have version 2.3.4.
+#       Fail for requests for different major
+#       Fail for request for any version > 2.3.4
+#
+_is_compatible_version_value_distance()
 {
    # major check
    if [ "$1" -ge 1048576 -o "$1" -le -1048575 ]
@@ -182,10 +193,19 @@ is_compatible_version_value_distance()
 }
 
 
-is_compatible_version()
+#
+# is_compatible_version <version1> <version2>
+#
+#   Check if version1 is compatible with version2
+#
+#    When do we fail ? Assume we have version 2.3.4.
+#       Fail for requests for different major
+#       Fail for request for any version < 2.3.4
+#
+function is_compatible_version()
 {
    r_version_distance "$1" "$2"
-   is_compatible_version_value_distance "${RVAL}"
+   _is_compatible_version_value_distance "${RVAL}"
 }
 
 fi

@@ -39,9 +39,13 @@ MULLE_INIT_SH="included"
 [ -z "${MULLE_STRING_SH}" ] && _fatal "mulle-string.sh must be included before mulle-init.sh"
 
 
-
-# export into RVAL global
-r_dirname()
+#
+# r_dirname <file>
+#
+#    Shell version of the `dirname` command. Just a lot faster in usage,
+#    because no external process is spawned.
+#
+function r_dirname()
 {
    RVAL="$1"
 
@@ -86,12 +90,17 @@ r_dirname()
 
 
 #
-# stolen from:
-# http://stackoverflow.com/questions/1055671/how-can-i-get-the-behavior-of-gnus-readlink-f-on-a-mac
-# ----
+# r_prepend_path_if_relative <path> <file>
+#
+#    Prepend <path> to <file> if <file> is not an absolute path.
 #
 r_prepend_path_if_relative()
 {
+   #
+   # stolen from:
+   # http://stackoverflow.com/questions/1055671/how-can-i-get-the-behavior-of-gnus-readlink-f-on-a-mac
+   # ----
+   #
    case "$2" in
       /*)
          RVAL="$2"
@@ -104,7 +113,15 @@ r_prepend_path_if_relative()
 }
 
 
-r_resolve_symlinks()
+#
+# r_resolve_symlinks <file>
+#
+#    Find the actual file <file> is pointing at. This function does not
+#    canonicalize but it will resolve multiple symlinks. The returned filepath
+#    can still contain symlinks though, but not at the last position.
+#    e.g. /usr/dir-symlink/file-symlink -> /usr/dir-symlink/file
+#
+function r_resolve_symlinks()
 {
    local filepath
 
@@ -119,14 +136,16 @@ r_resolve_symlinks()
 }
 
 
+
 #
-# executablepath: will be $0
-# subdir: will be mulle-bashfunctions/${VERSION}
-# matchfile: the file to match against, to verify the directory
+# r_get_libexec_dir <executablepath> <subdir> <matchfile>
 #
-# Written this way, so it can get reused
+#    Find the libexec dir of a mulle-bashfunctions script.
+#    executablepath: will be $0
+#    subdir: will be  ${MULLE_EXECUTABLE}
+#    matchfile: a file to match against, to verify the directory
 #
-r_get_libexec_dir()
+function r_get_libexec_dir()
 {
    local executablepath="$1"
    local subdir="$2"
@@ -182,7 +201,12 @@ r_get_libexec_dir()
 }
 
 
-r_escaped_eval_arguments()
+#
+# r_escaped_eval_arguments ...
+#
+#    All arguments are escaped to prevent unwanted extension in an eval.
+#
+function r_escaped_eval_arguments()
 {
    local arg
    local args
@@ -199,6 +223,12 @@ r_escaped_eval_arguments()
 }
 
 
+#
+# call_with_flags <function> <flags> ...
+#
+#    Call a <function> with with <flags> interposed before the remaining
+#    arguments.
+#
 call_with_flags()
 {
    local functionname="$1"; shift

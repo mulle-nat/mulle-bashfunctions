@@ -36,18 +36,7 @@ if ! [ ${MULLE_CASE_SH+x} ]
 then
 MULLE_CASE_SH="included"
 
-#
-# This is a camel case to underscore converter that keeps capitalized
-# letters together. It contains a stupid hack for ObjC because it was just
-# too hard to figure that one out.
-#
-# Ex. MulleObjCBaseFoundation -> Mulle_ObjC_Base_Foundation
-#     FBTroll -> FBTroll
-#     FBTrollFB -> FBTroll_FB
-#
-#     MulleEOFoundation -> Mulle_EO_Foundation
-#     MulleEOClassDescription Mulle_EO_Class_Description
-#
+
 _r_tweaked_de_camel_case()
 {
    local s="$1"
@@ -132,7 +121,21 @@ _r_tweaked_de_camel_case()
 }
 
 
-r_tweaked_de_camel_case()
+#
+# r_tweaked_de_camel_case <string>
+#
+#    This is a camel case to underscore converter that keeps capitalized
+#    letters together. It contains a stupid hack for ObjC because it was just
+#    too hard to figure that one out.
+#
+#    Ex. MulleObjCBaseFoundation -> Mulle_ObjC_Base_Foundation
+#        FBTroll -> FBTroll
+#        FBTrollFB -> FBTroll_FB
+#
+#        MulleEOFoundation -> Mulle_EO_Foundation
+#        MulleEOClassDescription Mulle_EO_Class_Description
+#
+function r_tweaked_de_camel_case()
 {
    # need this for [A-B] to be case sensitive, don't ask
    # https://stackoverflow.com/questions/10695029/why-isnt-the-case-statement-case-sensitive-when-nocasematch-is-off
@@ -140,14 +143,30 @@ r_tweaked_de_camel_case()
 }
 
 
-r_de_camel_case_identifier()
+#
+# r_tweaked_de_camel_case <string>
+#
+#    Uses r_tweaked_de_camel_case to de-camel case a string, then turns it
+#    into an identifier.
+#
+#       EO.Foundation -> EO_Foundation
+#
+function r_de_camel_case_identifier()
 {
    r_tweaked_de_camel_case "$1"
    r_identifier "${RVAL}"
 }
 
 
-r_smart_downcase_identifier()
+#
+# r_smart_downcase_identifier <string>
+#
+#    Uses r_de_camel_case_identifier to create an identifier. Then make it all
+#    lowercase.
+#
+#       EO.Foundation -> eo_foundation
+#
+function r_smart_downcase_identifier()
 {
    r_de_camel_case_identifier "$1"
    r_lowercase "${RVAL}"
@@ -155,9 +174,15 @@ r_smart_downcase_identifier()
 
 
 #
-# make ID_FOO_R from idFooR
-# but don't make FOO__XXX from FOO_XXX
-r_smart_upcase_identifier()
+# r_smart_downcase_identifier <string>
+#
+#    Uses r_de_camel_case_identifier to create an identifier. Then make it all
+#    lowercase.
+#
+#    makes ID_FOO_R from idFooR
+#    Ensures that it doesn't make FOO__XXX from FOO_XXX though.
+#
+function r_smart_upcase_identifier()
 {
    r_uppercase "$1"
    r_identifier "${RVAL}"

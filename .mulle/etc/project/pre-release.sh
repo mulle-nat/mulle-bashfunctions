@@ -4,10 +4,11 @@
 
 post_release()
 {
-   # get rid of these from earlier combined files build
+   # get rid of these of later debian build
    exekutor rm -f CPackConfig.cmake CMakeCache.txt CPackSourceConfig.cmake cmake_install.cmake
    exekutor rm -rf CMakeFiles build
 
-   rexekutor mulle-project-debian "$@"
+   # rebuild combined files
+   exekutor cmake .
 }
 

@@ -140,8 +140,14 @@ exekutor_trace_output()
    fi
 }
 
-
-exekutor()
+#
+# exekutor ...
+#
+#   Execute following command line, like the shell would. If tracing is
+#   enabled, this will generate thr tracing output. If dry run is enabled,
+#   the actual command line is not actually executed.
+#
+function exekutor()
 {
    exekutor_trace "exekutor_print" "$@"
 
@@ -160,9 +166,14 @@ exekutor()
 
 
 #
-# the rexekutor promises only to read and is therefore harmless
+# rexecutor ...
 #
-rexekutor()
+#   Execute following command line, like the shell would. If tracing is
+#   enabled, this will generate thr tracing output. The rexekutor promises only
+#   to read and is therefore deemed harmless and will execute, if dry run is
+#   enabled.
+#
+function rexekutor()
 {
    exekutor_trace "exekutor_print" "$@"
 
@@ -175,7 +186,12 @@ rexekutor()
 }
 
 
-eval_exekutor()
+#
+# eval_exekutor ...
+#
+#   eval version fo the exekutor
+#
+function eval_exekutor()
 {
    exekutor_trace "eval_exekutor_print" "$@"
 
@@ -194,10 +210,11 @@ eval_exekutor()
 
 
 #
-# declared as harmless (read only)
-# old name reval_exekutor didnt make much sense
+# eval_rexekutor ...
 #
-eval_rexekutor()
+#   eval version fo the rexekutor
+#
+function eval_rexekutor()
 {
    exekutor_trace "eval_exekutor_print" "$@"
 
@@ -210,25 +227,13 @@ eval_rexekutor()
 }
 
 
-_eval_exekutor()
-{
-   exekutor_trace "eval_exekutor_print" "$@"
-
-   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN:-}" = 'YES' ]
-   then
-      return
-   fi
-
-   eval "$@"
-   MULLE_EXEKUTOR_RVAL=$?
-
-   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-127}" ] && stacktrace
-
-   return ${MULLE_EXEKUTOR_RVAL}
-}
-
-
-redirect_exekutor()
+#
+# redirect_exekutor <output> ...
+#
+#   The redirect_exekutor version fo the exekutor, will store stdout of the
+#   executed command line into <output>
+#
+function redirect_exekutor()
 {
    # funny not found problem ? the base directory of output is missing!a
    local output="$1"; shift
@@ -249,7 +254,13 @@ redirect_exekutor()
 }
 
 
-redirect_eval_exekutor()
+
+#
+# redirect_eval_exekutor <output> ...
+#
+#   eval version of the redirect_exekutor
+#
+function redirect_eval_exekutor()
 {
    # funny not found problem ? the base directory of output is missing!a
    local output="$1"; shift
@@ -271,6 +282,12 @@ redirect_eval_exekutor()
 }
 
 
+#
+# redirect_append_exekutor <output> ...
+#
+#   The redirect_exekutor version fo the exekutor, will append stdout of the
+#   executed command line to <output>
+#
 redirect_append_exekutor()
 {
    # funny not found problem ? the base directory of output is missing!a
@@ -372,9 +389,15 @@ _append_tee_eval_exekutor()
 
 
 #
-# output is supposed to be the logfile and teeoutput the console
+# logging_tee_exekutor <output> <teeoutput> ...
 #
-logging_tee_exekutor()
+#   This exekutor is like the redirect_exekutor, but can store output in
+#   two different files. Useful for creating log files and console output
+#   at the same time.
+#
+#   Output is supposed to be the logfile and teeoutput the console
+#
+function logging_tee_exekutor()
 {
    local output="$1"; shift
    local teeoutput="$1"; shift
@@ -391,9 +414,11 @@ logging_tee_exekutor()
 
 
 #
-# output is supposed to be the logfile and teeoutput the console
+# logging_tee_eval_exekutor <output> <teeoutput> ...
 #
-logging_tee_eval_exekutor()
+#    eval version of the logging_tee_exekutor
+#
+function logging_tee_eval_exekutor()
 {
    local output="$1"; shift
    local teeoutput="$1"; shift
@@ -404,14 +429,18 @@ logging_tee_eval_exekutor()
       eval_exekutor_print "$@" >> "${teeoutput}"
    fi
    eval_exekutor_print "$@" >> "${output}"
+
    _append_tee_eval_exekutor "${output}" "${teeoutput}" "$@"
 }
 
 
 #
-# output eval trace also into logfile
+# logging_redirekt_exekutor <output>  ...
 #
-logging_redirekt_exekutor()
+#    Also add trace output to <output> in addition to stdout of the command
+#    line.
+#
+function logging_redirekt_exekutor()
 {
    local output="$1"; shift
 
@@ -423,7 +452,12 @@ logging_redirekt_exekutor()
 }
 
 
-logging_redirect_eval_exekutor()
+#
+# logging_redirect_eval_exekutor <output>  ...
+#
+#    Eval version of logging_redirekt_exekutor
+#
+function logging_redirect_eval_exekutor()
 {
    local output="$1"; shift
 
@@ -436,11 +470,12 @@ logging_redirect_eval_exekutor()
 
 
 #
-# prefer mulle-column as it colorifies
-#        column if installed (as its a BSD tool, its often missing)
-#        cat as a fallback to get anything
+# rexecute_column_table_or_cat <separator> ...
 #
-rexecute_column_table_or_cat()
+#    If neither the mulle-column command nor the column is installed in the
+#    system use cat as th fallback for output-
+#
+function rexecute_column_table_or_cat()
 {
    local separator="$1"; shift
 

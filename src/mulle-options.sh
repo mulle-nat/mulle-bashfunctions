@@ -39,9 +39,38 @@ MULLE_OPTIONS_SH="included"
 [ -z "${MULLE_LOGGING_SH}" ] && _fatal "mulle-logging.sh must be included before mulle-options.sh"
 
 
+# RESET
+# NOCOLOR
+#
+#    Use "options" function `options_technical_flags` to parse and set common
+#    mulle-bashfunctions flags like -v or -ld. Then use `options_setup_trace`
+#    to start tracing, if desired by the user. So your mulle-bashfunctions
+#    script should contain some code like this:
+#
+# PRE
+#    while [ $# -ne 0 ]
+#    do
+#       if options_technical_flags "$1"
+#       then
+#          shift
+#          continue
+#       fi
+#
+#       <other argument handling>
+#
+#       break
+#   done
+#
+#   options_setup_trace "${MULLE_TRACE:-}" && set -x
+# /PRE
+#
+#    Use the global variable MULLE_TECHNICAL_FLAGS to forward these flags to other
+#    mulle-bashfunctions scripts. That way you seamlessly use verbose mode over
+#    multiple scripts.
+#
+# TITLE INTRO
+# COLOR
 
-## core option parsing
-# not used by mulle-bootstrap itself at the moment
 
 #
 # variables called flag. because they are indirectly set by flags
@@ -54,8 +83,14 @@ options_dump_env()
    log_trace "LS  :${C_TRACE2} `ls -a1F`"
 }
 
-# caller should do set +x if 0
-options_setup_trace()
+#
+# options_setup_trace <mode>
+#
+#   Call this function after all the command-line flags have been parsed.
+#   The return status indicates if shell tracing should be turned on.
+#   Failure to do so, will lose you the tracing support.
+#
+function options_setup_trace()
 {
    local mode="$1"
 
@@ -135,7 +170,14 @@ EOF
 }
 
 
-options_technical_flags_usage()
+#
+# options_technical_flags_usage <delimiter> <align>
+#
+#    Print out help text for the flags understood by mulle-bashfunctions.
+#    Use <delimiter> to separate text the flag string from the description
+#    text. Set <align> to NO to remove alignment spaces.
+#
+function options_technical_flags_usage()
 {
    _options_technical_flags_usage "$@" | sort
 }
@@ -156,14 +198,19 @@ after_trace_warning()
 
 
 #
-# local MULLE_FLAG_EXEKUTOR_DRY_RUN
-# local MULLE_FLAG_LOG_DEBUG
-# local MULLE_FLAG_LOG_EXEKUTOR
-# local MULLE_FLAG_LOG_TERSE
-# local MULLE_FLAG_LOG_ENVIRONMENT
-# local MULLE_TRACE
+# options_technical_flags <flag>
 #
-options_technical_flags()
+#    Parses common flags like --dry-run (-n), --verbose (-v) and so on.
+#    The following global variables will be set:
+#       MULLE_FLAG_EXEKUTOR_DRY_RUN
+#       MULLE_FLAG_LOG_DEBUG
+#       MULLE_FLAG_LOG_EXEKUTOR
+#       MULLE_FLAG_LOG_TERSE
+#       MULLE_FLAG_LOG_ENVIRONMENT
+#       MULLE_TRACE
+#       MULLE_TECHNICAL_FLAGS
+#
+function options_technical_flags()
 {
    local flag="$1"
 
@@ -326,11 +373,6 @@ options_technical_flags()
          return # don't propagate
       ;;
 
-      -tpo|--trace-postpone)
-         before_trace_fail "${flag}"
-         MULLE_TRACE_POSTPONE='YES'
-      ;;
-
       -tpwd|--trace-pwd)
          before_trace_fail "${flag}"
          if [ ${ZSH_VERSION+x} ]
@@ -441,19 +483,6 @@ options_technical_flags()
 }
 
 
-## option parsing common
-
-
-options_unpostpone_trace()
-{
-   if [ ! -z "${MULLE_TRACE_POSTPONE}" -a "${MULLE_TRACE}" = '1848' ]
-   then
-      set -x
-      PS4="+ ${ps4string} + "
-   fi
-}
-
-
 #
 # this has very limited use, i only use it in some tests
 # caller should do set +x if 0
@@ -470,7 +499,7 @@ _options_mini_main()
       break
    done
 
-   options_setup_trace "${MULLE_TRACE:-}"
+   options_setup_trace "${MULLE_TRACE:-}" && set -x
 }
 
 fi

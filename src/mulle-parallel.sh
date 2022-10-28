@@ -39,6 +39,48 @@ MULLE_PARALLEL_SH="included"
 [ -z "${MULLE_FILE_SH}" ] && _fatal "mulle-file.sh must be included before mulle-parallel.sh"
 
 
+
+# RESET
+# NOCOLOR
+#
+#    Use "parallel" functions to run commands in parallel in a more controlled
+#    manner, than just forking off commands into the background with &.
+#
+#    "parallel" will collect the status of the background processes and wait
+#    for their completion. It will stop forking background processes, if the
+#    load is too high and may limit the number of background processes to the
+#    number of cores available on the system.
+#
+#    In its simplest form `parallel_execute` applies arguments to a command
+#    just like xargs does:
+#
+# PRE
+#    arguments="1
+#    2
+#    3"
+#    parallel_execute "${arguments}" echo "number:"
+# /PRE
+#
+#    For more control over parallel execution use `_parallel_begin`,
+#    `_parallel_execute` and `_parallel_end`
+#
+# PRE
+#    local _parallel_statusfile
+#    local _parallel_maxjobs
+#    local _parallel_jobs
+#    local _parallel_fails
+#
+#    _parallel_begin
+#    _parallel_execute remove_file_if_present "${filename}"
+#    _parallel_execute remove_file_if_present "${filename2}"
+#    _parallel_end || fail "failed"
+# /PRE
+#
+#
+# TITLE INTRO
+# COLOR
+
+
 very_short_sleep()
 {
    case "${MULLE_UNAME}" in 
@@ -52,6 +94,14 @@ very_short_sleep()
    esac
 }  
 
+
+#
+# r_get_core_count
+#
+#    Try to figure out the number of cores available on this system.
+#    Will set MULLE_CORES global variable. If MULLE_CORES is already set,
+#    its value will be returned.
+#
 r_get_core_count()
 {
    if ! [ ${MULLE_CORES+x} ]
@@ -122,7 +172,12 @@ wait_for_available_job()
 }
 
 
-# just the floored load integer (i.e. 0.89 -> 0)
+#
+# get_current_load_average
+#
+#    Try to figure out the current load average on this system.
+#    Returns value to stdout.
+#
 get_current_load_average()
 {
    case "${MULLE_UNAME}" in
@@ -198,12 +253,18 @@ wait_for_load_average()
 
 
 #
-# local _parallel_statusfile
-# local _parallel_maxjobs
-# local _parallel_jobs
-# local _parallel_fails
+# _parallel_begin <maxjobs>
 #
-_parallel_begin()
+#     Creates the status file for the parallel jobs and determines the number
+#     to be run in parallel. Use <maxjobs> to limit this number.
+#     You should define these local variable before calling _parallel_begin:
+#
+#     local _parallel_statusfile
+#     local _parallel_maxjobs
+#     local _parallel_jobs
+#     local _parallel_fails
+#
+function _parallel_begin()
 {
    log_entry "_parallel_begin" "$@"
 
@@ -227,30 +288,6 @@ _parallel_begin()
 }
 
 
-_parallel_end()
-{
-   log_entry "_parallel_end" "$@"
-
-   wait
-
-   _parallel_fails="`rexekutor wc -l "${_parallel_statusfile}" | awk '{ printf $1 }'`"
-
-   log_setting "_parallel_jobs : ${_parallel_jobs}"
-   log_setting "_parallel_fails: ${_parallel_fails}"
-   log_setting "${_parallel_statusfile} : `cat "${_parallel_statusfile}"`"
-
-   exekutor rm "${_parallel_statusfile}"
-
-   if [ "${_parallel_fails}" -ne 0 ]
-   then
-      log_warning "warning: ${_parallel_fails} parallel jobs failed"
-      return 1
-   fi
-
-   return 0
-}
-
-
 _parallel_status()
 {
    log_entry "_parallel_status" "$@"
@@ -268,7 +305,13 @@ _parallel_status()
 }
 
 
-_parallel_execute()
+#
+# _parallel_execute ...
+#
+#     Execute command line in the background. _parallel_execute blocks until a
+#     job becomes available.
+#
+function _parallel_execute()
 {
    log_entry "_parallel_execute" "$@"
 
@@ -286,8 +329,48 @@ _parallel_execute()
 }
 
 
-# intention of this is to act like a form of xargs
-parallel_execute()
+#
+# _parallel_end
+#
+#     Waits for the parallel processes to finish. Returns 1 if one or more
+#     of the jobs indicates failure.
+#
+function _parallel_end()
+{
+   log_entry "_parallel_end" "$@"
+
+   wait
+
+   _parallel_fails="`rexekutor wc -l "${_parallel_statusfile}" | awk '{ printf $1 }'`"
+
+   log_setting "_parallel_jobs : ${_parallel_jobs}"
+   log_setting "_parallel_fails: ${_parallel_fails}"
+   log_setting "${_parallel_statusfile} : `cat "${_parallel_statusfile}"`"
+
+   exekutor rm "${_parallel_statusfile}"
+
+   if [ "${_parallel_fails:-1}" -ne 0 ]
+   then
+      log_warning "warning: ${_parallel_fails} parallel jobs failed"
+      return 1
+   fi
+
+   return 0
+}
+
+
+
+#
+# parallel_execute <arguments> ...
+#
+#    Parallel receives an arguments string, which contains the arguments
+#    separated by linefeeds. This arguments are then fed to the remainder
+#    of the command line as the last argument and executed in the background.
+#    parallel_execute then waits for the completion of all background tasks.
+#
+#    The return value is zero, of all executed commands succeeded.
+#
+function parallel_execute()
 {
    log_entry "parallel_execute" "$@"
 
@@ -304,15 +387,14 @@ parallel_execute()
 
    local argument
 
-   shell_disable_glob;  IFS=$'\n'
+   shell_disable_glob
+
    .foreachline argument in ${arguments}
    .do
-      shell_enable_glob; IFS="${DEFAULT_IFS}"
-
       _parallel_execute "$@" "${argument}"
    .done
 
-   shell_enable_glob; IFS="${DEFAULT_IFS}"
+   shell_enable_glob
 
    _parallel_end
 }

@@ -334,19 +334,19 @@ then
 MULLE_COMPATIBILITY_SH="included"
 
 
-shell_enable_pipefail()
+function shell_enable_pipefail()
 {
    set -o pipefail
 }
 
 
-shell_disable_pipefail()
+function shell_disable_pipefail()
 {
    set +o pipefail
 }
 
 
-shell_is_pipefail_enabled()
+function shell_is_pipefail_enabled()
 {
    case "$-" in
       *f*)
@@ -357,7 +357,7 @@ shell_is_pipefail_enabled()
 }
 
 
-shell_enable_extglob()
+function shell_enable_extglob()
 {
    if [ ${ZSH_VERSION+x} ]
    then
@@ -369,7 +369,7 @@ shell_enable_extglob()
 }
 
 
-shell_disable_extglob()
+function shell_disable_extglob()
 {
    if [ ${ZSH_VERSION+x} ]
    then
@@ -381,7 +381,7 @@ shell_disable_extglob()
 }
 
 
-shell_is_extglob_enabled()
+function shell_is_extglob_enabled()
 {
    if [ ${ZSH_VERSION+x} ]
    then
@@ -393,7 +393,7 @@ shell_is_extglob_enabled()
 }
 
 
-shell_enable_nullglob()
+function shell_enable_nullglob()
 {
    if [ ${ZSH_VERSION+x} ]
    then
@@ -404,7 +404,7 @@ shell_enable_nullglob()
 }
 
 
-shell_disable_nullglob()
+function shell_disable_nullglob()
 {
    if [ ${ZSH_VERSION+x} ]
    then
@@ -415,7 +415,7 @@ shell_disable_nullglob()
 }
 
 
-shell_is_nullglob_enabled()
+function shell_is_nullglob_enabled()
 {
    if [ ${ZSH_VERSION+x} ]
    then
@@ -426,7 +426,7 @@ shell_is_nullglob_enabled()
 }
 
 
-shell_enable_glob()
+function shell_enable_glob()
 {
    if [ ${ZSH_VERSION+x} ]
    then
@@ -437,7 +437,7 @@ shell_enable_glob()
 }
 
 
-shell_disable_glob()
+function shell_disable_glob()
 {
    if [ ${ZSH_VERSION+x} ]
    then
@@ -448,7 +448,7 @@ shell_disable_glob()
 }
 
 
-shell_is_glob_enabled()
+function shell_is_glob_enabled()
 {
    if [ ${ZSH_VERSION+x} ]
    then
@@ -468,7 +468,7 @@ shell_is_glob_enabled()
 }
 
 
-shell_is_function()
+function shell_is_function()
 {
    if [ ${ZSH_VERSION+x} ]
    then
@@ -673,18 +673,37 @@ _log_trace()
 
 
 alias log_debug='_log_debug'
+
 alias log_entry='_log_entry'
+
 alias log_error='_log_error'
+
 alias log_fluff='_log_fluff'
+
 alias log_info='_log_info'
+
 alias log_setting='_log_setting'
+
 alias log_trace='_log_trace'
+
 alias log_verbose='_log_verbose'
+
 alias log_warning='_log_warning'
 
 
 log_set_trace_level()
 {
+   alias log_debug='_log_debug'
+   alias log_entry='_log_entry'
+   alias log_error='_log_error'
+   alias log_fluff='_log_fluff'
+   alias log_info='_log_info'
+   alias log_setting='_log_setting'
+   alias log_trace='_log_trace'
+   alias log_verbose='_log_verbose'
+   alias log_warning='_log_warning'
+
+
    if [ "${MULLE_FLAG_LOG_DEBUG:-}" != 'YES' ]
    then
       alias log_entry=': #'
@@ -768,7 +787,7 @@ stacktrace()
 }
 
 
-fail()
+function fail()
 {
    if [ ! -z "$*" ]
    then
@@ -787,7 +806,7 @@ fail()
 MULLE_INTERNAL_ERROR_PREFIX=" *** internal error ***:"
 
 
-_internal_fail()
+function _internal_fail()
 {
    _log_printf "${C_ERROR}${MULLE_EXECUTABLE_FAIL_PREFIX}${MULLE_INTERNAL_ERROR_PREFIX}${C_ERROR_TEXT}%b${C_RESET}\n" "$*"
    stacktrace
@@ -971,8 +990,7 @@ exekutor_trace_output()
    fi
 }
 
-
-exekutor()
+function exekutor()
 {
    exekutor_trace "exekutor_print" "$@"
 
@@ -990,7 +1008,7 @@ exekutor()
 }
 
 
-rexekutor()
+function rexekutor()
 {
    exekutor_trace "exekutor_print" "$@"
 
@@ -1003,7 +1021,7 @@ rexekutor()
 }
 
 
-eval_exekutor()
+function eval_exekutor()
 {
    exekutor_trace "eval_exekutor_print" "$@"
 
@@ -1021,7 +1039,7 @@ eval_exekutor()
 }
 
 
-eval_rexekutor()
+function eval_rexekutor()
 {
    exekutor_trace "eval_exekutor_print" "$@"
 
@@ -1034,25 +1052,7 @@ eval_rexekutor()
 }
 
 
-_eval_exekutor()
-{
-   exekutor_trace "eval_exekutor_print" "$@"
-
-   if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN:-}" = 'YES' ]
-   then
-      return
-   fi
-
-   eval "$@"
-   MULLE_EXEKUTOR_RVAL=$?
-
-   [ "${MULLE_EXEKUTOR_RVAL}" = "${MULLE_EXEKUTOR_STRACKTRACE_RVAL:-127}" ] && stacktrace
-
-   return ${MULLE_EXEKUTOR_RVAL}
-}
-
-
-redirect_exekutor()
+function redirect_exekutor()
 {
    local output="$1"; shift
 
@@ -1072,7 +1072,8 @@ redirect_exekutor()
 }
 
 
-redirect_eval_exekutor()
+
+function redirect_eval_exekutor()
 {
    local output="$1"; shift
 
@@ -1189,7 +1190,7 @@ _append_tee_eval_exekutor()
 }
 
 
-logging_tee_exekutor()
+function logging_tee_exekutor()
 {
    local output="$1"; shift
    local teeoutput="$1"; shift
@@ -1204,7 +1205,7 @@ logging_tee_exekutor()
 }
 
 
-logging_tee_eval_exekutor()
+function logging_tee_eval_exekutor()
 {
    local output="$1"; shift
    local teeoutput="$1"; shift
@@ -1214,11 +1215,12 @@ logging_tee_eval_exekutor()
       eval_exekutor_print "$@" >> "${teeoutput}"
    fi
    eval_exekutor_print "$@" >> "${output}"
+
    _append_tee_eval_exekutor "${output}" "${teeoutput}" "$@"
 }
 
 
-logging_redirekt_exekutor()
+function logging_redirekt_exekutor()
 {
    local output="$1"; shift
 
@@ -1230,7 +1232,7 @@ logging_redirekt_exekutor()
 }
 
 
-logging_redirect_eval_exekutor()
+function logging_redirect_eval_exekutor()
 {
    local output="$1"; shift
 
@@ -1242,7 +1244,7 @@ logging_redirect_eval_exekutor()
 }
 
 
-rexecute_column_table_or_cat()
+function rexecute_column_table_or_cat()
 {
    local separator="$1"; shift
 
@@ -1286,13 +1288,104 @@ MULLE_STRING_SH="included"
 [ -z "${MULLE_COMPATIBILITY_SH}" ] && _fatal "mulle-compatibility.sh must be included before mulle-string.sh"
 
 
-r_append()
+
+
+
+
+function r_trim_whitespace()
+{
+   RVAL="$*"
+   RVAL="${RVAL#"${RVAL%%[![:space:]]*}"}"
+   RVAL="${RVAL%"${RVAL##*[![:space:]]}"}"
+}
+
+
+
+
+function r_upper_firstchar()
+{
+   case "${BASH_VERSION:-}" in
+      [0123]*)
+         RVAL="`printf "%s" "${1:0:1}" | tr '[:lower:]' '[:upper:]'`"
+         RVAL="${RVAL}${1:1}"
+      ;;
+
+      *)
+         if [ ${ZSH_VERSION+x} ]
+         then
+            RVAL="${1:0:1}"
+            RVAL="${RVAL:u}${1:1}"
+         else
+            RVAL="${1^}"
+         fi
+      ;;
+   esac
+}
+
+
+function r_capitalize()
+{
+   r_lowercase "$@"
+   r_upper_firstchar "${RVAL}"
+}
+
+
+function r_uppercase()
+{
+   case "${BASH_VERSION:-}" in
+      [0123]*)
+         RVAL="`printf "%s" "$1" | tr '[:lower:]' '[:upper:]'`"
+      ;;
+
+      *)
+         if [ ${ZSH_VERSION+x} ]
+         then
+            RVAL="${1:u}"
+         else
+            RVAL="${1^^}"
+         fi
+      ;;
+   esac
+}
+
+function r_lowercase()
+{
+   case "${BASH_VERSION:-}" in
+      [0123]*)
+         RVAL="`printf "%s" "$1" | tr '[:upper:]' '[:lower:]'`"
+      ;;
+
+      *)
+         if [ ${ZSH_VERSION+x} ]
+         then
+            RVAL="${1:l}"
+         else
+            RVAL="${1,,}"
+         fi
+      ;;
+   esac
+}
+
+
+function r_identifier()
+{
+   RVAL="${1//-/_}" # __
+   RVAL="${RVAL//[^a-zA-Z0-9]/_}"
+   case "${RVAL}" in
+      [0-9]*)
+         RVAL="_${RVAL}"
+      ;;
+   esac
+}
+
+
+
+function r_append()
 {
    RVAL="${1}${2}"
 }
 
-
-r_concat()
+function r_concat()
 {
    local separator="${3:- }"
 
@@ -1310,18 +1403,34 @@ r_concat()
 }
 
 
-concat()
+r_remove_duplicate()
 {
-   r_concat "$@"
-   printf "%s\n" "$RVAL"
-}
+   local s="$1"
+   local separator="${2:- }"
 
+   local escaped
+   local dualescaped
+   local replacement
 
-r_trim_whitespace()
-{
-   RVAL="$*"
-   RVAL="${RVAL#"${RVAL%%[![:space:]]*}"}"
-   RVAL="${RVAL%"${RVAL##*[![:space:]]}"}"
+   printf -v escaped '%q' "${separator}"
+
+   dualescaped="${escaped//\//\/\/}"
+   replacement="${separator}"
+   case "${separator}" in
+      */*)
+         replacement="${escaped}"
+      ;;
+   esac
+
+   local old
+
+   RVAL="${s}"
+   old=''
+   while [ "${RVAL}" != "${old}" ]
+   do
+      old="${RVAL}"
+      RVAL="${RVAL//${dualescaped}${dualescaped}/${replacement}}"
+   done
 }
 
 
@@ -1357,33 +1466,35 @@ r_remove_ugly()
    done
 }
 
-
-r_colon_concat()
+function r_colon_concat()
 {
    r_concat "$1" "$2" ":"
    r_remove_ugly "${RVAL}" ":"
 }
 
-r_comma_concat()
+function r_comma_concat()
 {
    r_concat "$1" "$2" ","
    r_remove_ugly "${RVAL}" ","
 }
 
-r_semicolon_concat()
+function r_semicolon_concat()
 {
    r_concat "$1" "$2" ";"
 }
 
 
-r_slash_concat()
+function r_slash_concat()
 {
    r_concat "$1" "$2" "/"
    r_remove_duplicate "${RVAL}" "/"
 }
 
 
-r_list_remove()
+
+
+
+function r_list_remove()
 {
    local sep="${3:- }"
 
@@ -1393,25 +1504,19 @@ r_list_remove()
 }
 
 
-r_colon_remove()
+function r_colon_remove()
 {
    r_list_remove "$1" "$2" ":"
 }
 
 
-r_comma_remove()
+function r_comma_remove()
 {
    r_list_remove "$1" "$2" ","
 }
 
 
-r_space_concat()
-{
-   concat_no_double_separator "$1" "$2" | string_remove_ugly_separators
-}
-
-
-r_add_line()
+function r_add_line()
 {
    local lines="$1"
    local line="$2"
@@ -1430,7 +1535,7 @@ r_add_line()
 }
 
 
-r_remove_line()
+function r_remove_line()
 {
    local lines="$1"
    local search="$2"
@@ -1453,7 +1558,7 @@ r_remove_line()
 }
 
 
-r_remove_line_once()
+function  r_remove_line_once()
 {
    local lines="$1"
    local search="$2"
@@ -1478,19 +1583,19 @@ r_remove_line_once()
 }
 
 
-r_get_last_line()
+function  r_get_last_line()
 {
   RVAL="$(sed -n '$p' <<< "$1")" # get last line
 }
 
 
-r_remove_last_line()
+function r_remove_last_line()
 {
    RVAL="$(sed '$d' <<< "$1")"  # remove last line
 }
 
 
-find_item()
+function find_item()
 {
    local line="$1"
    local search="$2"
@@ -1516,7 +1621,7 @@ find_item()
 }
 
 
-find_empty_line_zsh()
+_find_empty_line_zsh()
 {
    local lines="$1"
 
@@ -1530,7 +1635,7 @@ find_empty_line_zsh()
 }
 
 
-find_line_zsh()
+_find_line_zsh()
 {
    local lines="$1"
    local search="$2"
@@ -1542,7 +1647,7 @@ find_line_zsh()
          return 0
       fi
 
-      find_empty_line_zsh "${lines}"
+      _find_empty_line_zsh "${lines}"
       return $?
    fi
 
@@ -1560,11 +1665,11 @@ find_line_zsh()
 }
 
 
-find_line()
+function find_line()
 {
    if [ ${ZSH_VERSION+x} ]
    then
-      find_line_zsh "$@"
+      _find_line_zsh "$@"
       return $?
    fi
 
@@ -1608,7 +1713,7 @@ ${lines}
 }
 
 
-r_count_lines()
+function r_count_lines()
 {
    local array="$1"
 
@@ -1623,7 +1728,8 @@ r_count_lines()
 }
 
 
-r_add_unique_line()
+
+function r_add_unique_line()
 {
    local lines="$1"
    local line="$2"
@@ -1645,26 +1751,25 @@ ${line}"
 }
 
 
-
-r_remove_duplicate_lines()
+function r_remove_duplicate_lines()
 {
    RVAL="`awk '!x[$0]++' <<< "$@"`"
 }
 
 
-remove_duplicate_lines()
+function remove_duplicate_lines()
 {
    awk '!x[$0]++' <<< "$@"
 }
 
 
-remove_duplicate_lines_stdin()
+function remove_duplicate_lines_stdin()
 {
    awk '!x[$0]++'
 }
 
 
-r_reverse_lines()
+function r_reverse_lines()
 {
    local lines="$1"
 
@@ -1684,197 +1789,20 @@ r_reverse_lines()
 }
 
 
-r_filepath_cleaned()
-{
-   RVAL="$1"
-
-   [ -z "${RVAL}" ] && return
-
-   local old
-
-   old=''
-
-   while [ "${RVAL}" != "${old}" ]
-   do
-      old="${RVAL}"
-      RVAL="${RVAL//\/.\///}"
-      RVAL="${RVAL//\/\///}"
-   done
-
-   if [ -z "${RVAL}" ] 
-   then
-      RVAL="${1:0:1}"
-   fi
-}
-
-
-r_filepath_concat()
-{
-   local i
-   local s
-   local sep
-   local fallback
-
-   s=""
-   fallback=""
-
-   for i in "$@"
-   do
-      sep="/"
-
-      r_filepath_cleaned "${i}"
-      i="${RVAL}"
-
-      case "$i" in
-         "")
-            continue
-         ;;
-
-         "."|"./")
-            if [ -z "${fallback}" ]
-            then
-               fallback="./"
-            fi
-            continue
-         ;;
-      esac
-
-      case "$i" in
-         "/"|"/.")
-            if [ -z "${fallback}" ]
-            then
-               fallback="/"
-            fi
-            continue
-         ;;
-      esac
-
-      if [ -z "${s}" ]
-      then
-         s="${fallback}$i"
-      else
-         case "${i}" in
-            /*)
-               s="${s}${i}"
-            ;;
-
-            *)
-               s="${s}/${i}"
-            ;;
-         esac
-      fi
-   done
-
-   if [ ! -z "${s}" ]
-   then
-      r_filepath_cleaned "${s}"
-   else
-      RVAL="${fallback:0:1}" # / make ./ . again
-   fi
-}
-
-
-filepath_concat()
-{
-   r_filepath_concat "$@"
-
-   [ ! -z "${RVAL}" ] && printf "%s\n" "${RVAL}"
-}
-
-
-r_upper_firstchar()
-{
-   case "${BASH_VERSION:-}" in
-      [0123]*)
-         RVAL="`printf "%s" "${1:0:1}" | tr '[:lower:]' '[:upper:]'`"
-         RVAL="${RVAL}${1:1}"
-      ;;
-
-      *)
-         if [ ${ZSH_VERSION+x} ]
-         then
-            RVAL="${1:0:1}"
-            RVAL="${RVAL:u}${1:1}"
-         else
-            RVAL="${1^}"
-         fi
-      ;;
-   esac
-}
-
-
-r_capitalize()
-{
-   r_lowercase "$@"
-   r_upper_firstchar "${RVAL}"
-}
-
-
-
-r_uppercase()
-{
-   case "${BASH_VERSION:-}" in
-      [0123]*)
-         RVAL="`printf "%s" "$1" | tr '[:lower:]' '[:upper:]'`"
-      ;;
-
-      *)
-         if [ ${ZSH_VERSION+x} ]
-         then
-            RVAL="${1:u}"
-         else
-            RVAL="${1^^}"
-         fi
-      ;;
-   esac
-}
-
-
-r_lowercase()
-{
-   case "${BASH_VERSION:-}" in
-      [0123]*)
-         RVAL="`printf "%s" "$1" | tr '[:upper:]' '[:lower:]'`"
-      ;;
-
-      *)
-         if [ ${ZSH_VERSION+x} ]
-         then
-            RVAL="${1:l}"
-         else
-            RVAL="${1,,}"
-         fi
-      ;;
-   esac
-}
-
-
-r_identifier()
-{
-   RVAL="${1//-/_}" # __
-   RVAL="${RVAL//[^a-zA-Z0-9]/_}"
-   case "${RVAL}" in
-      [0-9]*)
-         RVAL="_${RVAL}"
-      ;;
-   esac
-}
-
-
 is_yes()
 {
    local s
 
    case "$1" in
-      [yY][eE][sS]|Y|1)
+      [yY][eE][sS]|[yY]|1|[oO][nN])
          return 0
       ;;
-      [nN][oO]|[nN]|0|"")
+      [nN][oO]|[nN]|0|[oO][fF][fF]|"")
          return 1
       ;;
 
       *)
-         return 255
+         return 4
       ;;
    esac
 }
@@ -1884,7 +1812,8 @@ is_yes()
 
 
 
-r_escaped_grep_pattern()
+
+function r_escaped_grep_pattern()
 {
    local s="$1"
 
@@ -1902,7 +1831,7 @@ r_escaped_grep_pattern()
 }
 
 
-r_escaped_sed_pattern()
+function r_escaped_sed_pattern()
 {
    local s="$1"
 
@@ -1919,7 +1848,7 @@ r_escaped_sed_pattern()
 }
 
 
-r_escaped_sed_replacement()
+function r_escaped_sed_replacement()
 {
    local s="$1"
 
@@ -1931,19 +1860,19 @@ r_escaped_sed_replacement()
 }
 
 
-r_escaped_spaces()
+function r_escaped_spaces()
 {
    RVAL="${1// /\\ }"
 }
 
 
-r_escaped_backslashes()
+function r_escaped_backslashes()
 {
    RVAL="${1//\\/\\\\}"
 }
 
 
-r_escaped_singlequotes()
+function r_escaped_singlequotes()
 {
    local quote
 
@@ -1952,106 +1881,37 @@ r_escaped_singlequotes()
 }
 
 
-r_escaped_doublequotes()
+function r_escaped_doublequotes()
 {
    RVAL="${*//\\/\\\\}"
    RVAL="${RVAL//\"/\\\"}"
 }
 
-
-r_unescaped_doublequotes()
+function r_unescaped_doublequotes()
 {
    RVAL="${*//\\\"/\"}"
    RVAL="${RVAL//\\\\/\\}"
 }
 
 
-r_escaped_shell_string()
+function r_escaped_shell_string()
 {
    printf -v RVAL '%q' "$*"
 }
 
 
-string_has_prefix()
+
+function string_has_prefix()
 {
   [ "${1#$2}" != "$1" ]
 }
 
 
-string_has_suffix()
+function string_has_suffix()
 {
   [ "${1%$2}" != "$1" ]
 }
 
-
-r_basename()
-{
-   local filename="$1"
-
-   while :
-   do
-      case "${filename}" in
-         /)
-           RVAL="/"
-           return
-         ;;
-
-         */)
-            filename="${filename%?}"
-         ;;
-
-         *)
-            RVAL="${filename##*/}"
-            return
-         ;;
-      esac
-   done
-}
-
-
-r_dirname()
-{
-   local filename="$1"
-
-   local last
-
-   while :
-   do
-      case "${filename}" in
-         /)
-            RVAL="${filename}"
-            return
-         ;;
-
-         */)
-            filename="${filename%?}"
-            continue
-         ;;
-      esac
-      break
-   done
-
-   printf -v last '%q' "${filename##*/}"
-   RVAL="${filename%${last}}"
-
-   while :
-   do
-      case "${RVAL}" in
-         /)
-           return
-         ;;
-
-         */)
-            RVAL="${RVAL%?}"
-         ;;
-
-         *)
-            RVAL="${RVAL:-.}"
-            return
-         ;;
-      esac
-   done
-}
 
 
 _r_prefix_with_unquoted_string()
@@ -2197,7 +2057,7 @@ _r_expand_string()
 }
 
 
-r_expanded_string()
+function r_expanded_string()
 {
    local string="$1"
    local expand="${2:-YES}"
@@ -2222,8 +2082,7 @@ MULLE_INIT_SH="included"
 [ -z "${MULLE_STRING_SH}" ] && _fatal "mulle-string.sh must be included before mulle-init.sh"
 
 
-
-r_dirname()
+function r_dirname()
 {
    RVAL="$1"
 
@@ -2281,7 +2140,7 @@ r_prepend_path_if_relative()
 }
 
 
-r_resolve_symlinks()
+function r_resolve_symlinks()
 {
    local filepath
 
@@ -2296,7 +2155,8 @@ r_resolve_symlinks()
 }
 
 
-r_get_libexec_dir()
+
+function r_get_libexec_dir()
 {
    local executablepath="$1"
    local subdir="$2"
@@ -2351,7 +2211,7 @@ r_get_libexec_dir()
 }
 
 
-r_escaped_eval_arguments()
+function r_escaped_eval_arguments()
 {
    local arg
    local args
@@ -2402,7 +2262,7 @@ options_dump_env()
    log_trace "LS  :${C_TRACE2} `ls -a1F`"
 }
 
-options_setup_trace()
+function options_setup_trace()
 {
    local mode="$1"
 
@@ -2479,7 +2339,7 @@ EOF
 }
 
 
-options_technical_flags_usage()
+function options_technical_flags_usage()
 {
    _options_technical_flags_usage "$@" | sort
 }
@@ -2499,7 +2359,7 @@ after_trace_warning()
 }
 
 
-options_technical_flags()
+function options_technical_flags()
 {
    local flag="$1"
 
@@ -2646,11 +2506,6 @@ options_technical_flags()
          return # don't propagate
       ;;
 
-      -tpo|--trace-postpone)
-         before_trace_fail "${flag}"
-         MULLE_TRACE_POSTPONE='YES'
-      ;;
-
       -tpwd|--trace-pwd)
          before_trace_fail "${flag}"
          if [ ${ZSH_VERSION+x} ]
@@ -2754,18 +2609,6 @@ options_technical_flags()
 }
 
 
-
-
-options_unpostpone_trace()
-{
-   if [ ! -z "${MULLE_TRACE_POSTPONE}" -a "${MULLE_TRACE}" = '1848' ]
-   then
-      set -x
-      PS4="+ ${ps4string} + "
-   fi
-}
-
-
 _options_mini_main()
 {
    while [ $# -ne 0 ]
@@ -2779,7 +2622,7 @@ _options_mini_main()
       break
    done
 
-   options_setup_trace "${MULLE_TRACE:-}"
+   options_setup_trace "${MULLE_TRACE:-}" && set -x
 }
 
 fi

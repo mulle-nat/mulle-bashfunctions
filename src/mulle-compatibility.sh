@@ -37,19 +37,36 @@ then
 MULLE_COMPATIBILITY_SH="included"
 
 
-shell_enable_pipefail()
+#
+# shell_enable_pipefail
+#
+#    Turn on pipefail.
+#
+function shell_enable_pipefail()
 {
    set -o pipefail
 }
 
 
-shell_disable_pipefail()
+#
+# shell_disable_pipefail
+#
+#    Turn off pipefail.
+#
+function shell_disable_pipefail()
 {
    set +o pipefail
 }
 
 
-shell_is_pipefail_enabled()
+#
+# shell_is_pipefail_enabled
+#
+#    Check if pipefail is enabled.
+#    pipefail is recommended and turned on by default in mulle-bashfunctions
+#    Returns 0 if yes.
+#
+function shell_is_pipefail_enabled()
 {
    case "$-" in
       *f*)
@@ -60,7 +77,12 @@ shell_is_pipefail_enabled()
 }
 
 
-shell_enable_extglob()
+#
+# shell_enable_extglob
+#
+#    Turn on extglob.
+#
+function shell_enable_extglob()
 {
    if [ ${ZSH_VERSION+x} ]
    then
@@ -72,7 +94,13 @@ shell_enable_extglob()
 }
 
 
-shell_disable_extglob()
+#
+# shell_disable_extglob
+#
+#    Turn of extglob.
+#    Not recommended for mulle-bashfunctions code.
+#
+function shell_disable_extglob()
 {
    if [ ${ZSH_VERSION+x} ]
    then
@@ -84,7 +112,14 @@ shell_disable_extglob()
 }
 
 
-shell_is_extglob_enabled()
+#
+# shell_is_extglob_enabled
+#
+#    Check if extended globbing is enabled. Extended globbing allows use
+#    of more regular expressions.
+#    Returns 0 if yes.
+#
+function shell_is_extglob_enabled()
 {
    if [ ${ZSH_VERSION+x} ]
    then
@@ -96,7 +131,12 @@ shell_is_extglob_enabled()
 }
 
 
-shell_enable_nullglob()
+#
+# shell_enable_nullglob
+#
+#    Enable nullglob. nullglob is turned off by default.
+#
+function shell_enable_nullglob()
 {
    if [ ${ZSH_VERSION+x} ]
    then
@@ -107,7 +147,12 @@ shell_enable_nullglob()
 }
 
 
-shell_disable_nullglob()
+#
+# shell_disable_nullglob
+#
+#    Disable nullglob.
+#
+function shell_disable_nullglob()
 {
    if [ ${ZSH_VERSION+x} ]
    then
@@ -118,7 +163,14 @@ shell_disable_nullglob()
 }
 
 
-shell_is_nullglob_enabled()
+#
+# shell_is_nullglob_enabled
+#
+#    Check if nullglob is enabled.
+#    When nullglob is set, non-matching wildcards return an empty result.
+#    Returns 0 if so.
+#
+function shell_is_nullglob_enabled()
 {
    if [ ${ZSH_VERSION+x} ]
    then
@@ -129,7 +181,12 @@ shell_is_nullglob_enabled()
 }
 
 
-shell_enable_glob()
+#
+# shell_enable_glob
+#
+#    Enable globbing
+#
+function shell_enable_glob()
 {
    if [ ${ZSH_VERSION+x} ]
    then
@@ -140,7 +197,12 @@ shell_enable_glob()
 }
 
 
-shell_disable_glob()
+#
+# shell_disable_glob
+#
+#    Disable globbing
+#
+function shell_disable_glob()
 {
    if [ ${ZSH_VERSION+x} ]
    then
@@ -151,7 +213,14 @@ shell_disable_glob()
 }
 
 
-shell_is_glob_enabled()
+#
+# shell_is_glob_enabled <name>
+#
+#    Check if globbing is enabled.
+#    Globbing turns wildcards into filenames.
+#    Returns 0 if yes.
+#
+function shell_is_glob_enabled()
 {
    if [ ${ZSH_VERSION+x} ]
    then
@@ -171,7 +240,13 @@ shell_is_glob_enabled()
 }
 
 
-shell_is_function()
+#
+# shell_is_function <name>
+#
+#    Check if a function exists under this <name>
+#    Returns 0 if yes.
+#
+function shell_is_function()
 {
    if [ ${ZSH_VERSION+x} ]
    then

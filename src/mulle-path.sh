@@ -39,16 +39,233 @@ MULLE_PATH_SH="included"
 [ -z "${MULLE_STRING_SH}" ] && _fatal "mulle-string.sh must be included before mulle-path.sh"
 
 
+# RESET
+# NOCOLOR
+#
+#    Assortment of various string functions that deal with filepaths.
+#    None of these functions actually touch the filesystem.
+#
+#    Functions prefixed "r_" return the result in the global variable RVAL.
+#    The return value 0 indicates success.
+#
+# TITLE INTRO
+# COLOR
+
+
+#
+# r_filepath_cleaned <filepath>
+#
+#    r_filepath_cleaned makes somewhat prettier filenames, removing
+#    superflous "." and trailing '/'. It's fairly cheap though.
+#    DO NOT USE ON URLs
+#
+function r_filepath_cleaned()
+{
+   RVAL="$1"
+
+   [ -z "${RVAL}" ] && return
+
+   local old
+
+   old=''
+
+   # remove excess //, also inside components
+   # remove excess /./, also inside components
+   while [ "${RVAL}" != "${old}" ]
+   do
+      old="${RVAL}"
+      RVAL="${RVAL//\/.\///}"
+      RVAL="${RVAL//\/\///}"
+   done
+
+   if [ -z "${RVAL}" ]
+   then
+      RVAL="${1:0:1}"
+   fi
+}
+
+
+#
+# r_filepath_concat <component> ...
+#
+#    r_filepath_concat concatenates filepaths components to produce a single
+#    filepath.
+#    .e.g.  "foo" "bar"  ->  foo/bar
+#           "/"  "/foo" "." "bar"  ->  /foo/bar
+#
+r_filepath_concat()
+{
+   local i
+   local s
+   local sep
+   local fallback
+
+   s=""
+   fallback=""
+
+   for i in "$@"
+   do
+      sep="/"
+
+      r_filepath_cleaned "${i}"
+      i="${RVAL}"
+
+      case "$i" in
+         "")
+            continue
+         ;;
+
+         "."|"./")
+            if [ -z "${fallback}" ]
+            then
+               fallback="./"
+            fi
+            continue
+         ;;
+      esac
+
+      case "$i" in
+         "/"|"/.")
+            if [ -z "${fallback}" ]
+            then
+               fallback="/"
+            fi
+            continue
+         ;;
+      esac
+
+      if [ -z "${s}" ]
+      then
+         s="${fallback}$i"
+      else
+         case "${i}" in
+            /*)
+               s="${s}${i}"
+            ;;
+
+            *)
+               s="${s}/${i}"
+            ;;
+         esac
+      fi
+   done
+
+   if [ ! -z "${s}" ]
+   then
+      r_filepath_cleaned "${s}"
+   else
+      RVAL="${fallback:0:1}" # / make ./ . again
+   fi
+}
+
 
 # ####################################################################
 #                             Path handling
 # ####################################################################
-# 0 = ""
-# 1 = /
-# 2 = /tmp
-# ...
+
+
 #
-r_path_depth()
+# r_basename <filename>
+#
+#    In functionality identical to "basename", but much faster than calling
+#    the external commands
+#
+#
+#    /tmp/foo.sh -> foo.sh
+#
+function r_basename()
+{
+   local filename="$1"
+
+   while :
+   do
+      case "${filename}" in
+         /)
+           RVAL="/"
+           return
+         ;;
+
+         */)
+            filename="${filename%?}"
+         ;;
+
+         *)
+            RVAL="${filename##*/}"
+            return
+         ;;
+      esac
+   done
+}
+
+
+#
+# r_dirname <filename>
+#
+#    In functionality identical to "dirname", but much faster than calling
+#    the external commands
+#
+#    /tmp/foo.sh -> /tmp
+#
+function r_dirname()
+{
+   local filename="$1"
+
+   local last
+
+   while :
+   do
+      case "${filename}" in
+         /)
+            RVAL="${filename}"
+            return
+         ;;
+
+         */)
+            filename="${filename%?}"
+            continue
+         ;;
+      esac
+      break
+   done
+
+   # need to escape filename here as it may contain wildcards
+   printf -v last '%q' "${filename##*/}"
+   RVAL="${filename%${last}}"
+
+   while :
+   do
+      case "${RVAL}" in
+         /)
+           return
+         ;;
+
+         */)
+            RVAL="${RVAL%?}"
+         ;;
+
+         *)
+            RVAL="${RVAL:-.}"
+            return
+         ;;
+      esac
+   done
+}
+
+
+#
+# r_path_depth <filepath>
+#
+#    Computes the depth of <filepath>
+#    Return values are
+#     0 = ""
+#     1 = /
+#     2 = /tmp
+#     3 = /tmp/bar
+#     3 = /tmp/bar/
+#     4 = /tmp/bar/foo
+#     ...
+#
+function r_path_depth()
 {
    local name="$1"
 
@@ -73,9 +290,13 @@ r_path_depth()
 
 
 #
-# cuts off last extension only
+# r_extensionless_basename <s>
 #
-r_extensionless_basename()
+#    Extracts filename from <s> and cut off the last extension only
+#
+#    /tmp/foo.sh.xxx -> foo.sh
+#
+function r_extensionless_basename()
 {
    r_basename "$@"
 
@@ -83,13 +304,27 @@ r_extensionless_basename()
 }
 
 
-r_extensionless_filename()
+#
+# r_extensionless_filename <s>
+#
+#    Cut off the last extension from <s>
+#
+#    /tmp/foo.sh.xx -> /tmp/foo.sh
+#
+function r_extensionless_filename()
 {
    RVAL="${RVAL%.*}"
 }
 
 
-r_path_extension()
+#
+# r_path_extension <s>
+#
+#    Retrieve the last extension from <s>
+#
+#    /tmp/foo.sh.xx -> "xx"
+#
+function r_path_extension()
 {
    r_basename "$@"
    case "${RVAL}" in
@@ -102,48 +337,6 @@ r_path_extension()
    RVAL=""
 }
 
-
-_r_canonicalize_dir_path()
-{
-   RVAL="`
-   (
-     cd "$1" 2>/dev/null &&
-     pwd -P
-   )`"
-}
-
-
-_r_canonicalize_file_path()
-{
-   local component
-   local directory
-
-   r_basename "$1"
-   component="${RVAL}"
-   r_dirname "$1"
-   directory="${RVAL}"
-
-   if ! _r_canonicalize_dir_path "${directory}"
-   then
-      return 1
-   fi
-
-   RVAL="${RVAL}/${component}"
-   return 0
-}
-
-
-r_canonicalize_path()
-{
-   [ -z "$1" ] && _internal_fail "empty path"
-
-   if [ -d "$1" ]
-   then
-      _r_canonicalize_dir_path "$1"
-   else
-      _r_canonicalize_file_path "$1"
-   fi
-}
 
 
 # ----
@@ -217,16 +410,19 @@ _r_relative_path_between()
 }
 
 #
-# $1 is the directory/file, that we want to access relative from root
-# $2 is the root
+# r_relative_path_between <to> <from>
 #
-# ex.   /usr/include /usr,  -> include
-# ex.   /usr/include /  -> /usr/include
+#    <to> is the directory/file, that we want to access relative from root
+#    <from> is the place we want to acces <to> from
 #
-# the routine can not deal with ../ and ./
-# but is a bit faster than symlink_relpath
+#    the routine can not deal with ../ and ./, but is a bit faster than
+#    symlink_relpath
 #
-r_relative_path_between()
+#    ex.   /usr/include /usr,  -> include
+#    ex.   /usr/include /  -> /usr/include
+#
+#
+function r_relative_path_between()
 {
    local a="$1"
    local b="$2"
@@ -300,17 +496,19 @@ r_relative_path_between()
 
 
 #
-# compute number of .. needed to return from path
-# e.g.  cd "a/b/c" -> cd ../../..
+# r_compute_relative <s>
 #
-r_compute_relative()
+#    Compute number of ".." needed to return from <path> to root. Returns
+#    this as a string.
+#    e.g.  cd "a/b/c" -> cd ../../..
+#
+function r_compute_relative()
 {
    local name="${1:-}"
 
-   local depth
    local relative
+   local depth
 
-   relative=""
    r_path_depth "${name}"
    depth="${RVAL}"
 
@@ -333,47 +531,13 @@ r_compute_relative()
 }
 
 
-
-# TODO: zsh can do this easier
-r_physicalpath()
-{
-   if [ -d "$1" ]
-   then
-      RVAL="`( cd "$1" && pwd -P ) 2>/dev/null `"
-      return $?
-   fi
-
-   local dir
-   local file
-
-   r_dirname "$1"
-   dir="${RVAL}"
-
-   r_basename "$1"
-   file="${RVAL}"
-
-   if ! r_physicalpath "${dir}"
-   then
-      RVAL=
-      return 1
-   fi
-
-   r_filepath_concat "${RVAL}" "${file}"
-}
-
-
-# this old form function is used quite a lot still
-physicalpath()
-{
-   if ! r_physicalpath "$@"
-   then
-      return 1
-   fi
-   printf "%s\n" "${RVAL}"
-}
-
-
-is_absolutepath()
+#
+# is_absolutepath <filepath>
+#
+#    Returns 0 if <filepath> is an absolute path.
+#    e.g. "/foo" -> 0  "./x" -> 1
+#
+function is_absolutepath()
 {
    case "${1}" in
       /*|~*)
@@ -387,7 +551,13 @@ is_absolutepath()
 }
 
 
-is_relativepath()
+#
+# is_relativepath <filepath>
+#
+#    Returns 0 if <filepath> is a relative path.
+#    e.g. "/foo" -> 1  "./x" -> 0
+#
+function is_relativepath()
 {
    case "${1}" in
       ""|/*|~*)
@@ -401,7 +571,16 @@ is_relativepath()
 }
 
 
-r_absolutepath()
+#
+# r_absolutepath <filepath> [pwd]
+#
+#    Creates an absolute filepath from <filepath> The current directory may
+#    be passed as [pwd]. Otherwise the contents of PWD is used. If <filepath>
+#    is already absolute, no changes happen.
+#
+#    e.g. "/foo" -> 1  "./x" -> 0
+#
+function r_absolutepath()
 {
   local directory="$1"
   local working="${2:-${PWD}}"
@@ -422,7 +601,13 @@ r_absolutepath()
 }
 
 
-r_simplified_absolutepath()
+#
+# r_simplified_absolutepath <directory> [pwd]
+#
+#    Like r_absolutepath but the resultant path is then simplified with
+#    r_simplified_path.
+#
+function r_simplified_absolutepath()
 {
   local directory="$1"
   local working="${2:-${PWD}}"
@@ -442,13 +627,14 @@ r_simplified_absolutepath()
    esac
 }
 
-
 #
-# Imagine you are in a working directory `dirname b`
-# This function gives the relpath you need
-# if you were to create symlink 'b' pointing to 'a'
+# r_symlink_relpath <file> <directory>
 #
-r_symlink_relpath()
+#    Imagine you are in a working <directory>
+#    This function gives the relative path you need to create a symlink
+#    that points to <file>.
+#
+function r_symlink_relpath()
 {
    local a
    local b
@@ -553,10 +739,14 @@ _r_simplified_path()
 
 
 #
-# works also on filepaths that do not exist
-# r_simplified_path is faster, if there are no relative components
+# r_simplified_path <filepath>
 #
-r_simplified_path()
+#    r_simplified_path makes prettier relative or absolute paths.
+#    This function works also on filepaths that do not exist.
+#    r_simplified_path performs better, if there are no relative components.
+#    Caveat: you can't have | in your <filepath>.
+#
+function r_simplified_path()
 {
    #
    # quick check if there is something to simplify
@@ -589,28 +779,16 @@ r_simplified_path()
 
 
 #
-# consider . .. ~ or absolute paths as unsafe
-# anything starting with a $ is probably also bad
-# this just catches some obvious problems, not all
+# r_assert_sane_path <filepath>
 #
-assert_sane_subdir_path()
-{
-   r_simplified_path "$1"
-
-   case "${RVAL}"  in
-      "")
-         fail "refuse empty subdirectory \"$1\""
-         exit 1
-      ;;
-
-      \$*|~|..|.|/*)
-         fail "refuse unsafe subdirectory path \"$1\""
-      ;;
-   esac
-}
-
-
-r_assert_sane_path()
+#    Use to check a filepath before possible deletion. Will not accept the
+#    following filepaths and fail:
+#    . .. ~ ${HOME}
+#    anything starting with '$'
+#    anyfile path whose depth is <= 2, so /usr/local is bad but /usr/local/etc
+#    would be okay. /tmp is an exception though.
+#
+function r_assert_sane_path()
 {
    r_simplified_path "$1"
 

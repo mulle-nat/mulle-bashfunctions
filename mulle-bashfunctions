@@ -1,4 +1,5 @@
-#! /bin/sh
+#! /usr/bin/env mulle-bash
+#! MULLE_BASHFUNCTIONS_VARIANT=minimal
 #
 # shellcheck shell=bash
 # shellcheck disable=SC2236
@@ -34,76 +35,10 @@
 #   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 #   POSSIBILITY OF SUCH DAMAGE.
 #
-[ "${TRACE}" = 'YES' -o "${MULLE_BASHFUNCTIONS_ENV_TRACE}" = 'YES' ] && set -x && : "$0" "$@"
+[ "${TRACE}" = 'YES' -o "${MULLE_BASHFUNCTIONS_ENV_TRACE}" = 'YES' ] && set -x && : "${MULLE_EXECUTABLE}" "$@"
 
-MULLE_BASHFUNCTIONS_VERSION="4.1.1"
+MULLE_BASHFUNCTIONS_VERSION="5.0.0"
 
-#
-# Prelude to be placed at top of each script. Rerun this script either in
-# bash or zsh, if not already running in either (which can happen!)
-# Allows script to run on systems that either have bash (linux) or
-# zsh (macOS) only by default.
-#
-if [ "${1:-}" != --no-auto-shell ]
-then
-   # bourne shell knows no -v
-   if [ -z "${BASH_VERSION}" -a -z "${ZSH_VERSION}" ]
-   then
-      exe_shell="`command -v "bash" `"
-      exe_shell="${exe_shell:-`command -v "zsh" `}"
-
-      script="$0"
-
-      #
-      # Quote incoming arguments for shell expansion
-      #
-      args=""
-      for arg in "$@"
-      do
-         # True bourne sh doesn't know ${a//b/c} and <<<
-         case "${arg}" in
-            *\'*)
-               # Use cat instead of echo to avoid possible echo -n
-               # problems. Escape single quotes in string.
-               arg="`cat <<EOF | sed -e s/\'/\'\\\"\'\\\"\'/g
-${arg}
-EOF
-`"
-            ;;
-         esac
-         if [ -z "${args}" ]
-         then
-            args="'${arg}'"
-         else
-            args="${args} '${arg}'"
-         fi
-      done
-
-      #
-      # bash/zsh will use arg after -c <arg> as $0, convenient!
-      #
-
-      exec "${exe_shell:-bash}" -c ". ${script} --no-auto-shell ${args}" "${script}"
-   fi
-   if [ ! -z "${BASH_VERSION}" ]
-   then
-      set +o posix
-   fi
-else
-   shift    # get rid of --no-auto-shell
-fi
-
-#
-# leading backslash ? looks like we're getting called from
-# mingw via a .BAT or so. Correct this now
-#
-case "$PATH" in
-   "\\"*)
-      PATH="${PATH//\\/\/}"
-   ;;
-esac
-
-MULLE_EXECUTABLE="${BASH_SOURCE[0]:-${(%):-%x}}"
 
 
 usage()
@@ -114,92 +49,269 @@ usage()
 Usage:
    ${MULLE_EXECUTABLE_NAME} [command]
 
-   Locate bashfunctions install path for desired version.
+   mulle-bashfunctions main purpose is to help load the library functions
+   into an interactive shell. The librar functions are almalgamated in a
+   file called "mulle-bashfunctions.sh". There are variants though (none,
+   minimal, all) with different sizes.
+
+   But mulle-bashfunctions can also
+
+   * embed "mulle-bashfunctions.sh" into another shell script
+   * show the path to "mulle-bashfunctions.sh"
+   * locate the "mulle-bashfunctions.sh" install path for a desired variant
+   * show documentation for any of the defined functions
+   * list the available libraries, which you can "include"
+
+Examples:
+   Load "mulle-bashfunctions-all.sh" into the current interactive shell:
+
+      eval \`mulle-bashfunctions load all\`
 
 Commands:
-   libexec-dir [version]   : print best libexec filepath for desired version
-   list                    : list installed versions
-   uname                   : show system short name
-   version                 : print most recent version
+   env            : environment needed for "mulle-bashfunctions.sh"
+   functions      : list defined functions
+   hostname       : show system hostname used by mulle-bashfunctions
+   libraries      : list available libraries
+   load [variant] : use  eval \`mulle-bashfunctions load\`  to load
+   path [variant] : path to "mulle-bashfunctions.sh"
+   username       : show username used by mulle-bashfunctions
+   uname          : show system short name used by mulle-bashfunctions
+   version        : print currently used version
+   versions       : list installed versions
 EOF
 
    exit 1
 }
 
 
-
-list_libraries()
+list_versions()
 {
-   for i in "${MULLE_LIBEXECBASE_PATH}"/[0-9]*.[0-9]*.[0-9]*
-   do
-      if [ -d "${i}" ]
-      then
-         basename -- "${i}"
-      fi
-   done
-}
+   log_entry "list_versions" "$@"
 
+   [ -z "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}" ] && _internal_fail "MULLE_BASHFUNCTIONS_LIBEXEC_DIR not set"
 
-#
-# Usually one requests the library by major.minor number
-# and one gets that with the latest patch
-#
-_find_library_path()
-{
-   local version="$1"
+   local i
+   local found
 
-   local major
-   local minor
-   local patch
-
-   r_get_version_major "${version}"
-   major="${RVAL}"
-   r_get_version_minor "${version}"
-   minor="${RVAL}"
-   r_get_version_patch "${version}"
-   patch="${RVAL}"
-
-   local majorpattern
-   local minorpattern
-   local patchpattern
-
-   majorpattern="${major:-[0-9]*}"
-   minorpattern="${minor:-[0-9]*}"
-   patchpattern="${patch:-[0-9]*}"
+   shell_enable_nullglob
 
    local prefix
 
    prefix="${MULLE_BASHFUNCTIONS_LIBEXEC_DIR%/*}"
+   for i in "${prefix}"/[0-9]*.[0-9]*.[0-9]*
+   do
+      if [ -d "${i}" ]
+      then
+         basename -- "${i}"
+         found="yes"
+      fi
+   done
 
-   ls -1d "${prefix}"/${majorpattern}.${minorpattern}.${patchpattern} 2> /dev/null | sort -nr | head -1
-}
-
-
-_find_local_library_path()
-{
-   local version="$1"
-
-   if ! is_compatible_version "${MULLE_BASHFUNCTIONS_VERSION}" "${version}"
+   if [ -z "${found}" ]
    then
-      return 1
+      printf "${MULLE_BASHFUNCTIONS_VERSION}\n"
    fi
-   printf "%s\n" "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}"
 }
 
 
-find_library_path()
+r_all_library_paths()
 {
-   case "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}" in
-      */src)
-         if _find_local_library_path "$@"
-         then
-            return
-         fi
-      ;;
-   esac
+   log_entry "r_all_library_paths" "$@"
 
-   _find_library_path "$@"
+   local paths
+
+   local library
+
+   shell_enable_nullglob
+   for library in "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}"/mulle-*.sh
+   do
+      r_basename "${library}"
+      case "${RVAL}" in
+         mulle-bash*.sh|mulle-boot.sh)
+         ;;
+
+         *)
+            if [ -z "${paths}" ]
+            then
+               paths="${library}"
+            else
+               paths="${paths}"$'\n'"${library}"
+            fi
+         ;;
+      esac
+   done
+   shell_disable_nullglob
+   RVAL="${paths}"
 }
+
+
+r_library_name()
+{
+   log_entry "r_library_name" "$@"
+
+   RVAL="${1##*/}"
+   RVAL="${RVAL#mulle-}"
+   RVAL="${RVAL%.sh}"
+}
+
+
+list_libraries()
+{
+   log_entry "list_libraries" "$@"
+
+   local paths
+
+   r_all_library_paths
+   paths="${RVAL}"
+
+   local library
+
+   IFS=$'\n'
+   for library in ${paths}
+   do
+      r_library_name "${library}"
+      printf "${RVAL}\n"
+   done
+   IFS="${DEFAULT_IFS}"
+}
+
+
+parse_library()
+{
+   log_entry "parse_library" "$@"
+
+   local library="$1"
+
+   local line
+   local comment
+   local sep
+   local color1="${C_RESET_BOLD}"
+   local color2="${C_RESET}"
+
+   IFS=$'\n'
+   while read -r line
+   do
+      #
+      # special commands RESET,NOCOLOR,PRE,COLOR only work _well_ in the
+      # TITLE INTRO block
+      #
+      case "${line}" in
+         \#\ RESET)
+            comment=""
+            sep=""
+         ;;
+
+         \#\ NOCOLOR)
+            color1=""
+            color2=""
+         ;;
+
+         \#\ PRE)
+            comment="${comment}${C_SPECIAL_BLUE}"
+         ;;
+
+         \#\ \/PRE)
+            comment="${comment}${C_RESET}${C_FAINT}"
+         ;;
+
+         \#\ COLOR)
+            color1="${C_RESET_BOLD}"
+            color2="${C_RESET}"
+         ;;
+
+         \#\ TITLE*)
+            printf "${C_INFO}${line#\#\ TITLE\ }\n${C_RESET}"
+            printf "${C_FAINT}%b${C_RESET}\n\n" "${comment%%$'\n'}"
+         ;;
+
+         \#\ SUBTITLE*)
+            printf "${C_VERBOSE}${line#\#\ SUBTITLE\ }\n${C_RESET}"
+            printf "${C_FAINT}%b${C_RESET}\n\n" "${comment%%$'\n'}"
+         ;;
+
+         \#)
+            if [ ! -z "${sep}" ]
+            then
+               comment="${comment}${sep}"
+            fi
+         ;;
+
+         \#*)
+            line="${line##\#\ }"
+            if [ ! -z "${sep}" ]
+            then
+               comment="${comment}${sep}${line}"
+               sep=${color2}$'\n'
+            else
+               if [ ! -z "${line}" ]
+               then
+                  comment="${comment}${sep}${line}"
+                  sep=$'\n'
+               fi
+            fi
+         ;;
+
+         function\ *\(\)*|alias\ *)
+            printf "%b\n\n" "${comment%%$'\n'}"
+         ;;
+
+         *)
+            comment=""
+            sep="${color1}"
+         ;;
+      esac
+   done < "${library}"
+   IFS="${DEFAULT_IFS}"
+}
+
+
+list_library_functions()
+{
+   local library="$1"
+   local namesonly="$2"
+
+   if [ ! -z "${namesonly}" ]
+   then
+      sed -n 's/^\([a-z0-9A-Z:][a-z0-9A-Z:_]*\)().*/   \1/p' "${library}" | sort
+   else
+      parse_library "${library}"
+   fi
+}
+
+
+list_functions()
+{
+   local library="$1"
+   local namesonly="$2"
+
+   if [ -z "$1" ]
+   then
+      local paths
+
+      r_all_library_paths
+      paths="${RVAL}"
+
+      local sep
+
+      IFS=$'\n'
+      for library in ${paths}
+      do
+         r_library_name "${library}"
+         log_info "${sep}${RVAL}:"
+         list_library_functions "${library}" "${namesonly}"
+         sep=$'\n'
+      done
+   else
+      library="${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-$1.sh"
+      if [ -f "${library}" ]
+      then
+         list_library_functions "${library}" "${namesonly}"
+      else
+         fail "Library \"$1\" not found"
+      fi
+   fi
+}
+
 
 
 HEAD_MARKER='### >> START OF mulle-bashfunctions-embed.sh >>'
@@ -241,7 +353,6 @@ mulle_bashfunctions_embed()
       esac
    done
 
-
    local line
 
    # initial state, searching for start
@@ -282,6 +393,12 @@ main()
    #
    while [ $# -ne 0 ]
    do
+      if options_technical_flags "$1"
+      then
+         shift
+         continue
+      fi
+
       case "$1" in
          -h|--help)
             usage
@@ -290,16 +407,6 @@ main()
          --version)
             printf "%s\n" "${MULLE_BASHFUNCTIONS_VERSION}"
             exit 0
-         ;;
-
-         -v|-vv|-vvv)
-         ;;
-
-         -ld|-ls|-lx)
-         ;;
-
-         -t)
-            set -x
          ;;
 
          -*)
@@ -315,30 +422,52 @@ main()
       shift
    done
 
+   options_setup_trace "${MULLE_TRACE}" && set -x
+
    local cmd
 
    cmd="${1:-libexec-dir}"
+   [ $# -eq 0 ] || shift
 
    MULLE_EXECUTABLE_FAIL_PREFIX="${MULLE_EXECUTABLE_NAME} ${cmd}"
-   [ $# -eq 0 ] || shift
 
    case "${cmd}" in
       help)
          usage
       ;;
 
-      boot*)
+      env)
          echo "\
 MULLE_BASHFUNCTIONS_LIBEXEC_DIR=\"${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}\"
-export MULLE_BASHFUNCTIONS_LIBEXEC_DIR
 MULLE_USERNAME=\"${MULLE_USERNAME}\"
-export MULLE_USERNAME
 MULLE_HOSTNAME=\"${MULLE_HOSTNAME}\"
-export MULLE_HOSTNAME
-MULLE_UNAME=\"${MULLE_UNAME}\"
-export MULLE_UNAME"
+MULLE_UNAME=\"${MULLE_UNAME}\""
+      ;;
 
-         cat "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions-${cmd}.sh"
+      path)
+         local format
+
+         [ $# -ne 0 ] && format="-$1"
+
+         echo "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions${format}.sh"
+      ;;
+
+      load)
+         local format
+
+         [ $# -ne 0 ] && format="-$1"
+
+         echo "\
+MULLE_BASHFUNCTIONS_LIBEXEC_DIR=\"${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}\" ;
+export MULLE_BASHFUNCTIONS_LIBEXEC_DIR ;
+MULLE_USERNAME=\"${MULLE_USERNAME}\" ;
+export MULLE_USERNAME ;
+MULLE_HOSTNAME=\"${MULLE_HOSTNAME}\" ;
+export MULLE_HOSTNAME ;
+MULLE_UNAME=\"${MULLE_UNAME}\" ;
+export MULLE_UNAME ;
+. \"${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions${format}.sh\"
+"
       ;;
 
       embed)
@@ -350,29 +479,31 @@ export MULLE_UNAME"
       ;;
 
       username)
-         echo "${MULLE_USERNAME}"
+         printf "%s\n" "${MULLE_USERNAME}"
       ;;
 
       hostname)
-         echo "${MULLE_HOSTNAME}"
+         printf "%s\n" "${MULLE_HOSTNAME}"
       ;;
 
-      libexec-dir|library-path)
-         if [ $# -eq 0 ]
-         then
-            printf "%s\n" "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}"
-            return 0
-         fi
-
-         find_library_path "$@"
+      libexec-dir)
+         printf "%s\n" "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}"
       ;;
 
-      list)
+      versions)
+         list_versions "$@" || exit 1
+      ;;
+
+      functions)
+         list_functions "$@" || exit 1
+      ;;
+
+      libraries)
          list_libraries "$@" || exit 1
       ;;
 
       uname)
-         echo "${MULLE_UNAME}"
+         printf "%s\n" "${MULLE_UNAME}"
       ;;
 
       version)
@@ -386,211 +517,20 @@ export MULLE_UNAME"
 }
 
 
-
-#
-# ####
-# #### this is a duplicate of mulle-init
-# #### Do not edit this, edit mulle-init and then copy back to here
-# ####
-#
-
-# export into RVAL global
-r_dirname()
-{
-   RVAL="$1"
-
-   while :
-   do
-      case "${RVAL}" in
-         /)
-            return
-         ;;
-
-         */)
-            RVAL="${RVAL%?}"
-            continue
-         ;;
-      esac
-      break
-   done
-
-   local last
-
-   last="${RVAL##*/}"
-   RVAL="${RVAL%${last}}"
-
-   while :
-   do
-      case "${RVAL}" in
-         /)
-           return
-         ;;
-
-         */)
-            RVAL="${RVAL%?}"
-         ;;
-
-         *)
-            RVAL="${RVAL:-.}"
-            return
-         ;;
-      esac
-   done
-}
-
-
-#
-# ####
-# #### this is a duplicate of mulle-init
-# #### Do not edit this, edit mulle-init and then copy back to here
-# ####
-#
-
-# result in RVAL global
-r_resolve_symlinks()
-{
-   if RVAL="`readlink "$1"`"
-   then
-      case "${RVAL}" in
-         /*)
-            r_resolve_symlinks "${RVAL}"
-         ;;
-
-         *)
-            local linkpath
-
-            linkpath="${RVAL}"
-            r_dirname "$1"
-            r_resolve_symlinks "${RVAL}/${linkpath}"
-         ;;
-      esac
-   else
-      RVAL="$1"
-   fi
-}
-
-
-#
-# ####
-# #### this is a duplicate of mulle-init
-# #### Do not edit this, edit mulle-init and then copy back to here
-# ####
-#
-
-
-#
-# executablepath: will be $0
-# subdir: will be mulle-bashfunctions/${VERSION}
-# matchfile: the file to match agains
-#
-# Written this way, so it can get reused
-#
-r_get_libexec_dir()
-{
-   local executablepath="$1"
-   local subdir="$2"
-   local matchfile="$3"
-
-   local exedirpath
-   local prefix
-
-   case "${executablepath}" in
-      \.*|/*|~*)
-      ;;
-
-      *)
-         executablepath="`command -v "${executablepath}"`"
-      ;;
-   esac
-
-   r_resolve_symlinks "${executablepath}"
-   executablepath="${RVAL}"
-
-   r_dirname "${executablepath}"
-   exedirpath="${RVAL}"
-
-   r_dirname "${exedirpath}"
-   prefix="${RVAL}"
-
-
-   # now setup the global variable
-
-   RVAL="${prefix}/libexec/${subdir}"
-   if [ ! -f "${RVAL}/${matchfile}" ]
-   then
-      RVAL="${exedirpath}/src"
-   fi
-
-   case "$RVAL" in
-      /*|~*)
-      ;;
-
-      .)
-         RVAL="$PWD"
-      ;;
-
-      *)
-         RVAL="$PWD/${RVAL}"
-      ;;
-   esac
-
-   if [ ! -f "${RVAL}/${matchfile}" ]
-   then
-      unset RVAL
-   fi
-}
-
-
-#
-# Memo: to avoid confusion
-#    variables containing a filesystem path to a directory end with _DIR
-#    other variables containing a filesystem path end with _FILE
-#    variables containing search paths end with _PATH
-#
-_fatal()
-{
-   echo "$0 fatal error: $*" >&2
-   exit 1
-}
-
-
 _init()
 {
-   #
-   # leading backslash ? looks like we're getting called from
-   # mingw via a .BAT or so
-   #
-   case "$PATH" in
-      '\\'*)
-         PATH="${PATH//\\/\/}"
-      ;;
-   esac
-
    if [ ${ZSH_VERSION+x} ]
    then
      setopt sh_word_split
    fi
 
-   # nice for tests
-   if [ -z "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}" ]
-   then
-      r_get_libexec_dir "${MULLE_EXECUTABLE}" \
-                        "mulle-bashfunctions/${MULLE_BASHFUNCTIONS_VERSION}" \
-                        "mulle-bashfunctions.sh"
-
-      if [ -z "${RVAL}" ]
-      then
-         _fatal "Could not find libexec (PWD: $PWD)"
-      fi
-      MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${RVAL}"
-   fi
-
    #
-   # commands with minimal trap setup
+   # commands with minimal trap setup. libexec-dir is the most common call
+   # and will exit quickly
    #
    if [ $# -eq 1 ]
    then
-      case "${1}" in
+      case "$1" in
          libexec-dir|library-path)
             printf "%s\n" "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}"
             exit 0
@@ -602,9 +542,6 @@ _init()
          ;;
       esac
    fi
-
-   # shellcheck source=src/mulle-compatibility.sh
-   . "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions-minimal.sh" || _fatal "loading mulle-bashfunctions-minimal.sh failed"
 
    # shellcheck source=src/mulle-logging.sh
    include "logging" || _internal_fail "include mulle-version.sh fail"
