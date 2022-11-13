@@ -485,6 +485,18 @@ function shell_is_function()
 }
 
 
+function r_shell_indirect_expand()
+{
+   local key="$1"
+
+   if [ ${ZSH_VERSION+x} ]
+   then
+      RVAL="${(P)key}"
+   else
+      RVAL="${!key}"
+   fi
+}
+
 unalias -a
 
 if [ ${ZSH_VERSION+x} ]
@@ -1379,6 +1391,13 @@ function r_identifier()
 }
 
 
+function r_extended_identifier()
+{
+   RVAL="${1//[^a-zA-Z0-9+:.=_-]/_}"
+}
+
+
+
 
 function r_append()
 {
@@ -1499,8 +1518,8 @@ function r_list_remove()
    local sep="${3:- }"
 
    RVAL="${sep}$1${sep}//${sep}$2${sep}/}"
-   RVAL="${RVAL##${sep}}"
-   RVAL="${RVAL%%${sep}}"
+   RVAL="${RVAL##"${sep}"}"
+   RVAL="${RVAL%%"${sep}"}"
 }
 
 
@@ -1903,13 +1922,13 @@ function r_escaped_shell_string()
 
 function string_has_prefix()
 {
-  [ "${1#$2}" != "$1" ]
+  [ "${1#"$2"}" != "$1" ]
 }
 
 
 function string_has_suffix()
 {
-  [ "${1%$2}" != "$1" ]
+  [ "${1%"$2"}" != "$1" ]
 }
 
 
@@ -1926,14 +1945,14 @@ _r_prefix_with_unquoted_string()
    head=""
    while :
    do
-      prefix="${s%%${c}*}"             # a${
+      prefix="${s%%"${c}"*}"             # a${
       if [ "${prefix}" = "${_s}" ]
       then
          RVAL=
          return 1
       fi
 
-      e_prefix="${_s%%\\${c}*}"         # a\\${ or whole string if no match
+      e_prefix="${_s%%\\"${c}"*}"         # a\\${ or whole string if no match
       if [ "${e_prefix}" = "${_s}" ]
       then
          RVAL="${head}${prefix}"
@@ -2040,12 +2059,8 @@ _r_expand_string()
 
       if [ "${_expand}" = 'YES' ]
       then
-         if [ ${ZSH_VERSION+x} ]
-         then
-            value="${(P)identifier:-${default_value}}"
-         else
-            value="${!identifier:-${default_value}}"
-         fi
+         r_shell_indirect_expand "${identifier}"
+         value="${RVAL:-${default_value}}"
       else
          value="${default_value}"
       fi
@@ -2205,7 +2220,7 @@ function r_get_libexec_dir()
 
    if [ ! -f "${RVAL}/${matchfile}" ]
    then
-      printf "%s\n" "$0 fatal error: Could not find \"${subdir}\" libexec (${PWD#${MULLE_USER_PWD}/})" >&2
+      printf "%s\n" "$0 fatal error: Could not find \"${subdir}\" libexec (${PWD#"${MULLE_USER_PWD}/"})" >&2
       exit 1
    fi
 }
@@ -3170,7 +3185,8 @@ _r_simplified_path()
       return
    fi
 
-   RVAL="`tr -d '|' <<< "${result}" | tr '\012' '/'`"
+   RVAL="${result//\|/}"
+   RVAL="${RVAL//$'\n'/\/}"
    RVAL="${RVAL%/}"
 }
 
@@ -3264,7 +3280,7 @@ function mkdir_if_missing()
 
    if [ "${rval}" -eq 0 ]
    then
-      log_fluff "Created directory \"$1\" (${PWD#${MULLE_USER_PWD}/})"
+      log_fluff "Created directory \"$1\" (${PWD#"${MULLE_USER_PWD}/"})"
       return 0
    fi
 
@@ -3297,16 +3313,13 @@ function r_mkdir_parent_if_missing()
 
    case "${dirname}" in
       ""|\.)
-      ;;
-
-      *)
-         mkdir_if_missing "${dirname}"
-         RVAL="${dirname}"
-         return 0
+         return 1
       ;;
    esac
 
-   return 1
+   mkdir_if_missing "${dirname}"
+   RVAL="${dirname}"
+   return 0
 }
 
 
@@ -3423,7 +3436,7 @@ remove_file_if_present()
 {
    if [ -e "$1"  -o -L "$1" ] && _remove_file_if_present "$1"
    then
-      log_fluff "Removed \"${1#${PWD}/}\" (${PWD#${MULLE_USER_PWD}/})"
+      log_fluff "Removed \"${1#${PWD}/}\" (${PWD#"${MULLE_USER_PWD}/"})"
       return 0
    fi
    return 1
@@ -3435,14 +3448,15 @@ _make_tmp_in_dir_mktemp()
    local tmpdir="$1"
    local name="$2"
    local filetype="$3"
+   local extension="$4"
 
    case "${filetype}" in
       *d*)
-         TMPDIR="${tmpdir}" exekutor mktemp -d "${name}-XXXXXXXX"
+         TMPDIR="${tmpdir}" exekutor mktemp -d "${name}-XXXXXXXX${extension}"
       ;;
 
       *)
-         TMPDIR="${tmpdir}" exekutor mktemp "${name}-XXXXXXXX"
+         TMPDIR="${tmpdir}" exekutor mktemp "${name}-XXXXXXXX${extension}"
       ;;
    esac
 }
@@ -3455,6 +3469,7 @@ _r_make_tmp_in_dir_uuidgen()
    local tmpdir="$1"
    local name="$2"
    local filetype="${3:-f}"
+   local extension="$4"
 
    local MKDIR
    local TOUCH
@@ -3474,7 +3489,7 @@ _r_make_tmp_in_dir_uuidgen()
    while :
    do
       uuid="`"${UUIDGEN}"`" || _internal_fail "uuidgen failed"
-      RVAL="${tmpdir}/${name}-${uuid}"
+      RVAL="${tmpdir}/${name}-${uuid}${extension}"
 
       case "${filetype}" in
          *d*)
@@ -3511,16 +3526,21 @@ _r_make_tmp_in_dir()
    name="${name:-${MULLE_EXECUTABLE_NAME}}"
    name="${name:-mulle}"
 
+   if [ ! -z "${extension}" ]
+   then
+      extension=".${extension}"
+   fi 
+
    local UUIDGEN
 
    UUIDGEN="`command -v "uuidgen"`"
    if [ ! -z "${UUIDGEN}" ]
    then
-      _r_make_tmp_in_dir_uuidgen "${UUIDGEN}" "${tmpdir}" "${name}" "${filetype}"
+      _r_make_tmp_in_dir_uuidgen "${UUIDGEN}" "${tmpdir}" "${name}" "${filetype}" "${extension}"
       return $?
    fi
 
-   RVAL="`_make_tmp_in_dir_mktemp "${tmpdir}" "${name}" "${filetype}"`"
+   RVAL="`_make_tmp_in_dir_mktemp "${tmpdir}" "${name}" "${filetype}" "${extension}"`"
    return $?
 }
 
@@ -3529,6 +3549,7 @@ function r_make_tmp()
 {
    local name="$1"
    local filetype="${2:-f}"
+   local extension="$3"
 
    local tmpdir
 
@@ -3545,19 +3566,19 @@ function r_make_tmp()
    esac
    tmpdir="${tmpdir:-/tmp}"
 
-   _r_make_tmp_in_dir "${tmpdir}" "${name}" "${filetype}"
+   _r_make_tmp_in_dir "${tmpdir}" "${name}" "${filetype}" "${extension}"
 }
 
 
 function r_make_tmp_file()
 {
-   r_make_tmp "$1" "f"
+   r_make_tmp "$1" "f" "$2"
 }
 
 
 function r_make_tmp_directory()
 {
-   r_make_tmp "$1" "d"
+   r_make_tmp "$1" "d" "$2"
 }
 
 
@@ -3679,7 +3700,7 @@ function create_symlink()
    local symlink="$2"      # symlink of this clone (absolute or relative to $PWD)
    local absolute="${3:-NO}"
 
-   [ -e "${source}" ]     || fail "${C_RESET}${C_BOLD}${source}${C_ERROR} does not exist (${PWD#${MULLE_USER_PWD}/})"
+   [ -e "${source}" ]     || fail "${C_RESET}${C_BOLD}${source}${C_ERROR} does not exist (${PWD#"${MULLE_USER_PWD}/"})"
    [ ! -z "${absolute}" ] || fail "absolute must be YES or NO"
 
    if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN:-}" = 'YES' ]
@@ -3803,6 +3824,32 @@ function dir_has_files()
                                        "$@" \
                                        -print 2> /dev/null`"
    [ ! -z "$empty" ]
+}
+
+
+function dir_list_files()
+{
+   local directory="$1" ; shift
+   local pattern="${1:-*}" ; [ $# -eq 0 ] || shift
+   local flags="$1"
+
+   [ ! -z "${directory}" ] || _internal_fail "directory is empty"
+
+   case "$1" in
+      [fd])
+         flags="-type"$'\n'"$1"
+         shift
+      ;;
+   esac
+
+   IFS=$'\n'
+   rexekutor find ${directory} -xdev \
+                               -mindepth 1 \
+                               -maxdepth 1 \
+                               -name "${pattern}" \
+                               ${flags} \
+                               -print  | sort -n
+   IFS=' '$'\t'$'\n'
 }
 
 

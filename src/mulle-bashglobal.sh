@@ -79,7 +79,7 @@ then
 
    #
    # this is useful for shortening filenames for output
-   # like printf "%s\n" "${filename#${MULLE_USER_PWD}/}"
+   # like printf "%s\n" "${filename#"${MULLE_USER_PWD}/"}"
    #
    if [ -z "${MULLE_USER_PWD:-}" ]
    then

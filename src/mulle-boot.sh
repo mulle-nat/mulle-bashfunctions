@@ -49,10 +49,11 @@ EOF
 
       exec "${exe_shell:-bash}" -c ". ${script} --no-auto-shell ${args}" "${script}"
    fi
-   if [ ${BASH_VERSION+x} ]
-   then
-      set +o posix
-   fi
+# breaks alias macros since v5   
+#   if [ ${BASH_VERSION+x} ]
+#   then
+#      set +o posix
+#   fi
 else
    shift    # get rid of --no-auto-shell
 fi

@@ -69,7 +69,7 @@ function mkdir_if_missing()
 
    if [ "${rval}" -eq 0 ]
    then
-      log_fluff "Created directory \"$1\" (${PWD#${MULLE_USER_PWD}/})"
+      log_fluff "Created directory \"$1\" (${PWD#"${MULLE_USER_PWD}/"})"
       return 0
    fi
 
@@ -112,16 +112,13 @@ function r_mkdir_parent_if_missing()
 
    case "${dirname}" in
       ""|\.)
-      ;;
-
-      *)
-         mkdir_if_missing "${dirname}"
-         RVAL="${dirname}"
-         return 0
+         return 1
       ;;
    esac
 
-   return 1
+   mkdir_if_missing "${dirname}"
+   RVAL="${dirname}"
+   return 0
 }
 
 
@@ -282,7 +279,7 @@ remove_file_if_present()
    # fluff. So this is even super slow.
    if [ -e "$1"  -o -L "$1" ] && _remove_file_if_present "$1"
    then
-      log_fluff "Removed \"${1#${PWD}/}\" (${PWD#${MULLE_USER_PWD}/})"
+      log_fluff "Removed \"${1#${PWD}/}\" (${PWD#"${MULLE_USER_PWD}/"})"
       return 0
    fi
    return 1
@@ -297,14 +294,15 @@ _make_tmp_in_dir_mktemp()
    local tmpdir="$1"
    local name="$2"
    local filetype="$3"
+   local extension="$4"
 
    case "${filetype}" in
       *d*)
-         TMPDIR="${tmpdir}" exekutor mktemp -d "${name}-XXXXXXXX"
+         TMPDIR="${tmpdir}" exekutor mktemp -d "${name}-XXXXXXXX${extension}"
       ;;
 
       *)
-         TMPDIR="${tmpdir}" exekutor mktemp "${name}-XXXXXXXX"
+         TMPDIR="${tmpdir}" exekutor mktemp "${name}-XXXXXXXX${extension}"
       ;;
    esac
 }
@@ -317,6 +315,7 @@ _r_make_tmp_in_dir_uuidgen()
    local tmpdir="$1"
    local name="$2"
    local filetype="${3:-f}"
+   local extension="$4"
 
    local MKDIR
    local TOUCH
@@ -338,7 +337,7 @@ _r_make_tmp_in_dir_uuidgen()
    while :
    do
       uuid="`"${UUIDGEN}"`" || _internal_fail "uuidgen failed"
-      RVAL="${tmpdir}/${name}-${uuid}"
+      RVAL="${tmpdir}/${name}-${uuid}${extension}"
 
       case "${filetype}" in
          *d*)
@@ -375,16 +374,21 @@ _r_make_tmp_in_dir()
    name="${name:-${MULLE_EXECUTABLE_NAME}}"
    name="${name:-mulle}"
 
+   if [ ! -z "${extension}" ]
+   then
+      extension=".${extension}"
+   fi 
+
    local UUIDGEN
 
    UUIDGEN="`command -v "uuidgen"`"
    if [ ! -z "${UUIDGEN}" ]
    then
-      _r_make_tmp_in_dir_uuidgen "${UUIDGEN}" "${tmpdir}" "${name}" "${filetype}"
+      _r_make_tmp_in_dir_uuidgen "${UUIDGEN}" "${tmpdir}" "${name}" "${filetype}" "${extension}"
       return $?
    fi
 
-   RVAL="`_make_tmp_in_dir_mktemp "${tmpdir}" "${name}" "${filetype}"`"
+   RVAL="`_make_tmp_in_dir_mktemp "${tmpdir}" "${name}" "${filetype}" "${extension}"`"
    return $?
 }
 
@@ -402,6 +406,7 @@ function r_make_tmp()
 {
    local name="$1"
    local filetype="${2:-f}"
+   local extension="$3"
 
    local tmpdir
 
@@ -420,7 +425,7 @@ function r_make_tmp()
    esac
    tmpdir="${tmpdir:-/tmp}"
 
-   _r_make_tmp_in_dir "${tmpdir}" "${name}" "${filetype}"
+   _r_make_tmp_in_dir "${tmpdir}" "${name}" "${filetype}" "${extension}"
 }
 
 
@@ -435,7 +440,7 @@ function r_make_tmp()
 #
 function r_make_tmp_file()
 {
-   r_make_tmp "$1" "f"
+   r_make_tmp "$1" "f" "$2"
 }
 
 
@@ -450,7 +455,7 @@ function r_make_tmp_file()
 #
 function r_make_tmp_directory()
 {
-   r_make_tmp "$1" "d"
+   r_make_tmp "$1" "d" "$2"
 }
 
 
@@ -609,7 +614,7 @@ function create_symlink()
    local symlink="$2"      # symlink of this clone (absolute or relative to $PWD)
    local absolute="${3:-NO}"
 
-   [ -e "${source}" ]     || fail "${C_RESET}${C_BOLD}${source}${C_ERROR} does not exist (${PWD#${MULLE_USER_PWD}/})"
+   [ -e "${source}" ]     || fail "${C_RESET}${C_BOLD}${source}${C_ERROR} does not exist (${PWD#"${MULLE_USER_PWD}/"})"
    [ ! -z "${absolute}" ] || fail "absolute must be YES or NO"
 
    # doesn't work if mkdir isn't made
@@ -781,6 +786,41 @@ function dir_has_files()
                                        "$@" \
                                        -print 2> /dev/null`"
    [ ! -z "$empty" ]
+}
+
+
+#
+# dir_list_files <directory> [pattern] [filetype]
+#
+#    Lists file in <directory> (or directories as <directory> may contain
+#    wildcards) line by line.
+#    <directory> may contain whitespace but no tabs. filetype may be "f" for
+#    files only or "d" for diretorries only.
+#    Expects glob to be enabled. Resets IFS to default.
+#
+function dir_list_files()
+{
+   local directory="$1" ; shift
+   local pattern="${1:-*}" ; [ $# -eq 0 ] || shift
+   local flags="$1"
+
+   [ ! -z "${directory}" ] || _internal_fail "directory is empty"
+
+   case "$1" in
+      [fd])
+         flags="-type"$'\n'"$1"
+         shift
+      ;;
+   esac
+
+   IFS=$'\n'
+   rexekutor find ${directory} -xdev \
+                               -mindepth 1 \
+                               -maxdepth 1 \
+                               -name "${pattern}" \
+                               ${flags} \
+                               -print  | sort -n
+   IFS=' '$'\t'$'\n'
 }
 
 

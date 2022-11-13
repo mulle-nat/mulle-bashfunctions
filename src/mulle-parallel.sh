@@ -341,11 +341,12 @@ function _parallel_end()
 
    wait
 
-   _parallel_fails="`rexekutor wc -l "${_parallel_statusfile}" | awk '{ printf $1 }'`"
+   # use exekutor because the file ain't there in dry mode
+   _parallel_fails="`exekutor wc -l "${_parallel_statusfile}" | awk '{ printf $1 }'`"
 
    log_setting "_parallel_jobs : ${_parallel_jobs}"
    log_setting "_parallel_fails: ${_parallel_fails}"
-   log_setting "${_parallel_statusfile} : `cat "${_parallel_statusfile}"`"
+   log_setting "${_parallel_statusfile} : `exekutor cat "${_parallel_statusfile}"`"
 
    exekutor rm "${_parallel_statusfile}"
 

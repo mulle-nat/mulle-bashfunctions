@@ -485,6 +485,18 @@ function shell_is_function()
 }
 
 
+function r_shell_indirect_expand()
+{
+   local key="$1"
+
+   if [ ${ZSH_VERSION+x} ]
+   then
+      RVAL="${(P)key}"
+   else
+      RVAL="${!key}"
+   fi
+}
+
 unalias -a
 
 if [ ${ZSH_VERSION+x} ]
@@ -1379,6 +1391,13 @@ function r_identifier()
 }
 
 
+function r_extended_identifier()
+{
+   RVAL="${1//[^a-zA-Z0-9+:.=_-]/_}"
+}
+
+
+
 
 function r_append()
 {
@@ -1499,8 +1518,8 @@ function r_list_remove()
    local sep="${3:- }"
 
    RVAL="${sep}$1${sep}//${sep}$2${sep}/}"
-   RVAL="${RVAL##${sep}}"
-   RVAL="${RVAL%%${sep}}"
+   RVAL="${RVAL##"${sep}"}"
+   RVAL="${RVAL%%"${sep}"}"
 }
 
 
@@ -1903,13 +1922,13 @@ function r_escaped_shell_string()
 
 function string_has_prefix()
 {
-  [ "${1#$2}" != "$1" ]
+  [ "${1#"$2"}" != "$1" ]
 }
 
 
 function string_has_suffix()
 {
-  [ "${1%$2}" != "$1" ]
+  [ "${1%"$2"}" != "$1" ]
 }
 
 
@@ -1926,14 +1945,14 @@ _r_prefix_with_unquoted_string()
    head=""
    while :
    do
-      prefix="${s%%${c}*}"             # a${
+      prefix="${s%%"${c}"*}"             # a${
       if [ "${prefix}" = "${_s}" ]
       then
          RVAL=
          return 1
       fi
 
-      e_prefix="${_s%%\\${c}*}"         # a\\${ or whole string if no match
+      e_prefix="${_s%%\\"${c}"*}"         # a\\${ or whole string if no match
       if [ "${e_prefix}" = "${_s}" ]
       then
          RVAL="${head}${prefix}"
@@ -2040,12 +2059,8 @@ _r_expand_string()
 
       if [ "${_expand}" = 'YES' ]
       then
-         if [ ${ZSH_VERSION+x} ]
-         then
-            value="${(P)identifier:-${default_value}}"
-         else
-            value="${!identifier:-${default_value}}"
-         fi
+         r_shell_indirect_expand "${identifier}"
+         value="${RVAL:-${default_value}}"
       else
          value="${default_value}"
       fi
@@ -2205,7 +2220,7 @@ function r_get_libexec_dir()
 
    if [ ! -f "${RVAL}/${matchfile}" ]
    then
-      printf "%s\n" "$0 fatal error: Could not find \"${subdir}\" libexec (${PWD#${MULLE_USER_PWD}/})" >&2
+      printf "%s\n" "$0 fatal error: Could not find \"${subdir}\" libexec (${PWD#"${MULLE_USER_PWD}/"})" >&2
       exit 1
    fi
 }

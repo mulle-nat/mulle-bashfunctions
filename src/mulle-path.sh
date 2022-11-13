@@ -733,7 +733,8 @@ _r_simplified_path()
       return
    fi
 
-   RVAL="`tr -d '|' <<< "${result}" | tr '\012' '/'`"
+   RVAL="${result//\|/}"
+   RVAL="${RVAL//$'\n'/\/}"
    RVAL="${RVAL%/}"
 }
 

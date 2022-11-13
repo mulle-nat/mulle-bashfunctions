@@ -485,6 +485,18 @@ function shell_is_function()
 }
 
 
+function r_shell_indirect_expand()
+{
+   local key="$1"
+
+   if [ ${ZSH_VERSION+x} ]
+   then
+      RVAL="${(P)key}"
+   else
+      RVAL="${!key}"
+   fi
+}
+
 unalias -a
 
 if [ ${ZSH_VERSION+x} ]

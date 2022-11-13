@@ -44,23 +44,6 @@ MULLE_ETC_SH="included"
 #
 
 
-#
-# etc_prepare_for_write_of_file <filename>
-#
-#    Removes <filename> it is a symlink, otherwise doesn't.
-#
-function etc_prepare_for_write_of_file()
-{
-   log_entry "etc_prepare_for_write_of_file" "$@"
-
-   local filename="$1"
-
-   if [ -L "${filename}" ]
-   then
-      exekutor rm "${filename}"
-   fi
-}
-
 
 #
 # etc_make_file_from_symlinked_file <dstfile>
@@ -84,6 +67,8 @@ function etc_make_file_from_symlinked_file()
    then
       flags="-v"
    fi
+
+   log_verbose "Turn symlink \"${dstfile}\" into a file"
 
    local targetfile
 
@@ -109,6 +94,91 @@ function etc_make_file_from_symlinked_file()
       exekutor cp ${flags} "${targetfile}" "${filename}" || exit 1
       exekutor chmod ug+w "${filename}"
    ) || fail "Could not copy \"${targetfile}\" to \"${dstfile}\""
+}
+
+
+
+#
+# etc_prepare_for_write_of_file <filename>
+#
+#    Turns <filename> from a symlink into a file, otherwise doesn't.
+#    Ensures that parent directory exists
+#
+function etc_prepare_for_write_of_file()
+{
+   log_entry "etc_prepare_for_write_of_file" "$@"
+
+   local filename="$1"
+
+   r_mkdir_parent_if_missing "${filename}"
+
+   etc_make_file_from_symlinked_file "${filename}"
+}
+
+
+
+#
+# etc_make_symlink_if_possible <filename>
+#
+#    Turns <filename> into a symlink, if the contents are the
+#    same as those on the share file.
+#
+# Returns 0 : did make symlink
+#         1 : symlinking error
+#         2 : share file does not exist
+#         3 : contents differ
+#         4 : already a symlink
+#
+function etc_make_symlink_if_possible()
+{
+   log_entry "etc_make_symlink_if_possible" "$@"
+
+   local dstfile="$1"
+   local sharedir="$2"
+   local symlink="$3"
+
+   if [ -z "${sharedir}" ]
+   then
+      return 2
+   fi
+
+   if [ -L "${dstfile}" ]
+   then
+      return 4
+   fi
+
+   local srcfile
+   local filename
+
+   r_basename "${dstfile}"
+   filename="${RVAL}"
+
+   r_filepath_concat "${sharedir}" "${filename}"
+   srcfile="${RVAL}"
+
+   if [ ! -e "${srcfile}" ]
+   then
+      return 2
+   fi
+
+   local dstdir
+
+   r_dirname "${dstfile}"
+   dstdir="${RVAL}"
+
+   if ! diff -q -b "${dstfile}" "${srcfile}" > /dev/null
+   then
+      return 3
+   fi
+
+   log_verbose "\"${dstfile}\" has no user edits: replace with symlink"
+
+   remove_file_if_present "${dstfile}"
+   etc_symlink_or_copy_file "${srcfile}" \
+                            "${dstdir}" \
+                            "${filename}" \
+                            "${symlink}"
+   return $?
 }
 
 
@@ -252,17 +322,19 @@ function etc_remove_if_possible()
 {
    log_entry "etc_remove_if_possible" "$@"
 
-   local etc="$1"
-   local share="$2"
+   [ $# -eq 2 ] || _internal_fail "API error"
 
-   if [ ! -d "${etc}" ]
+   local etcdir="$1"
+   local sharedir="$2"
+
+   if [ ! -d "${etcdir}" ]
    then
       return
    fi
 
-   if dirs_contain_same_files "${etc}" "${share}"
+   if dirs_contain_same_files "${etcdir}" "${sharedir}"
    then
-      rmdir_safer "${etc}"
+      rmdir_safer "${etcdir}"
    fi
 }
 
@@ -386,7 +458,7 @@ function etc_repair_files()
 
    if [ "${can_remove_etc}" = 'YES' ]
    then
-      log_info "\"${dstdir#${MULLE_USER_PWD}/}\" contains no user changes so use \"share\" again"
+      log_info "\"${dstdir#"${MULLE_USER_PWD}/"}\" contains no user changes so use \"share\" again"
       rmdir_safer "${dstdir}"
       rmdir_if_empty "${srcdir}"
    fi

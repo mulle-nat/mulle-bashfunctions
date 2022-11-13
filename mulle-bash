@@ -99,10 +99,11 @@ EOF
       #
       exec "${exe_shell:-bash}" -c ". ${script} --no-auto-shell ${args}" "${script}"
    fi
-   if [ ${BASH_VERSION+x} ]
-   then
-      set +o posix
-   fi
+# breaks our alias macros now   
+#   if [ ${BASH_VERSION+x} ]
+#   then
+#      set +o posix
+#   fi
 else
    shift  # get rid of --no-auto-shell
 fi
@@ -168,7 +169,7 @@ else
       #
       while :
       do
-         IFS=$'n' read -r line
+         IFS=$'\n' read -r line
          case "${line}" in
             \#\!*)
             ;;
@@ -181,7 +182,7 @@ else
          done=
          while [ "${done}" != 'YES' ]
          do
-            IFS=$'n' read -r line
+            IFS=$'\n' read -r line
             case "${line}" in
                \#\!*MULLE_BASHFUNCTIONS_VERSION_QUALIFIER*=*)
                   version="${line#\#\!}"     # remove #!
@@ -687,7 +688,7 @@ r_get_libexec_dir()
 
    if [ ! -f "${RVAL}/${matchfile}" ]
    then
-      _fatal "%s\n" "$0 fatal error: Could not find \"${subdir}\" libexec (${PWD#${MULLE_USER_PWD}/})"
+      _fatal "%s\n" "$0 fatal error: Could not find \"${subdir}\" libexec (${PWD#"${MULLE_USER_PWD}/"})"
    fi
 }
 

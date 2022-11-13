@@ -263,6 +263,22 @@ function shell_is_function()
 }
 
 
+#
+# x=y ; y=22 ; r_shell_indirect_expand "x" ; echo "${RVAL}" -> y
+# x=y ; y=22 ; r_shell_indirect_expand "${x}" ; echo "${RVAL}" -> 22
+#
+function r_shell_indirect_expand()
+{
+   local key="$1"
+
+   if [ ${ZSH_VERSION+x} ]
+   then
+      RVAL="${(P)key}"
+   else
+      RVAL="${!key}"
+   fi
+}
+
 ##
 ## Special for macros. The default for in a shell script is "supposed to"
 ## iterate though file names (e.g. for i in *). That's why globbing is on

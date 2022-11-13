@@ -124,7 +124,7 @@ Name                              | Descriptions
 ## Runtime environment
 
 If run under **zsh**, `mulle-bashfunctions.sh` will `setopt sh_word_split`
-and `setopt POSIX_ARGZERO`. On bash **posix** mode will be enabled.
+and `setopt POSIX_ARGZERO`. 
 
 * `pipefail` is set and expected to be kept.
 * `extglob` is set and required for bash and zsh for a few functions.
