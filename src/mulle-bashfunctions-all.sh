@@ -83,7 +83,7 @@ then
          ;;
 
          *)
-            MULLE_UNAME="`uname`"
+            MULLE_UNAME="${_MULLE_UNAME:-`uname`}"
             if [ ${ZSH_VERSION+x} ]
             then
                MULLE_UNAME="${MULLE_UNAME:l}"
@@ -3186,7 +3186,7 @@ _r_simplified_path()
    fi
 
    RVAL="${result//\|/}"
-   RVAL="${RVAL//$'\n'/\/}"
+   RVAL="${RVAL//$'\n'//}"
    RVAL="${RVAL%/}"
 }
 
@@ -4660,7 +4660,7 @@ function r_url_encode()
    do
       safe="${s%%[^a-zA-Z0-9.~_-]*}"
       RVAL="${RVAL}${safe}"
-      s="${s#${safe}}"
+      s="${s#"${safe}"}"
       if [ -z "${s}" ]
       then
          break
@@ -4721,33 +4721,40 @@ function r_url_remove_file_compression_extension()
 
 
 
-readonly MULLE_URI_REGEX='^(([^:/?#]+):)?(//((([^:/?#]+)@)?([^:/?#]+)(:([0-9]+))?))?(/([^?#]*))(\?([^#]*))?(#(.*))?'
+MULLE_URI_REGEX='^(([^:/?#]+):)?(//((([^:/?#]+)@)?([^:/?#]+)(:([0-9]+))?))?(/([^?#]*))(\?([^#]*))?(#(.*))?'
 
 
-function url_parse()
+function __url_parse()
 {
-   log_entry "url_parse" "$@"
+   log_entry "__url_parse" "$@"
 
    local url="$1"
 
    if [ ${ZSH_VERSION+x} ]
    then
       setopt local_options BASH_REMATCH
+      setopt local_options KSH_ARRAYS
    fi
 
    case "${url}" in
-      *://*|/*)
+      *://*)
          if ! [[ "${url}" =~ ${MULLE_URI_REGEX} ]]
          then
             return 1
          fi
-         _scheme="${BASH_REMATCH[1]}"
-         _userinfo="${BASH_REMATCH[6]}"
-         _host="${BASH_REMATCH[7]}"
-         _port="${BASH_REMATCH[9]}"
-         _path="${BASH_REMATCH[10]}"
-         _query="${BASH_REMATCH[13]}"
-         _fragment="${BASH_REMATCH[15]}"
+
+            _scheme="${BASH_REMATCH[2]}"
+            _userinfo="${BASH_REMATCH[6]}"
+            _host="${BASH_REMATCH[7]}"
+            _port="${BASH_REMATCH[9]}"
+            _path="${BASH_REMATCH[10]}"
+            _query="${BASH_REMATCH[13]}"
+            _fragment="${BASH_REMATCH[15]}"
+
+         if [ -z "${_userinfo}${_host}${_port}" -a "${_path:0:3}" = "///" ]
+         then
+            _path="${_path#//}"
+         fi
       ;;
 
       *:*)
@@ -4796,23 +4803,21 @@ function r_url_get_path()
 
    local url="$1"
 
-   if [ ${ZSH_VERSION+x} ]
+   local _scheme
+   local _userinfo
+   local _host
+   local _port
+   local _path
+   local _query
+   local _fragment
+
+   if __url_parse "${url}"
    then
-      setopt local_options BASH_REMATCH
+      RVAL="${_path}"
+      return
    fi
 
-   RVAL=
-   case "${url}" in
-      *://*|/*)
-         [[ "${url}" =~ ${MULLE_URI_REGEX} ]] && RVAL="${BASH_REMATCH[10]}"
-      ;;
-
-      *)
-         r_url_remove_scheme "${url}"
-         r_url_remove_query "${RVAL}"
-         r_url_remove_fragment "${RVAL}"
-      ;;
-   esac
+   return 1
 }
 
 

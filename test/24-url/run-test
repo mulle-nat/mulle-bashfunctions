@@ -1,0 +1,153 @@
+#! /bin/sh
+
+[ "${TRACE}" = 'YES' ] && set -x && : "$0" "$@"
+
+###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
+MULLE_BASHFUNCTIONS_LIBEXEC_DIR="`mulle-bashfunctions libexec-dir`" || exit 1
+export MULLE_BASHFUNCTIONS_LIBEXEC_DIR
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-boot.sh" || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions.sh" || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-url.sh" || exit 1
+###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
+
+if [ ${ZSH_VERSION+x} ]
+then
+   setopt sh_word_split
+fi
+
+
+
+expect()
+{
+   local output="$1"
+   local expected="$2"
+
+   if [ "${output}" != "${expected}" ]
+   then
+      echo "Got \"${output}\". Expected: \"${expected}\"" >&2
+      stacktrace >&2
+      exit 1
+   fi
+}
+
+
+test_url1()
+{
+   local _scheme
+   local _userinfo
+   local _host
+   local _port
+   local _path
+   local _query
+   local _fragment
+
+   local url
+
+   url="https://git@www.mulle-kybernetik.com:666/weblog/article.html?foo=2#17"
+   if ! __url_parse "${url}"
+   then
+      fail "could not parse URL \"${url}\""
+   fi
+
+   expect "${_scheme}" "https"
+   expect "${_userinfo}" "git"
+   expect "${_host}" "www.mulle-kybernetik.com"
+   expect "${_port}" "666"
+   expect "${_path}" "/weblog/article.html"
+   expect "${_query}" "foo=2"
+   expect "${_fragment}" "17"
+}
+
+
+test_url2()
+{
+   local _scheme
+   local _userinfo
+   local _host
+   local _port
+   local _path
+   local _query
+   local _fragment
+
+   local url
+
+   url="git@foo.gitolite.com:repo.git"
+   if ! __url_parse "${url}"
+   then
+      fail "could not parse URL \"${url}\""
+   fi
+
+   expect "${_scheme}" ""
+   expect "${_userinfo}" "git"
+   expect "${_host}" "foo.gitolite.com"
+   expect "${_port}" ""
+   expect "${_path}" "repo.git"
+   expect "${_query}" ""
+   expect "${_fragment}" ""
+}
+
+
+test_url3()
+{
+   local _scheme
+   local _userinfo
+   local _host
+   local _port
+   local _path
+   local _query
+   local _fragment
+
+   local url
+
+   url="file:///tmp/repositories/b"
+   if ! __url_parse "${url}"
+   then
+      fail "could not parse URL \"${url}\""
+   fi
+
+   expect "${_scheme}" "file"
+   expect "${_userinfo}" ""
+   expect "${_host}" ""
+   expect "${_port}" ""
+   expect "${_path}" "/tmp/repositories/b"
+   expect "${_query}" ""
+   expect "${_fragment}" ""
+}
+
+
+test_url4()
+{
+   local _scheme
+   local _userinfo
+   local _host
+   local _port
+   local _path
+   local _query
+   local _fragment
+
+   local url
+
+   url="file:///tmp/repositories/b"
+   if ! r_url_get_path "${url}"
+   then
+      fail "could not parse URL \"${url}\""
+   fi
+
+   expect "${RVAL}" "/tmp/repositories/b"
+}
+
+
+main()
+{
+   _options_mini_main "$@" && set -x
+
+   test_url1
+   test_url2
+   test_url3
+
+   log_info "----- ALL PASSED -----"
+}
+
+
+main "$@"
+

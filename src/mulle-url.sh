@@ -67,7 +67,7 @@ function r_url_encode()
    do
       safe="${s%%[^a-zA-Z0-9.~_-]*}"
       RVAL="${RVAL}${safe}"
-      s="${s#${safe}}"
+      s="${s#"${safe}"}"
       if [ -z "${s}" ]
       then
          break
@@ -165,16 +165,16 @@ function r_url_remove_file_compression_extension()
 # Following regex is based on https://tools.ietf.org/html/rfc3986#appendix-B with
 # additional sub-expressions to split authority into userinfo, host and port
 #
-readonly MULLE_URI_REGEX='^(([^:/?#]+):)?(//((([^:/?#]+)@)?([^:/?#]+)(:([0-9]+))?))?(/([^?#]*))(\?([^#]*))?(#(.*))?'
-#                    ↑↑            ↑  ↑↑↑            ↑         ↑ ↑            ↑ ↑        ↑  ↑        ↑ ↑
-#                    |2 scheme     |  ||6 userinfo   7 host    | 9 port       | 11 rpath |  13 query | 15 fragment
-#                    1 scheme:     |  |5 userinfo@             8 :…           10 path    12 ?…       14 #…
-#                                  |  4 authority
-#                                  3 //…
+MULLE_URI_REGEX='^(([^:/?#]+):)?(//((([^:/?#]+)@)?([^:/?#]+)(:([0-9]+))?))?(/([^?#]*))(\?([^#]*))?(#(.*))?'
+#                 ↑↑            ↑  ↑↑↑            ↑         ↑ ↑            ↑ ↑        ↑  ↑        ↑ ↑
+#                 |2 scheme     |  ||6 userinfo   7 host    | 9 port       | 11 rpath |  13 query | 15 fragment
+#                 1 scheme:     |  |5 userinfo@             8 :…           10 path    12 ?…       14 #…
+#                                     |  4 authority
+#                               3 //…
 
 
 #
-# url_parse <url>
+# __url_parse <url>
 #
 #    Parse <url> into "global" variables. Before calling this function, define
 #    a local variable block like this:
@@ -187,32 +187,50 @@ readonly MULLE_URI_REGEX='^(([^:/?#]+):)?(//((([^:/?#]+)@)?([^:/?#]+)(:([0-9]+))
 #    local _query
 #    local _fragment
 #
-#    url_parse "${URL}"
+#    __url_parse "${URL}"
 #
-function url_parse()
+function __url_parse()
 {
-   log_entry "url_parse" "$@"
+   log_entry "__url_parse" "$@"
 
    local url="$1"
 
    if [ ${ZSH_VERSION+x} ]
    then
       setopt local_options BASH_REMATCH
+      setopt local_options KSH_ARRAYS
    fi
 
    case "${url}" in
-      *://*|/*)
+      *://*)
          if ! [[ "${url}" =~ ${MULLE_URI_REGEX} ]]
          then
             return 1
          fi
-         _scheme="${BASH_REMATCH[1]}"
-         _userinfo="${BASH_REMATCH[6]}"
-         _host="${BASH_REMATCH[7]}"
-         _port="${BASH_REMATCH[9]}"
-         _path="${BASH_REMATCH[10]}"
-         _query="${BASH_REMATCH[13]}"
-         _fragment="${BASH_REMATCH[15]}"
+
+#         if [ ${ZSH_VERSION+x} ]
+#         then
+#            _scheme="${BASH_REMATCH[3]}"
+#            _userinfo="${BASH_REMATCH[7]}"
+#            _host="${BASH_REMATCH[8]}"
+#            _port="${BASH_REMATCH[10]}"
+#            _path="${BASH_REMATCH[11]}"
+#            _query="${BASH_REMATCH[14]}"
+#            _fragment="${BASH_REMATCH[16]}"
+#         else
+            _scheme="${BASH_REMATCH[2]}"
+            _userinfo="${BASH_REMATCH[6]}"
+            _host="${BASH_REMATCH[7]}"
+            _port="${BASH_REMATCH[9]}"
+            _path="${BASH_REMATCH[10]}"
+            _query="${BASH_REMATCH[13]}"
+            _fragment="${BASH_REMATCH[15]}"
+#         fi
+
+         if [ -z "${_userinfo}${_host}${_port}" -a "${_path:0:3}" = "///" ]
+         then
+            _path="${_path#//}"
+         fi
       ;;
 
       # hack for git@github.com:mulle-kybernetik-tv/nanovg.git
@@ -268,23 +286,21 @@ function r_url_get_path()
 
    local url="$1"
 
-   if [ ${ZSH_VERSION+x} ]
+   local _scheme
+   local _userinfo
+   local _host
+   local _port
+   local _path
+   local _query
+   local _fragment
+
+   if __url_parse "${url}"
    then
-      setopt local_options BASH_REMATCH
+      RVAL="${_path}"
+      return
    fi
 
-   RVAL=
-   case "${url}" in
-      *://*|/*)
-         [[ "${url}" =~ ${MULLE_URI_REGEX} ]] && RVAL="${BASH_REMATCH[10]}"
-      ;;
-
-      *)
-         r_url_remove_scheme "${url}"
-         r_url_remove_query "${RVAL}"
-         r_url_remove_fragment "${RVAL}"
-      ;;
-   esac
+   return 1
 }
 
 

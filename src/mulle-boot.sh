@@ -10,11 +10,31 @@
 #
 if [ "${1:-}" != --no-auto-shell ]
 then
-   # bourne shell does not know "! -v" for checking for undefined
-   if [ -z "${BASH_VERSION}" -a -z "${ZSH_VERSION}" ]
+   _MULLE_UNAME="`uname`"
+   case "${_MULLE_UNAME}" in
+      [Dd]arwin)
+         [ -z "${ZSH_VERSION+x}" ]
+      ;;
+
+      *)
+         [ -z "${BASH_VERSION+x}" -a -z "${ZSH_VERSION+x}" ]
+      ;;
+   esac
+
+   if [ $? -eq 0 ]
    then
-      exe_shell="`command -v "bash" `"
-      exe_shell="${exe_shell:-`command -v "zsh" `}"
+      case "${_MULLE_UNAME}" in
+         [Dd]arwin)
+            exe_shell="`command -v "zsh" `"
+            exe_shell="${exe_shell:-zsh}" # for error if not installed
+         ;;
+
+         *)
+            exe_shell="`command -v "bash" `"
+            exe_shell="${exe_shell:-`command -v "zsh" `}"
+            exe_shell="${exe_shell:-bash}" # for error if not installed
+         ;;
+      esac
 
       script="$0"
 
@@ -46,16 +66,10 @@ EOF
       #
       # bash/zsh will use arg after -c <arg> as $0, convenient!
       #
-
-      exec "${exe_shell:-bash}" -c ". ${script} --no-auto-shell ${args}" "${script}"
+      exec "${exe_shell}" -c ". ${script} --no-auto-shell ${args}" "${script}"
    fi
-# breaks alias macros since v5   
-#   if [ ${BASH_VERSION+x} ]
-#   then
-#      set +o posix
-#   fi
 else
-   shift    # get rid of --no-auto-shell
+   shift  # get rid of --no-auto-shell
 fi
 
 #
@@ -67,3 +81,4 @@ case "$PATH" in
       PATH="${PATH//\\/\/}"
    ;;
 esac
+

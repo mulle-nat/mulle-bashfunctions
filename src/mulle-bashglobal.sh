@@ -104,7 +104,7 @@ then
          ;;
 
          *)
-            MULLE_UNAME="`uname`"
+            MULLE_UNAME="${_MULLE_UNAME:-`uname`}"
             if [ ${ZSH_VERSION+x} ]
             then
                MULLE_UNAME="${MULLE_UNAME:l}"

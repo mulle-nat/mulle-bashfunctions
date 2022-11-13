@@ -734,7 +734,7 @@ _r_simplified_path()
    fi
 
    RVAL="${result//\|/}"
-   RVAL="${RVAL//$'\n'/\/}"
+   RVAL="${RVAL//$'\n'//}"
    RVAL="${RVAL%/}"
 }
 
