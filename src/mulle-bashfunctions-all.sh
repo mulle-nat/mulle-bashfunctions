@@ -184,8 +184,8 @@ then
 
       if [ -z "${value}" ]
       then
-         value="`"${executable}" libexec-dir`"
-         printf -v "${libexec_define}" "%s" "${value}" || exit 1
+         value="`"${executable}" libexec-dir`" || fail "Could not execute ${executable} libexec-dir successfully ($PATH)"
+         printf -v "${libexec_define}" "%s" "${value}" 
          eval export "${libexec_define}"
       fi
 
@@ -510,7 +510,7 @@ then
    alias .foreachpath="setopt noglob; IFS=':'; for"
    alias .foreachpathcomponent="set -f; IFS='/'; for"
    alias .foreachcolumn="setopt noglob; IFS=';'; for"
-   alias .foreachfile="unsetopt noglob; unsetopt nullglob; IFS=' '$'\t'$'\n'; for"
+   alias .foreachfile="unsetopt noglob; setopt nullglob; IFS=' '$'\t'$'\n'; for"
    alias .do="do
    unsetopt noglob; unsetopt nullglob; IFS=' '$'\t'$'\n'"
    alias .done="done;unsetopt noglob; unsetopt nullglob; IFS=' '$'\t'$'\n'"
@@ -653,16 +653,27 @@ _log_entry()
    local functionname="$1" ; shift
 
    local args
+   local truncate
 
    if [ $# -ne 0 ]
    then
-      args="'$1'"
+      truncate="$1"
+      if [ "${#truncate}" -gt 200 ]
+      then
+         truncate="${truncate:0:197}..."
+      fi
+      args="'${truncate}'"
       shift
    fi
 
    while [ $# -ne 0 ]
    do
-      args="${args}, '$1'"
+      truncate="$1"
+      if [ "${#truncate}" -gt 200 ]
+      then
+         truncate="${truncate:0:197}..."
+      fi
+      args="${args}, '${truncate}'"
       shift
    done
 
@@ -3594,7 +3605,6 @@ function r_resolve_all_path_symlinks()
 
    local filename
    local directory
-   local resolved
 
    r_dirname "${resolved}"
    directory="${RVAL}"
@@ -3831,24 +3841,27 @@ function dir_list_files()
 {
    local directory="$1" ; shift
    local pattern="${1:-*}" ; [ $# -eq 0 ] || shift
-   local flags="$1"
+   local flagchar="${1:-}"
 
    [ ! -z "${directory}" ] || _internal_fail "directory is empty"
 
-   case "$1" in
-      [fd])
-         flags="-type"$'\n'"$1"
+   local flags
+
+   case "${flagchar}" in
+      [fdl])
+         flags="-type"$'\n'"'$1'"
          shift
       ;;
    esac
 
    IFS=$'\n'
-   rexekutor find ${directory} -xdev \
-                               -mindepth 1 \
-                               -maxdepth 1 \
-                               -name "${pattern}" \
-                               ${flags} \
-                               -print  | sort -n
+   shell_enable_glob
+   eval_rexekutor find ${directory} -xdev \
+                                    -mindepth 1 \
+                                    -maxdepth 1 \
+                                    -name "'${pattern}'" \
+                                    ${flags} \
+                                    -print  | sort -n
    IFS=' '$'\t'$'\n'
 }
 
@@ -4376,15 +4389,20 @@ MULLE_PARALLEL_SH="included"
 
 very_short_sleep()
 {
+   local us="$1"
+
+   us="${us:0:6}"
+   us="0.${us:-0001}"
+   us="${us%%0}"
    case "${MULLE_UNAME}" in 
       darwin)
-         sleep 0.001 #s # 1000Hz  
       ;;
 
       *)
-         sleep 0.001s #s # 1000Hz  
+         us="${us}s"
       ;;
    esac
+   LC_ALL=C sleep "${us}"
 }  
 
 
@@ -4526,9 +4544,9 @@ wait_for_load_average()
 }
 
 
-function _parallel_begin()
+function __parallel_begin()
 {
-   log_entry "_parallel_begin" "$@"
+   log_entry "__parallel_begin" "$@"
 
    _parallel_maxjobs="${1:-0}"
 
@@ -4550,9 +4568,9 @@ function _parallel_begin()
 }
 
 
-_parallel_status()
+__parallel_status()
 {
-   log_entry "_parallel_status" "$@"
+   log_entry "__parallel_status" "$@"
 
    local rval="$1"; shift
 
@@ -4566,9 +4584,9 @@ _parallel_status()
 }
 
 
-function _parallel_execute()
+function __parallel_execute()
 {
-   log_entry "_parallel_execute" "$@"
+   log_entry "__parallel_execute" "$@"
 
    wait_for_available_job "${_parallel_maxjobs}"
    _parallel_jobs=$(($_parallel_jobs + 1))
@@ -4579,14 +4597,14 @@ function _parallel_execute()
       local rval
 
       ( exekutor "$@" ) # run in subshell to capture exit code
-      _parallel_status $? "$@"
+      __parallel_status $? "$@"
    ) &
 }
 
 
-function _parallel_end()
+function __parallel_end()
 {
-   log_entry "_parallel_end" "$@"
+   log_entry "__parallel_end" "$@"
 
    wait
 
@@ -4622,7 +4640,7 @@ function parallel_execute()
 
    [ $# -eq 0 ] && _internal_fail "missing commandline"
 
-   _parallel_begin
+   __parallel_begin
 
    local argument
 
@@ -4630,12 +4648,12 @@ function parallel_execute()
 
    .foreachline argument in ${arguments}
    .do
-      _parallel_execute "$@" "${argument}"
+      __parallel_execute "$@" "${argument}"
    .done
 
    shell_enable_glob
 
-   _parallel_end
+   __parallel_end
 }
 
 fi
@@ -4783,13 +4801,12 @@ function __url_parse()
 
       *)
          _scheme="${url%:*}"
+         _host=
          r_url_remove_query "${url##*:}"
          r_url_remove_fragment "${RVAL}"
          _path=${RVAL}
          _userinfo=
-         _host=
          _port=
-         _path=
          _query=
          _fragment=
       ;;

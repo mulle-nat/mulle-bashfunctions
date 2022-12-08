@@ -137,6 +137,30 @@ test_url4()
 }
 
 
+
+test_url5()
+{
+   local _scheme
+   local _userinfo
+   local _host
+   local _port
+   local _path
+   local _query
+   local _fragment
+
+   local url
+
+   url="/name"
+   if ! r_url_get_path "${url}"
+   then
+      fail "could not parse URL \"${url}\""
+   fi
+
+   expect "${RVAL}" "/name"
+}
+
+
+
 main()
 {
    _options_mini_main "$@" && set -x
@@ -144,6 +168,8 @@ main()
    test_url1
    test_url2
    test_url3
+   test_url4
+   test_url5
 
    log_info "----- ALL PASSED -----"
 }

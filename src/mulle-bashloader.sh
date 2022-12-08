@@ -74,8 +74,8 @@ then
 
       if [ -z "${value}" ]
       then
-         value="`"${executable}" libexec-dir`"
-         printf -v "${libexec_define}" "%s" "${value}" || exit 1
+         value="`"${executable}" libexec-dir`" || fail "Could not execute ${executable} libexec-dir successfully ($PATH)"
+         printf -v "${libexec_define}" "%s" "${value}" 
          eval export "${libexec_define}"
       fi
 

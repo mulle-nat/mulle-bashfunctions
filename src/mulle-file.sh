@@ -481,7 +481,6 @@ function r_resolve_all_path_symlinks()
 
    local filename
    local directory
-   local resolved
 
    r_dirname "${resolved}"
    directory="${RVAL}"
@@ -802,24 +801,27 @@ function dir_list_files()
 {
    local directory="$1" ; shift
    local pattern="${1:-*}" ; [ $# -eq 0 ] || shift
-   local flags="$1"
+   local flagchar="${1:-}"
 
    [ ! -z "${directory}" ] || _internal_fail "directory is empty"
 
-   case "$1" in
-      [fd])
-         flags="-type"$'\n'"$1"
+   local flags
+
+   case "${flagchar}" in
+      [fdl])
+         flags="-type"$'\n'"'$1'"
          shift
       ;;
    esac
 
+   # need to eval for zsh
    IFS=$'\n'
-   rexekutor find ${directory} -xdev \
-                               -mindepth 1 \
-                               -maxdepth 1 \
-                               -name "${pattern}" \
-                               ${flags} \
-                               -print  | sort -n
+   eval_rexekutor find ${directory} -xdev \
+                                    -mindepth 1 \
+                                    -maxdepth 1 \
+                                    -name "'${pattern}'" \
+                                    ${flags} \
+                                    -print  | sort -n
    IFS=' '$'\t'$'\n'
 }
 

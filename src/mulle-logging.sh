@@ -213,16 +213,27 @@ _log_entry()
    local functionname="$1" ; shift
 
    local args
+   local truncate
 
    if [ $# -ne 0 ]
    then
-      args="'$1'"
+      truncate="$1"
+      if [ "${#truncate}" -gt 200 ]
+      then
+         truncate="${truncate:0:197}..."
+      fi
+      args="'${truncate}'"
       shift
    fi
 
    while [ $# -ne 0 ]
    do
-      args="${args}, '$1'"
+      truncate="$1"
+      if [ "${#truncate}" -gt 200 ]
+      then
+         truncate="${truncate:0:197}..."
+      fi
+      args="${args}, '${truncate}'"
       shift
    done
 

@@ -307,7 +307,7 @@ then
    alias .foreachpath="setopt noglob; IFS=':'; for"
    alias .foreachpathcomponent="set -f; IFS='/'; for"
    alias .foreachcolumn="setopt noglob; IFS=';'; for"
-   alias .foreachfile="unsetopt noglob; unsetopt nullglob; IFS=' '$'\t'$'\n'; for"
+   alias .foreachfile="unsetopt noglob; setopt nullglob; IFS=' '$'\t'$'\n'; for"
    alias .do="do
    unsetopt noglob; unsetopt nullglob; IFS=' '$'\t'$'\n'"
    alias .done="done;unsetopt noglob; unsetopt nullglob; IFS=' '$'\t'$'\n'"

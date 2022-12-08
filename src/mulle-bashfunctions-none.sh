@@ -184,8 +184,8 @@ then
 
       if [ -z "${value}" ]
       then
-         value="`"${executable}" libexec-dir`"
-         printf -v "${libexec_define}" "%s" "${value}" || exit 1
+         value="`"${executable}" libexec-dir`" || fail "Could not execute ${executable} libexec-dir successfully ($PATH)"
+         printf -v "${libexec_define}" "%s" "${value}" 
          eval export "${libexec_define}"
       fi
 
@@ -510,7 +510,7 @@ then
    alias .foreachpath="setopt noglob; IFS=':'; for"
    alias .foreachpathcomponent="set -f; IFS='/'; for"
    alias .foreachcolumn="setopt noglob; IFS=';'; for"
-   alias .foreachfile="unsetopt noglob; unsetopt nullglob; IFS=' '$'\t'$'\n'; for"
+   alias .foreachfile="unsetopt noglob; setopt nullglob; IFS=' '$'\t'$'\n'; for"
    alias .do="do
    unsetopt noglob; unsetopt nullglob; IFS=' '$'\t'$'\n'"
    alias .done="done;unsetopt noglob; unsetopt nullglob; IFS=' '$'\t'$'\n'"

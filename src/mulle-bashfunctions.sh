@@ -184,8 +184,8 @@ then
 
       if [ -z "${value}" ]
       then
-         value="`"${executable}" libexec-dir`"
-         printf -v "${libexec_define}" "%s" "${value}" || exit 1
+         value="`"${executable}" libexec-dir`" || fail "Could not execute ${executable} libexec-dir successfully ($PATH)"
+         printf -v "${libexec_define}" "%s" "${value}" 
          eval export "${libexec_define}"
       fi
 
@@ -510,7 +510,7 @@ then
    alias .foreachpath="setopt noglob; IFS=':'; for"
    alias .foreachpathcomponent="set -f; IFS='/'; for"
    alias .foreachcolumn="setopt noglob; IFS=';'; for"
-   alias .foreachfile="unsetopt noglob; unsetopt nullglob; IFS=' '$'\t'$'\n'; for"
+   alias .foreachfile="unsetopt noglob; setopt nullglob; IFS=' '$'\t'$'\n'; for"
    alias .do="do
    unsetopt noglob; unsetopt nullglob; IFS=' '$'\t'$'\n'"
    alias .done="done;unsetopt noglob; unsetopt nullglob; IFS=' '$'\t'$'\n'"
@@ -653,16 +653,27 @@ _log_entry()
    local functionname="$1" ; shift
 
    local args
+   local truncate
 
    if [ $# -ne 0 ]
    then
-      args="'$1'"
+      truncate="$1"
+      if [ "${#truncate}" -gt 200 ]
+      then
+         truncate="${truncate:0:197}..."
+      fi
+      args="'${truncate}'"
       shift
    fi
 
    while [ $# -ne 0 ]
    do
-      args="${args}, '$1'"
+      truncate="$1"
+      if [ "${#truncate}" -gt 200 ]
+      then
+         truncate="${truncate:0:197}..."
+      fi
+      args="${args}, '${truncate}'"
       shift
    done
 
@@ -3594,7 +3605,6 @@ function r_resolve_all_path_symlinks()
 
    local filename
    local directory
-   local resolved
 
    r_dirname "${resolved}"
    directory="${RVAL}"
@@ -3831,24 +3841,27 @@ function dir_list_files()
 {
    local directory="$1" ; shift
    local pattern="${1:-*}" ; [ $# -eq 0 ] || shift
-   local flags="$1"
+   local flagchar="${1:-}"
 
    [ ! -z "${directory}" ] || _internal_fail "directory is empty"
 
-   case "$1" in
-      [fd])
-         flags="-type"$'\n'"$1"
+   local flags
+
+   case "${flagchar}" in
+      [fdl])
+         flags="-type"$'\n'"'$1'"
          shift
       ;;
    esac
 
    IFS=$'\n'
-   rexekutor find ${directory} -xdev \
-                               -mindepth 1 \
-                               -maxdepth 1 \
-                               -name "${pattern}" \
-                               ${flags} \
-                               -print  | sort -n
+   shell_enable_glob
+   eval_rexekutor find ${directory} -xdev \
+                                    -mindepth 1 \
+                                    -maxdepth 1 \
+                                    -name "'${pattern}'" \
+                                    ${flags} \
+                                    -print  | sort -n
    IFS=' '$'\t'$'\n'
 }
 

@@ -47,16 +47,16 @@ run_parallel()
    local _parallel_jobs
    local _parallel_fails
 
-   _parallel_begin
+   __parallel_begin
 
    local cmd
 
    for cmd in "$@"
    do
-      _parallel_execute "${cmd}"
+      __parallel_execute "${cmd}"
    done
 
-   _parallel_end
+   __parallel_end
 }
 
 

@@ -9,7 +9,6 @@ featureful scripts.
 ### Features
 
 * A common framework for initializing a script with subscripts
-* Array and associative array for backwards compatibility
 * Execution control, trace external commands without executing them
 * Extensive major.minor.patch version support
 * Logging with color or without
@@ -17,7 +16,6 @@ featureful scripts.
 * Support for parallel execution of multiple tasks
 * Various file functions with an emphasis on safety
 * Various string functions, like escaping, case conversion, searching
-* Has lots of tests
 
 
 Executable            | Description
@@ -97,28 +95,28 @@ With `mulle-bashfunction.sh` preloaded you have access to a basic selection
 of libraries, namely:
 
 
-Name                                        | Descriptions
---------------------------------------------|------------------
-[compatibility](src/mulle-compatibility.sh) | abstraction of zsh and bash differences
-[logging](src/mulle-logging.sh)             | log support with colorization, zero cost if unused
-[exekutor](src/mulle-exekutor.sh)           | run external commands with logging and "dry-run"
-[file](src/mulle-file.sh)                   | functions to manage files, directories, symlinks
-[options](src/mulle-options.sh)             | default handling of commandline options and trace support
-[path](src/mulle-path.sh)                   | functions dealing with file paths
-[string](src/mulle-string.sh)               | a multitude of string functions
+| Name                                        | Descriptions |
+|---------------------------------------------|------------------ |
+| [compatibility](src/mulle-compatibility.sh) | abstraction of zsh and bash differences |
+| [logging](src/mulle-logging.sh)             | log support with colorization, zero cost if unused |
+| [exekutor](src/mulle-exekutor.sh)           | run external commands with logging and "dry-run" |
+| [file](src/mulle-file.sh)                   | functions to manage files, directories, symlinks |
+| [options](src/mulle-options.sh)             | default handling of commandline options and trace support |
+| [path](src/mulle-path.sh)                   | functions dealing with file paths |
+| [string](src/mulle-string.sh)               | a multitude of string functions |
 
 
-Use `include <name>` to get access to the functions not included in
+Use `include "<name>"` to get access to the functions not included in
 `mulle-bashfunctions.sh` (but in `mulle-bashfunctions-all.sh`), namely:
 
-Name                              | Descriptions
-----------------------------------|------------------
-[array](src/mulle-array.sh)       | maintain arrays as a string separated by linefeeds
-[case](src/mulle-case.sh)         | perform camelCase conversions
-[etc](src/mulle-etc.sh)           | maintain a writable `etc` folder, shadowed by read-only `share`
-[parallel](src/mulle-parallel.sh) | execute parallel processes without swamping the machine
-[url](src/mulle-url.sh)           | URL parser
-[version](src/mulle-version.sh)   | semver version management major.minor.version
+| Name                              | Descriptions                            |
+|-----------------------------------|-----------------------------------------|
+| [array](src/mulle-array.sh)       | maintain arrays as a string separated by linefeeds |
+| [case](src/mulle-case.sh)         | perform camelCase conversions |
+| [etc](src/mulle-etc.sh)           | maintain a writable `etc` folder, shadowed by read-only `share` |
+| [parallel](src/mulle-parallel.sh) | execute parallel processes without swamping the machine |
+| [url](src/mulle-url.sh)           | URL parser |
+| [version](src/mulle-version.sh)   | semver version management major.minor.version |
 
 
 ## Runtime environment

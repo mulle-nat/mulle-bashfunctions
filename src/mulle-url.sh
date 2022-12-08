@@ -260,13 +260,12 @@ function __url_parse()
 
       *)
          _scheme="${url%:*}"
+         _host=
          r_url_remove_query "${url##*:}"
          r_url_remove_fragment "${RVAL}"
          _path=${RVAL}
          _userinfo=
-         _host=
          _port=
-         _path=
          _query=
          _fragment=
       ;;

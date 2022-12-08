@@ -61,8 +61,8 @@ MULLE_PARALLEL_SH="included"
 #    parallel_execute "${arguments}" echo "number:"
 # /PRE
 #
-#    For more control over parallel execution use `_parallel_begin`,
-#    `_parallel_execute` and `_parallel_end`
+#    For more control over parallel execution use `__parallel_begin`,
+#    `__parallel_execute` and `__parallel_end`
 #
 # PRE
 #    local _parallel_statusfile
@@ -70,10 +70,10 @@ MULLE_PARALLEL_SH="included"
 #    local _parallel_jobs
 #    local _parallel_fails
 #
-#    _parallel_begin
-#    _parallel_execute remove_file_if_present "${filename}"
-#    _parallel_execute remove_file_if_present "${filename2}"
-#    _parallel_end || fail "failed"
+#    __parallel_begin
+#    __parallel_execute remove_file_if_present "${filename}"
+#    __parallel_execute remove_file_if_present "${filename2}"
+#    __parallel_end || fail "failed"
 # /PRE
 #
 #
@@ -83,15 +83,20 @@ MULLE_PARALLEL_SH="included"
 
 very_short_sleep()
 {
+   local us="$1"
+
+   us="${us:0:6}"
+   us="0.${us:-0001}"
+   us="${us%%0}"
    case "${MULLE_UNAME}" in 
       darwin)
-         sleep 0.001 #s # 1000Hz  
       ;;
 
       *)
-         sleep 0.001s #s # 1000Hz  
+         us="${us}s"
       ;;
    esac
+   LC_ALL=C sleep "${us}"
 }  
 
 
@@ -253,20 +258,20 @@ wait_for_load_average()
 
 
 #
-# _parallel_begin <maxjobs>
+# __parallel_begin <maxjobs>
 #
 #     Creates the status file for the parallel jobs and determines the number
 #     to be run in parallel. Use <maxjobs> to limit this number.
-#     You should define these local variable before calling _parallel_begin:
+#     You should define these local variable before calling __parallel_begin:
 #
-#     local _parallel_statusfile
 #     local _parallel_maxjobs
 #     local _parallel_jobs
 #     local _parallel_fails
+#     local _parallel_statusfile
 #
-function _parallel_begin()
+function __parallel_begin()
 {
-   log_entry "_parallel_begin" "$@"
+   log_entry "__parallel_begin" "$@"
 
    _parallel_maxjobs="${1:-0}"
 
@@ -288,9 +293,12 @@ function _parallel_begin()
 }
 
 
-_parallel_status()
+#
+#  local _parallel_statusfile
+#
+__parallel_status()
 {
-   log_entry "_parallel_status" "$@"
+   log_entry "__parallel_status" "$@"
 
    local rval="$1"; shift
 
@@ -306,14 +314,18 @@ _parallel_status()
 
 
 #
-# _parallel_execute ...
+# __parallel_execute ...
 #
-#     Execute command line in the background. _parallel_execute blocks until a
+#     Execute command line in the background. __parallel_execute blocks until a
 #     job becomes available.
 #
-function _parallel_execute()
+#  local _parallel_statusfile
+#  local _parallel_maxjobs
+#  local _parallel_jobs
+#
+function __parallel_execute()
 {
-   log_entry "_parallel_execute" "$@"
+   log_entry "__parallel_execute" "$@"
 
    wait_for_available_job "${_parallel_maxjobs}"
    _parallel_jobs=$(($_parallel_jobs + 1))
@@ -324,20 +336,24 @@ function _parallel_execute()
       local rval
 
       ( exekutor "$@" ) # run in subshell to capture exit code
-      _parallel_status $? "$@"
+      __parallel_status $? "$@"
    ) &
 }
 
 
 #
-# _parallel_end
+# __parallel_end
 #
 #     Waits for the parallel processes to finish. Returns 1 if one or more
 #     of the jobs indicates failure.
 #
-function _parallel_end()
+#  local _parallel_statusfile
+#  local _parallel_jobs
+#  local _parallel_fails
+#
+function __parallel_end()
 {
-   log_entry "_parallel_end" "$@"
+   log_entry "__parallel_end" "$@"
 
    wait
 
@@ -384,7 +400,7 @@ function parallel_execute()
 
    [ $# -eq 0 ] && _internal_fail "missing commandline"
 
-   _parallel_begin
+   __parallel_begin
 
    local argument
 
@@ -392,12 +408,12 @@ function parallel_execute()
 
    .foreachline argument in ${arguments}
    .do
-      _parallel_execute "$@" "${argument}"
+      __parallel_execute "$@" "${argument}"
    .done
 
    shell_enable_glob
 
-   _parallel_end
+   __parallel_end
 }
 
 fi
