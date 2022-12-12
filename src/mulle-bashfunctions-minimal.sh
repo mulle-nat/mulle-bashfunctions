@@ -2204,7 +2204,7 @@ function r_get_libexec_dir()
    executablepath="${RVAL}"
 
    r_dirname "${executablepath}"
-   exedirpath="${RVAL}"
+   exedirpath="`( cd "${RVAL}" && pwd -P ) 2>/dev/null `"
 
    r_dirname "${exedirpath}"
    prefix="${RVAL}"

@@ -2,8 +2,6 @@
 #
 # (c) 2015, coded by Nat!, Mulle KybernetiK
 #
-[ "${TRACE}" = 'YES' ] && set -x && : "$0" "$@"
-
 if [ "${MULLE_NO_COLOR}" != 'YES' ]
 then
    # Escape sequence and resets
@@ -55,14 +53,11 @@ _installer_prepend_path_if_relative()
 
 installer_resolve_symlinks()
 {
-   local dir_context
-   local exepath
-
-   exepath="`readlink "$1"`"
+   filepath="`readlink "$1"`"
    if [ $? -eq 0 ]
    then
       dir_context=`dirname -- "$1"`
-      installer_resolve_symlinks "`_installer_prepend_path_if_relative "$dir_context" "$path"`"
+      installer_resolve_symlinks "`_installer_prepend_path_if_relative "$dir_context" "$filepath"`"
    else
       printf "%s\n" "$1"
    fi
@@ -77,9 +72,6 @@ installer_canonicalize_path()
       cd "$1" 2>/dev/null && pwd -P
    )
    else
-      local dir
-      local file
-
       dir="`dirname "$1"`"
       file="`basename -- "$1"`"
       (
@@ -98,8 +90,6 @@ installer_realpath()
 
 installer_get_windows_path()
 {
-   local directory
-
    directory="$1"
    if [ -z "${directory}" ]
    then
@@ -113,8 +103,6 @@ installer_get_windows_path()
 
 installer_get_sh_windows_path()
 {
-   local directory
-
    directory="`which sh`"
    directory="`dirname -- "${directory}"`"
    directory="`installer_get_windows_path "${directory}"`"
@@ -133,11 +121,36 @@ installer_sed_mangle_escape_slashes()
 }
 
 
+#
+# so now some genius thought its good to have bin as a symlink and
+# libexec not.. but we need the "real" address to put our libexec into
+# the proper place where it can be found by the executable, based on the
+# location of the executable
+#
+r_installer_install_prefix()
+{
+   prefix="`installer_realpath "$1" 2> /dev/null`"
+   if [ ! -d "${prefix}" ]
+   then
+      installer_fail "\"${prefix}\" does not exist"
+   fi
+
+   directory="`dirname -- "$0"`"
+   cd "${directory}" || installer_fail "Could not cd to \"$directory\" ($PWD)"
+   cd .. || installer_fail "Could not cd to \"..\" ($PWD)"  # compensate for installer being in bin
+
+   bindir="${prefix}/bin"
+   if [ -d "${bindir}" ]
+   then
+      bindir="`installer_realpath "${bindir}"`"
+   fi
+   RVAL="`dirname -- "${bindir}"`"
+}
+
+
 main()
 {
-   local executable="$1" ; shift
-   local prefix
-   local mode
+   executable="$1" ; shift
 
    prefix=${1:-"/usr/local"}
    [ $# -eq 0 ] || shift
@@ -149,45 +162,35 @@ main()
       installer_fail "usage: install [prefix] [mode]"
    fi
 
-   prefix="`installer_realpath "${prefix}" 2> /dev/null`"
-   if [ ! -d "${prefix}" ]
-   then
-      installer_fail "\"${prefix}\" does not exist"
-   fi
+   # so /usr/bin/env mulle-bash works
+   PATH="`pwd`:${PATH}"
 
-   local bin
-   local libexec
-   local share
-
-   cd "`dirname -- "${executable}"`"
-   cd ..
+   PROJECT_VERSION="`mulle-bashfunctions version`"
+   [ -z "${PROJECT_VERSION}" ] && echo "tragisches versagen" >&2 && exit 1
 
    if [ ! -x mulle-bashfunctions ]
    then
       chmod 755 ./mulle-bashfunctions
    fi
+   if [ ! -x mulle-bash ]
+   then
+      chmod 755 ./mulle-bash
+   fi
 
-   PROJECT_VERSION="`./mulle-bashfunctions version`"
-   [ -z "${PROJECT_VERSION}" ] && echo "tragisches versagen" >&2 && exit 1
+   r_installer_install_prefix "${prefix}"
+   prefix="${RVAL}"
 
    bin="${prefix}/bin"
    libexec="${prefix}/libexec/mulle-bashfunctions/${PROJECT_VERSION}"
    share="${prefix}/share/mulle-bashfunctions/${PROJECT_VERSION}"
 
-   if [ ! -d "${bin}" ]
-   then
-      mkdir -p "${bin}" || installer_fail "could not create ${bin}"
-   fi
+   mkdir -p "${bin}" || installer_fail "could not create ${bin}"
+   mkdir -p "${share}" || installer_fail "could not create ${share}"
+   mkdir -p "${libexec}" || installer_fail "could not create ${libexec}"
 
-   if [ ! -d "${libexec}" ]
-   then
-      mkdir -p "${libexec}" || installer_fail "could not create ${libexec}"
-   fi
 
-   if [ ! -d "${share}" ]
-   then
-      mkdir -p "${share}" || installer_fail "could not create ${share}"
-   fi
+install -m "${mode}" "mulle-bash" "${bin}/mulle-bash" || exit 1
+   printf "install: ${C_MAGENTA}${C_BOLD}%s${C_RESET}\n" "${bin}/mulle-bash" >&2
 
    install -m "${mode}" "mulle-bashfunctions" "${bin}/mulle-bashfunctions" || exit 1
    printf "install: ${C_MAGENTA}${C_BOLD}%s${C_RESET}\n" "${bin}/mulle-bashfunctions" >&2

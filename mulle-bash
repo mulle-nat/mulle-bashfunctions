@@ -633,12 +633,11 @@ versions_filter()
 # this r_get_libexec_dir is actually more powerful than that
 # in mulle-init.sh
 #
-r_get_libexec_dir()
+r_get_bashfunctions_libexec_dir()
 {
    local executablepath="$1"
-   local subdir="$2"
-   local matchfile="$3"
-   local qualifier="$4"
+   local matchfile="$2"
+   local qualifier="$3"
 
    local exedirpath
    local prefix
@@ -656,14 +655,14 @@ r_get_libexec_dir()
    executablepath="${RVAL}"
 
    r_dirname "${executablepath}"
-   exedirpath="${RVAL}"
+   exedirpath="`( cd "${RVAL}" ; pwd -P)`"
 
    r_dirname "${exedirpath}"
    prefix="${RVAL}"
 
    local libexec_dir
 
-   libexec_dir="${prefix}/libexec/${subdir}"
+   libexec_dir="${prefix}/libexec/mulle-bashfunctions"
 
    if [ ! -z "${qualifier}" ]
    then
@@ -676,11 +675,12 @@ r_get_libexec_dir()
       version="`versions_filter "${versions}" "${qualifier}" `"
       if [ -z "${version}" ]
       then
-         _fatal "No installed mulle-bashfunctions versions match ${qualifier}"
+         return 1
       fi
       libexec_dir="${libexec_dir}/${version}"
+   else
+      libexec_dir="${libexec_dir}/${MULLE_BASHFUNCTIONS_VERSION}"
    fi
-
 
    if [ ! -f "${libexec_dir}/${matchfile}" ]
    then
@@ -701,29 +701,45 @@ r_get_libexec_dir()
       ;;
    esac
 
-   if [ ! -f "${RVAL}/${matchfile}" ]
-   then
-      _fatal "%s\n" "$0 fatal error: Could not find \"${subdir}\" libexec (${PWD#"${MULLE_USER_PWD}/"})"
-   fi
+   [ -f "${RVAL}/${matchfile}" ]
 }
 
 
 # ***
 # *** STAGE 3 : Figure out MULLE_BASHFUNCTIONS_LIBEXEC_DIR on this machine.
-# ***
+# ***           if we have an environment set, check that version matches
+
+if [ ! -z "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR:-}" ]
+then
+   case "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}" in
+      */${MULLE_BASHFUNCTIONS_VERSION}/*)
+         # match nice
+      ;;
+
+      *)
+         # can't use it
+         unset MULLE_BASHFUNCTIONS_LIBEXEC_DIR
+      ;;
+   esac
+fi
 
 if [ -z "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR:-}" ]
 then
-   r_get_libexec_dir "$0" \
-                     "mulle-bashfunctions" \
-                     "mulle-bashfunctions${MULLE_BASHFUNCTIONS_VARIANT}.sh" \
-                     "${MULLE_BASHFUNCTIONS_VERSION_QUALIFIER}"
-
-   if [ -z "${RVAL}" ]
+   if ! r_get_bashfunctions_libexec_dir "$0" \
+                                        "mulle-bashfunctions${MULLE_BASHFUNCTIONS_VARIANT}.sh" \
+                                        "${MULLE_BASHFUNCTIONS_VERSION_QUALIFIER}"
    then
-      _fatal "Could not find mulle-bashfunctions libexec directory (PWD: $PWD)"
+      _fatal "Could not find mulle-bashfunctions libexec directory (\
+\$0=\"$0\", \
+PWD=\"$PWD\", \
+PATH=\"$PATH\", \
+MULLE_EXECUTABLE=\"${MULLE_EXECUTABLE}\", \
+MULLE_BASHFUNCTIONS_VERSION=\"${MULLE_BASHFUNCTIONS_VERSION}\", \
+MULLE_BASHFUNCTIONS_VARIANT=\"${MULLE_BASHFUNCTIONS_VARIANT}\", \
+MULLE_BASHFUNCTIONS_VERSION_QUALIFIER=\"${MULLE_BASHFUNCTIONS_VERSION_QUALIFIER}\")"
    fi
    MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${RVAL}"
+   export MULLE_BASHFUNCTIONS_LIBEXEC_DIR
 fi
 
 if [ "$1" = "libexec-dir" ]
@@ -739,7 +755,7 @@ fi
 unset -f r_add_line
 unset -f r_dirname
 unset -f r_escaped_sed_pattern
-unset -f r_get_libexec_dir
+unset -f r_get_bashfunctions_libexec_dir
 unset -f r_prepend_path_if_relative
 unset -f r_resolve_symlinks
 unset -f r_versions_qualify

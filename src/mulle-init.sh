@@ -166,8 +166,12 @@ function r_get_libexec_dir()
    r_resolve_symlinks "${executablepath}"
    executablepath="${RVAL}"
 
+   # retarded debian does symlink /bin -> /usr/bin
+   # the installer notices and places libexec into /usr/libexec
+   # so we need the real "bin" here at excessive cost
+   #
    r_dirname "${executablepath}"
-   exedirpath="${RVAL}"
+   exedirpath="`( cd "${RVAL}" && pwd -P ) 2>/dev/null `"
 
    r_dirname "${exedirpath}"
    prefix="${RVAL}"
