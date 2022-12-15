@@ -87,7 +87,12 @@ _r_tweaked_de_camel_case()
                         output="${output}_${collect}"
                      fi
                   else
-                     output="${output}${collect}"
+                     if [ -z "${output}" -a "${#collect}" -gt 1 ]
+                     then
+                        output="${collect%?}_${collect: -1}"
+                     else
+                        output="${output}${collect}"
+                     fi
                   fi
                   collect=""
                   state="lower"
@@ -144,7 +149,7 @@ function r_tweaked_de_camel_case()
 
 
 #
-# r_tweaked_de_camel_case <string>
+# r_de_camel_case_identifier <string>
 #
 #    Uses r_tweaked_de_camel_case to de-camel case a string, then turns it
 #    into an identifier.
@@ -174,10 +179,10 @@ function r_smart_downcase_identifier()
 
 
 #
-# r_smart_downcase_identifier <string>
+# r_smart_upcase_identifier <string>
 #
-#    Uses r_de_camel_case_identifier to create an identifier. Then make it all
-#    lowercase.
+#    Uses r_de_camel_case_identifier to create an identifier. Then makes it all
+#    uppercase.
 #
 #    makes ID_FOO_R from idFooR
 #    Ensures that it doesn't make FOO__XXX from FOO_XXX though.
@@ -197,24 +202,34 @@ function r_smart_upcase_identifier()
 }
 
 
-# backwards compatibility
-
-r_de_camel_case_upcase_identifier()
+#
+# r_smart_file_upcase_identifier <string>
+#
+#    Uses r_smart_upcase_identifier to create an uppercase identifier.
+#
+#    turns mulle-scion into MULLE__SCION to distinguish from
+#    MulleScion -> MULLE_SCION
+#
+function r_smart_file_upcase_identifier()
 {
-   r_tweaked_de_camel_case "$1"
+   local s="$1"
+
+   s="${s//-/__}"
+
+   r_uppercase "$s"
    r_identifier "${RVAL}"
+
+   if [ "${RVAL}" = "$s" ]
+   then
+      return
+   fi
+
+   r_de_camel_case_identifier "$s"
    r_uppercase "${RVAL}"
-
-   # ensure it's a shell identifier
-   case "${RVAL}" in
-      [A-Za-z_]*)
-      ;;
-
-      *)
-         RVAL="_${RVAL}"
-      ;;
-   esac
 }
+
+
+
 fi
 
 :

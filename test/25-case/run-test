@@ -1,0 +1,108 @@
+#! /bin/sh
+
+[ "${TRACE}" = 'YES' ] && set -x && : "$0" "$@"
+
+###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
+MULLE_BASHFUNCTIONS_LIBEXEC_DIR="`mulle-bashfunctions libexec-dir`" || exit 1
+export MULLE_BASHFUNCTIONS_LIBEXEC_DIR
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-boot.sh" || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions.sh" || exit 1
+###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
+
+if [ ${ZSH_VERSION+x} ]
+then
+   setopt sh_word_split
+fi
+
+
+
+expect_output()
+{
+   local output="$1"
+   local expected="$2"
+
+   if [ "${output}" != "${expected}" ]
+   then
+      echo "Got \"${output}\". Expected: \"${expected}\"" >&2
+      stacktrace >&2
+      exit 1
+   fi
+}
+
+
+test_tweaked_de_camel_case()
+{
+   r_tweaked_de_camel_case "a"
+   expect_output "${RVAL}" "a"
+
+   r_tweaked_de_camel_case "a-b"
+   expect_output "${RVAL}" "a-b"
+
+   r_tweaked_de_camel_case "a.b"
+   expect_output "${RVAL}" "a.b"
+
+   r_tweaked_de_camel_case "ABC"
+   expect_output "${RVAL}" "ABC"
+
+   r_tweaked_de_camel_case "MulleFoundation"
+   expect_output "${RVAL}" "Mulle_Foundation"
+
+   r_tweaked_de_camel_case "MulleObjCFoundation"
+   expect_output "${RVAL}" "Mulle_Objc_Foundation"
+
+   r_tweaked_de_camel_case "ABCFoo"
+   expect_output "${RVAL}" "ABC_Foo"
+}
+
+
+test_de_camel_case_identifier()
+{
+   r_de_camel_case_identifier "A.b"
+   expect_output "${RVAL}" "A_b"
+
+   r_de_camel_case_identifier "MulleObjCFoundation"
+   expect_output "${RVAL}" "Mulle_Objc_Foundation"
+}
+
+
+test_smart_upcase_identifier()
+{
+   r_smart_upcase_identifier "a"
+   expect_output "${RVAL}" "A"
+
+   r_smart_upcase_identifier "a-b"
+   expect_output "${RVAL}" "A_B"
+
+   r_smart_upcase_identifier "a.b"
+   expect_output "${RVAL}" "A_B"
+}
+
+
+test_smart_file_upcase_identifier()
+{
+   r_smart_file_upcase_identifier "a"
+   expect_output "${RVAL}" "A"
+
+   r_smart_file_upcase_identifier "a-b"
+   expect_output "${RVAL}" "A__B"
+
+   r_smart_file_upcase_identifier "a.b"
+   expect_output "${RVAL}" "A_B"
+}
+
+
+main()
+{
+   include "case"
+
+   test_tweaked_de_camel_case
+   test_de_camel_case_identifier
+   test_smart_upcase_identifier
+   test_smart_file_upcase_identifier
+
+   echo "All tests passed" >&2
+}
+
+
+main "$@"
+

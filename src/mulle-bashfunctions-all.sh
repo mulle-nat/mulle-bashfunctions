@@ -4288,7 +4288,12 @@ _r_tweaked_de_camel_case()
                         output="${output}_${collect}"
                      fi
                   else
-                     output="${output}${collect}"
+                     if [ -z "${output}" -a "${#collect}" -gt 1 ]
+                     then
+                        output="${collect%?}_${collect: -1}"
+                     else
+                        output="${output}${collect}"
+                     fi
                   fi
                   collect=""
                   state="lower"
@@ -4357,22 +4362,26 @@ function r_smart_upcase_identifier()
 }
 
 
-
-r_de_camel_case_upcase_identifier()
+function r_smart_file_upcase_identifier()
 {
-   r_tweaked_de_camel_case "$1"
+   local s="$1"
+
+   s="${s//-/__}"
+
+   r_uppercase "$s"
    r_identifier "${RVAL}"
+
+   if [ "${RVAL}" = "$s" ]
+   then
+      return
+   fi
+
+   r_de_camel_case_identifier "$s"
    r_uppercase "${RVAL}"
-
-   case "${RVAL}" in
-      [A-Za-z_]*)
-      ;;
-
-      *)
-         RVAL="_${RVAL}"
-      ;;
-   esac
 }
+
+
+
 fi
 
 :

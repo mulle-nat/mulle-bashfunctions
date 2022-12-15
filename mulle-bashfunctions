@@ -317,6 +317,10 @@ list_functions()
 HEAD_MARKER='### >> START OF mulle-bashfunctions-embed.sh >>'
 FOOT_MARKER='### << END OF mulle-bashfunctions-embed.sh <<'
 
+BOOT_HEAD_MARKER='### >> START OF mulle-boot.sh >>'
+BOOT_FOOT_MARKER='### << END OF mulle-boot.sh <<'
+
+
 mulle_bashfunctions_usage()
 {
    [ $# -ne 0 ] && log_error "$*"
@@ -332,13 +336,60 @@ Usage:
    ${HEAD_MARKER}
    ${FOOT_MARKER}
 
+   Insert or update the mulle-boot.sh code between these two markers:
+
+   ${BOOT_HEAD_MARKER}
+   ${BOOT_FOOT_MARKER}
+
+
    This lazy script just reads from stdio and outputs to stdout.
 
-Flags:
 EOF
-   print_flags | LC_ALL=C sort >&2
-
    exit 1
+}
+
+
+mulle_boot_embed()
+{
+   while [ $# -ne 0 ]
+   do
+      case "$1" in
+         *)
+            mulle_bashfunctions_usage
+         ;;
+      esac
+   done
+
+   local line
+
+   # initial state, searching for start
+   IFS=$'\n'
+   while read -r line
+   do
+      if [ "${line}" = "${BOOT_HEAD_MARKER}" ]
+      then
+         break
+      fi
+      printf "%s\n" "${line}"
+   done
+
+   # start found and consumed now put in embed.sh
+   cat "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-boot.sh" || exit 1
+
+   # now search for end
+   while read -r line
+   do
+      if [ "${line}" = "${BOOT_FOOT_MARKER}" ]
+      then
+         break
+      fi
+   done
+
+   # output rest
+   while read -r line
+   do
+      printf "%s\n" "${line}"
+   done
 }
 
 
@@ -471,7 +522,7 @@ export MULLE_UNAME ;
       ;;
 
       embed)
-         mulle_bashfunctions_embed "$@"
+         mulle_bashfunctions_embed "$@" | mulle_boot_embed "$@"
       ;;
 
       init|script)
