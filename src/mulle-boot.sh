@@ -72,6 +72,11 @@ else
    shift  # get rid of --no-auto-shell
 fi
 
+if [ ! -z "${POSIXLY_CORRECT+x}" ]
+then
+   set +o posix  # turn off posix
+fi
+
 #
 # leading backslash ? looks like we're getting called from
 # mingw via a .BAT or so. Correct this now
