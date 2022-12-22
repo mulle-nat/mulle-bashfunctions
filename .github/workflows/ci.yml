@@ -14,4 +14,6 @@ jobs:
 
     - name: Test
       run: |
-        ( cd test ; ./run-test )
+        PATH="${PATH}:${PWD}"
+        echo "$PATH" >&2
+        ( cd test && ./run-test )
