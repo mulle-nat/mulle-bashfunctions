@@ -17,3 +17,11 @@ jobs:
         PATH="${PATH}:${PWD}"
         echo "$PATH" >&2
         ( cd test && ./run-test )
+
+    - name: Test Installer
+      run: |
+        mkdir /tmp/xxx
+        ./bin/installer /tmp/xxx
+        PATH=/tmp/xxx/bin:$PATH
+        echo "$PATH" >&2
+        mulle-bashfunctions env

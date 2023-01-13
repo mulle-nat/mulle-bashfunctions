@@ -37,9 +37,6 @@
 #
 [ "${TRACE}" = 'YES' -o "${MULLE_BASHFUNCTIONS_ENV_TRACE}" = 'YES' ] && set -x && : "${MULLE_EXECUTABLE}" "$@"
 
-MULLE_BASHFUNCTIONS_VERSION="5.0.1"
-
-
 
 usage()
 {
