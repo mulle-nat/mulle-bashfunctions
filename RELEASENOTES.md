@@ -1,3 +1,7 @@
+### 5.0.2
+
+* Various small improvements
+
 # 5.0.0
 
 * BREAKING change `_parallel` functions to `__parallel`
