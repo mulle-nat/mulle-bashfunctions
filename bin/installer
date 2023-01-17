@@ -189,7 +189,7 @@ main()
    mkdir -p "${libexec}" || installer_fail "could not create ${libexec}"
 
 
-install -m "${mode}" "mulle-bash" "${bin}/mulle-bash" || exit 1
+   install -m "${mode}" "mulle-bash" "${bin}/mulle-bash" || exit 1
    printf "install: ${C_MAGENTA}${C_BOLD}%s${C_RESET}\n" "${bin}/mulle-bash" >&2
 
    install -m "${mode}" "mulle-bashfunctions" "${bin}/mulle-bashfunctions" || exit 1
@@ -197,7 +197,8 @@ install -m "${mode}" "mulle-bash" "${bin}/mulle-bash" || exit 1
 
    for i in src/mulle*.sh
    do
-      install -v -m "${mode}" "${i}" "${libexec}" || exit 1
+      # -v doesn't work on old BSDs
+      install -m "${mode}" "${i}" "${libexec}" || exit 1
    done
 
    envshare="${prefix}/share/mulle-sde/mulle-nat"
