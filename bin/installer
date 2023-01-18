@@ -208,7 +208,7 @@ main()
    mkdir -p "${envshare}" 2> /dev/null
 
    # install only this one for now
-   cp -Rav src/mulle-nat/file.sh "${envshare}/"
+   cp -Rp src/mulle-nat/file.sh "${envshare}/"
 }
 
 main "$0" "$@"
