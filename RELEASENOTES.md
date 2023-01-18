@@ -1,3 +1,7 @@
+### 5.0.3
+
+* fix installer for (gasp) solaris
+
 ### 5.0.2
 
 * Various small improvements

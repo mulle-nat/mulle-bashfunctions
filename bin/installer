@@ -2,6 +2,8 @@
 #
 # (c) 2015, coded by Nat!, Mulle KybernetiK
 #
+[ "${TRACE}" = 'YES' ] && set -x && : "$0" "$@"
+
 if [ "${MULLE_NO_COLOR}" != 'YES' ]
 then
    # Escape sequence and resets
@@ -165,8 +167,6 @@ main()
    # so /usr/bin/env mulle-bash works
    PATH="`pwd`:${PATH}"
 
-   PROJECT_VERSION="`mulle-bashfunctions version`"
-   [ -z "${PROJECT_VERSION}" ] && echo "tragisches versagen" >&2 && exit 1
 
    if [ ! -x mulle-bashfunctions ]
    then
@@ -176,6 +176,9 @@ main()
    then
       chmod 755 ./mulle-bash
    fi
+
+   PROJECT_VERSION="`mulle-bash --no-auto-shell version`"
+   [ -z "${PROJECT_VERSION}" ] && echo "tragisches versagen bei der versionsabfrage" >&2 && exit 1
 
    r_installer_install_prefix "${prefix}"
    prefix="${RVAL}"

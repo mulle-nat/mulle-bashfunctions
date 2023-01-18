@@ -120,6 +120,7 @@ EOF
       exec "${exe_shell}" -c ". ${script} --no-auto-shell ${args}" "${script}"
    fi
 else
+   no_auto_shell='YES'
    shift  # get rid of --no-auto-shell
 fi
 
@@ -150,7 +151,7 @@ esac
 # this is "our" version
 # the actual loaded version may differ (and will change this variable)
 #
-MULLE_BASHFUNCTIONS_VERSION="5.0.2"
+MULLE_BASHFUNCTIONS_VERSION="5.0.3"
 
 MULLE_EXECUTABLE="$1"
 
@@ -169,6 +170,13 @@ MULLE_BASHFUNCTIONS_VARIANT="${MULLE_BASHFUNCTIONS_VARIANT%.*}"   # strip extens
 if [ $# -eq 0 ]
 then
    _fatal "mulle-bash can't be run interactively."$'\n'"Run \`mulle-bashfunctions help\` for help."
+fi
+
+# code used by the installer
+if [ "$1" = "version" -a "${no_auto_shell}" = 'YES' ]
+then
+   echo "${MULLE_BASHFUNCTIONS_VERSION}"
+   exit 0
 fi
 
 if [ "$1" = "libexec-dir" ]
@@ -791,6 +799,7 @@ then
    _fatal "Failed to load \"${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions${MULLE_BASHFUNCTIONS_VARIANT}.sh\""
 fi
 
+unset no_auto_shell
 unset -f _fatal
 
 [ ${MULLE_BASHLOADER_SH+x} ] ||  _fatal "Internal inconsistency error"
