@@ -150,6 +150,42 @@ r_installer_install_prefix()
 }
 
 
+# reuse globals here
+install_script()
+{
+   script="$1"
+#   bin="$2"
+#   bin_env="$3"
+#   mode=$4
+
+   #
+   # TODO: why not look for bash, and call it directly ?
+   #
+   sed -e "1,1 s|#! /usr/bin/env|#! ${bin_env}|" < "${script}" > "${bin}/${script}" || exit 1
+   chmod "${mode}" "${bin}/${script}" || exit 1
+   printf "install: ${C_MAGENTA}${C_BOLD}%s${C_RESET}\n" "${bin}/${script}" >&2
+}
+
+
+# reuse globals here
+install_mulle_bash()
+{
+   script="$1"
+#   bin="$2"
+#   bin_env="$3"
+#   mode=$4
+
+   # for WSL 2, zsh is more preferable
+   INSTALL_SH="${INSTALL_SH:-"`command -v zsh`"}"
+   INSTALL_SH="${INSTALL_SH:-"`command -v bash`"}"
+   INSTALL_SH="${INSTALL_SH:-"/usr/bin/env bash"}"
+
+   sed -e "1,1 s|#!.*|#! ${INSTALL_SH}|" < "${script}" > "${bin}/${script}" || exit 1
+   chmod "${mode}" "${bin}/${script}" || exit 1
+   printf "install: ${C_MAGENTA}${C_BOLD}%s${C_RESET}\n" "${bin}/${script}" >&2
+}
+
+
 main()
 {
    executable="$1" ; shift
@@ -164,9 +200,16 @@ main()
       installer_fail "usage: install [prefix] [mode]"
    fi
 
+   if ! bin_env="`command -v env`"
+   then
+      installer_fail "Need env in PATH to function"
+   fi
+
+   r_installer_install_prefix "${prefix}"
+   prefix="${RVAL}"
+
    # so /usr/bin/env mulle-bash works
    PATH="`pwd`:${PATH}"
-
 
    if [ ! -x mulle-bashfunctions ]
    then
@@ -177,26 +220,20 @@ main()
       chmod 755 ./mulle-bash
    fi
 
-   PROJECT_VERSION="`mulle-bash --no-auto-shell version`"
+   PROJECT_VERSION="`./mulle-bash --no-auto-shell version`"
    [ -z "${PROJECT_VERSION}" ] && echo "tragisches versagen bei der versionsabfrage" >&2 && exit 1
-
-   r_installer_install_prefix "${prefix}"
-   prefix="${RVAL}"
 
    bin="${prefix}/bin"
    libexec="${prefix}/libexec/mulle-bashfunctions/${PROJECT_VERSION}"
    share="${prefix}/share/mulle-bashfunctions/${PROJECT_VERSION}"
 
    mkdir -p "${bin}" || installer_fail "could not create ${bin}"
-   mkdir -p "${share}" || installer_fail "could not create ${share}"
+#   mkdir -p "${share}" || installer_fail "could not create ${share}"
    mkdir -p "${libexec}" || installer_fail "could not create ${libexec}"
 
 
-   install -m "${mode}" "mulle-bash" "${bin}/mulle-bash" || exit 1
-   printf "install: ${C_MAGENTA}${C_BOLD}%s${C_RESET}\n" "${bin}/mulle-bash" >&2
-
-   install -m "${mode}" "mulle-bashfunctions" "${bin}/mulle-bashfunctions" || exit 1
-   printf "install: ${C_MAGENTA}${C_BOLD}%s${C_RESET}\n" "${bin}/mulle-bashfunctions" >&2
+   install_mulle_bash mulle-bash       "${bin}" "${bin_env}" "${mode}"
+   install_script mulle-bashfunctions  "${bin}" "${bin_env}" "${mode}"
 
    for i in src/mulle*.sh
    do

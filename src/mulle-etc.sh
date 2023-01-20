@@ -65,7 +65,14 @@ function etc_make_file_from_symlinked_file()
 
    if [ "${MULLE_FLAG_LOG_FLUFF}" = 'YES' ]
    then
-      flags="-v"
+      case "${MULLE_UNAME}" in
+         'sunos')
+         ;;
+
+         *)
+            flags=-v
+         ;;
+      esac
    fi
 
    log_verbose "Turn symlink \"${dstfile}\" into a file"
@@ -161,12 +168,19 @@ function etc_make_symlink_if_possible()
       return 2
    fi
 
+   local DIFF
+
+   if ! DIFF="`command -v diff`"
+   then
+      fail "diff command not installed"
+   fi
+
    local dstdir
 
    r_dirname "${dstfile}"
    dstdir="${RVAL}"
 
-   if ! diff -q -b "${dstfile}" "${srcfile}" > /dev/null
+   if ! "${DIFF}" -b "${dstfile}" "${srcfile}" > /dev/null
    then
       return 3
    fi
@@ -228,13 +242,20 @@ function etc_symlink_or_copy_file()
 
    if [ "${MULLE_FLAG_LOG_FLUFF}" = 'YES' ]
    then
-      flags="-v"
+      case "${MULLE_UNAME}" in
+         'sunos')
+         ;;
+
+         *)
+            flags=-v
+         ;;
+      esac
    fi
 
    if [ -z "${symlink}" ]
    then
       case "${MULLE_UNAME}" in
-         mingw)
+         'mingw'|'msys')
             symlink="NO"
          ;;
 
@@ -290,7 +311,14 @@ function etc_setup_from_share_if_needed()
 
    if [ "${MULLE_FLAG_LOG_FLUFF}" = 'YES' ]
    then
-      flags="-v"
+      case "${MULLE_UNAME}" in
+         'sunos')
+         ;;
+
+         *)
+            flags=-v
+         ;;
+      esac
    fi
 
    local filename
@@ -377,6 +405,13 @@ function etc_repair_files()
    dstdir="${dstdir%%/}"
    srcdir="${srcdir%%/}"
 
+   local DIFF
+
+   if ! DIFF="`command -v diff`"
+   then
+      fail "diff command not installed"
+   fi
+
    #
    # go through etc, throw out symlinks that point to nowhere
    # create symlinks for files that are identical in share and throw old
@@ -411,7 +446,7 @@ function etc_repair_files()
       else
          if [ -f "${srcfile}" ]
          then
-            if diff -q -b "${dstfile}" "${srcfile}" > /dev/null
+            if "${DIFF}" -b "${dstfile}" "${srcfile}" > /dev/null
             then
                log_verbose "\"${filename}\" has no user edits: replace with symlink"
                remove_file_if_present "${dstfile}"

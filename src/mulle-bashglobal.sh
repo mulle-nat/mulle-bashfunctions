@@ -44,6 +44,7 @@ then
    then
      setopt sh_word_split
      setopt POSIX_ARGZERO
+     set -o GLOB_SUBST        # neede for [[ $i == $pattern ]]
    fi
 
    # this generally should be set by the main script
@@ -113,23 +114,42 @@ then
             fi
          ;;
       esac
+      
       MULLE_UNAME="${MULLE_UNAME%%_*}"
       MULLE_UNAME="${MULLE_UNAME%[36][24]}" # remove 32 64 (hax)
 
-      if [ "${MULLE_UNAME}" = "linux" ]
-      then
-         # check for WSL (Windows) we want this to be Windows then
-         read -r MULLE_UNAME < /proc/sys/kernel/osrelease
-         case "${MULLE_UNAME}" in
-            *-Microsoft)
-               MULLE_UNAME="windows"
-            ;;
-  
-            *)
-               MULLE_UNAME="linux"
-            ;;
-         esac
-      fi
+      case "${MULLE_UNAME}" in 
+         linux)
+            # check for WSL (Windows) we want this to be Windows then
+            # why not `uname -r` ?
+            read -r MULLE_UNAME < /proc/sys/kernel/osrelease
+            case "${MULLE_UNAME}" in
+               *-[Mm]icrosoft-*)
+                  MULLE_UNAME="windows" # wsl2, this is super slow on NTFS
+               ;;
+
+               *-[Mm]icrosoft)
+                  MULLE_UNAME="windows" # wsl1
+               ;;
+
+               *-android-*|*-android)
+                  MULLE_UNAME="android"
+               ;;
+     
+               *)
+                  MULLE_UNAME="linux"
+               ;;
+            esac
+         ;;
+
+         #
+         # If we assume that you use msys to run gcc and mingw to run cl.exe
+         # then a differentiation between mingw and msys makes sense
+         #
+         msys|cygwin)
+            MULLE_UNAME='msys'
+         ;;
+      esac
    fi
 
    if [ "${MULLE_UNAME}" = "windows" ]
@@ -147,7 +167,7 @@ then
    if [ -z "${MULLE_HOSTNAME:-}" ]
    then
       case "${MULLE_UNAME}" in
-         'mingw'*)
+         'mingw'|'msys'|'sunos')
             MULLE_HOSTNAME="`hostname`"
          ;;
 

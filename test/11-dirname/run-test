@@ -3,10 +3,17 @@
 [ "${TRACE}" = 'YES' ] && set -x && : "$0" "$@"
 
 ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
-MULLE_BASHFUNCTIONS_LIBEXEC_DIR="`mulle-bashfunctions libexec-dir`" || exit 1
-export MULLE_BASHFUNCTIONS_LIBEXEC_DIR
-. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-boot.sh" || exit 1
-. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions.sh" || exit 1
+MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${MULLE_BASHFUNCTIONS_LIBEXEC_DIR:-`mulle-bashfunctions libexec-dir`}" || exit 1
+
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-boot.sh"          || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashglobal.sh"    || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-compatibility.sh" || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-logging.sh"       || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-options.sh"       || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-string.sh"        || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-path.sh"          || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-exekutor.sh"      || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-file.sh"          || exit 1
 ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
 
 if [ ${ZSH_VERSION+x} ]
@@ -29,7 +36,7 @@ r_os_dirname()
 
    RVAL="`dirname -- "$1" `"
    case "${MULLE_UNAME}" in   
-      mingw)
+      'mingw'|'msys')
          RVAL="${RVAL//\/\//\/}"
       ;;
    esac
@@ -108,7 +115,7 @@ main()
    test_dirname "/a/b//"
 
    case "${MULLE_UNAME}" in 
-      mingw)
+      'mingw'|'msys')
          # interestingly mingw does it better sort of 
          # but its no use to us
       ;;

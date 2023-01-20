@@ -38,6 +38,7 @@ then
    then
      setopt sh_word_split
      setopt POSIX_ARGZERO
+     set -o GLOB_SUBST        # neede for [[ $i == $pattern ]]
    fi
 
    if [ -z "${MULLE_EXECUTABLE:-}" ]
@@ -92,22 +93,36 @@ then
             fi
          ;;
       esac
+      
       MULLE_UNAME="${MULLE_UNAME%%_*}"
       MULLE_UNAME="${MULLE_UNAME%[36][24]}" # remove 32 64 (hax)
 
-      if [ "${MULLE_UNAME}" = "linux" ]
-      then
-         read -r MULLE_UNAME < /proc/sys/kernel/osrelease
-         case "${MULLE_UNAME}" in
-            *-Microsoft)
-               MULLE_UNAME="windows"
-            ;;
-  
-            *)
-               MULLE_UNAME="linux"
-            ;;
-         esac
-      fi
+      case "${MULLE_UNAME}" in 
+         linux)
+            read -r MULLE_UNAME < /proc/sys/kernel/osrelease
+            case "${MULLE_UNAME}" in
+               *-[Mm]icrosoft-*)
+                  MULLE_UNAME="windows" # wsl2, this is super slow on NTFS
+               ;;
+
+               *-[Mm]icrosoft)
+                  MULLE_UNAME="windows" # wsl1
+               ;;
+
+               *-android-*|*-android)
+                  MULLE_UNAME="android"
+               ;;
+     
+               *)
+                  MULLE_UNAME="linux"
+               ;;
+            esac
+         ;;
+
+         msys|cygwin)
+            MULLE_UNAME='msys'
+         ;;
+      esac
    fi
 
    if [ "${MULLE_UNAME}" = "windows" ]
@@ -118,7 +133,7 @@ then
    if [ -z "${MULLE_HOSTNAME:-}" ]
    then
       case "${MULLE_UNAME}" in
-         'mingw'*)
+         'mingw'|'msys'|'sunos')
             MULLE_HOSTNAME="`hostname`"
          ;;
 
@@ -259,7 +274,7 @@ then
 
       tool="${s%::*}"
 
-      local upper_tool
+      local namespace
 
       case "${s}" in
          *-*)
@@ -275,14 +290,11 @@ then
       r_concat "${namespace}" "${tool}" "-"
       tool="${RVAL}"
 
+      local upper_tool
+
       r_identifier "${tool}"
       r_uppercase "${RVAL}"
       upper_tool="${RVAL}"
-
-
-      r_identifier "${name}"
-      r_uppercase "${RVAL}"
-      upper_name="${RVAL}"
 
       _executable="${tool}"
       _filename="${tool}-${name}.sh"
@@ -534,7 +546,6 @@ fi
 
 alias .break="break"
 alias .continue="continue"
-
 
 
 shell_enable_extglob

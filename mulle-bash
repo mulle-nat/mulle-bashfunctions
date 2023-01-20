@@ -74,18 +74,22 @@ then
 
    if [ $? -eq 0 ]
    then
-      case "${_MULLE_UNAME}" in
-         [Dd]arwin)
-            exe_shell="`command -v "zsh" `"
-            exe_shell="${exe_shell:-zsh}" # for error if not installed
-         ;;
+      exe_shell="${MULLE_BASH_EXE_SHELL}"
+      if [ -z "${exe_shell}" ]
+      then
+         case "${_MULLE_UNAME}" in
+            [Dd]arwin)
+               exe_shell="`command -v "zsh" `"
+               exe_shell="${exe_shell:-zsh}" # for error if not installed
+            ;;
 
-         *)
-            exe_shell="`command -v "bash" `"
-            exe_shell="${exe_shell:-`command -v "zsh" `}"
-            exe_shell="${exe_shell:-bash}" # for error if not installed
-         ;;
-      esac
+            *)
+               exe_shell="`command -v "bash" `"
+               exe_shell="${exe_shell:-`command -v "zsh" `}"
+               exe_shell="${exe_shell:-bash}" # for error if not installed
+            ;;
+         esac
+      fi
 
       script="$0"
 
@@ -129,15 +133,6 @@ then
    set +o posix  # turn off posix
 fi
 
-#
-# leading backslash ? looks like we're getting called from
-# mingw via a .BAT or so. Correct this now
-#
-case "$PATH" in
-   "\\"*)
-      PATH="${PATH//\\/\/}"
-   ;;
-esac
 
 
 
@@ -146,25 +141,13 @@ esac
 # ***           We are in bash! (or zsh)
 # ***
 
-
 #
 # this is "our" version
 # the actual loaded version may differ (and will change this variable)
 #
-MULLE_BASHFUNCTIONS_VERSION="5.0.3"
+MULLE_BASHFUNCTIONS_VERSION="5.1.0"
 
 MULLE_EXECUTABLE="$1"
-
-
-#
-# allow symlinks like mulle-bash[-variant].[version]
-#
-MULLE_BASHFUNCTIONS_VARIANT="${0##*/}" # get filename
-MULLE_BASHFUNCTIONS_VARIANT="${MULLE_BASHFUNCTIONS_VARIANT#mulle-bash}"
-MULLE_BASHFUNCTIONS_VARIANT="${MULLE_BASHFUNCTIONS_VARIANT#-}"    # get variant part
-
-MULLE_BASHFUNCTIONS_VERSION_QUALIFIER="${MULLE_BASHFUNCTIONS_VARIANT#*.}" # get all extensions
-MULLE_BASHFUNCTIONS_VARIANT="${MULLE_BASHFUNCTIONS_VARIANT%.*}"   # strip extension
 
 
 if [ $# -eq 0 ]
@@ -178,6 +161,27 @@ then
    echo "${MULLE_BASHFUNCTIONS_VERSION}"
    exit 0
 fi
+
+#
+# leading backslash ? looks like we're getting called from
+# mingw via a .BAT or so. Correct this now
+#
+case "$PATH" in
+   "\\"*)
+      PATH="${PATH//\\/\/}"
+   ;;
+esac
+
+#
+# allow symlinks like mulle-bash[-variant].[version]
+#
+MULLE_BASHFUNCTIONS_VARIANT="${0##*/}" # get filename
+MULLE_BASHFUNCTIONS_VARIANT="${MULLE_BASHFUNCTIONS_VARIANT#mulle-bash}"
+MULLE_BASHFUNCTIONS_VARIANT="${MULLE_BASHFUNCTIONS_VARIANT#-}"    # get variant part
+
+MULLE_BASHFUNCTIONS_VERSION_QUALIFIER="${MULLE_BASHFUNCTIONS_VARIANT#*.}" # get all extensions
+MULLE_BASHFUNCTIONS_VARIANT="${MULLE_BASHFUNCTIONS_VARIANT%.*}"   # strip extension
+
 
 if [ "$1" = "libexec-dir" ]
 then
@@ -382,7 +386,7 @@ versions_find_next()
    #
    # If ours is not in there yet, plop it in
    #
-   if ! fgrep -q -s -x "${version}" <<< "${versions}"
+   if ! grep -F -q -s -x "${version}" <<< "${versions}"
    then
       r_add_line "${versions}" "${version}"
       versions="${RVAL}"
@@ -413,7 +417,7 @@ versions_operation()
 
    case "${operation}" in
       '>=')
-         fgrep -x "${version}" <<< "${versions}"
+         grep -F -x "${version}" <<< "${versions}"
          versions_find_next "${versions}" "${version}"
       ;;
 
@@ -423,7 +427,7 @@ versions_operation()
 
       '<=')
          versions_find_next "${versions}" "${version}" "r" | versions_sort
-         fgrep -x "${version}" <<< "${versions}"
+         grep -F -x "${version}" <<< "${versions}"
       ;;
 
       '<')
@@ -431,12 +435,12 @@ versions_operation()
       ;;
 
       '==')
-         fgrep -x "${version}" <<< "${versions}"
+         grep -F -x "${version}" <<< "${versions}"
       ;;
 
       '!=')
          versions_sort <<< "${versions}"  | \
-            fgrep -x -v "${version}" | \
+            grep -F -x -v "${version}" | \
             "${_choose}" -1
       ;;
 
@@ -533,7 +537,7 @@ r_versions_qualify_i()
       [Aa][Nn][Dd]*)
          _s="${_s:3}"
          r_versions_qualify "${versions}"
-         RVAL="`fgrep -x -f <( echo "${result}") <<< "${RVAL}" `"
+         RVAL="`grep -F -x -f <( echo "${result}") <<< "${RVAL}" `"
          return 0
       ;;
 
@@ -721,6 +725,7 @@ r_get_bashfunctions_libexec_dir()
 # *** STAGE 3 : Figure out MULLE_BASHFUNCTIONS_LIBEXEC_DIR on this machine.
 # ***           if we have an environment set, check that version matches
 
+
 if [ ! -z "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR:-}" ]
 then
    case "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}" in
@@ -800,7 +805,7 @@ then
 fi
 
 unset no_auto_shell
-unset -f _fatal
+#unset -f _fatal
 
 [ ${MULLE_BASHLOADER_SH+x} ] ||  _fatal "Internal inconsistency error"
 

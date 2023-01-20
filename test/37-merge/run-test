@@ -1,0 +1,55 @@
+#! /bin/sh
+
+[ "${TRACE}" = 'YES' ] && set -x && : "$0" "$@"
+
+###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
+MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${MULLE_BASHFUNCTIONS_LIBEXEC_DIR:-`mulle-bashfunctions libexec-dir`}" || exit 1
+
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-boot.sh"          || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashglobal.sh"    || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-compatibility.sh" || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-logging.sh"       || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-options.sh"       || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-string.sh"        || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-path.sh"          || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-exekutor.sh"      || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-file.sh"          || exit 1
+###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
+
+main()
+{
+   _options_mini_main "$@" && set -x
+
+
+   local directory
+
+   r_make_tmp_directory
+   directory="${RVAL}"
+
+   merge_line_into_file "a" "${directory}/file"
+   merge_line_into_file "b" "${directory}/file"
+   merge_line_into_file "c" "${directory}/file"
+
+   merge_line_into_file "a" "${directory}/file"
+   merge_line_into_file "b" "${directory}/file"
+   merge_line_into_file "c" "${directory}/file"
+   merge_line_into_file "d" "${directory}/file"
+
+expect="\
+a
+b
+c
+d"
+   result="`cat "${directory}/file"`"
+
+   [ "${result}" = "${expect}" ] || exit 1
+
+   log_info "----- ALL PASSED -----"
+
+   cd ..
+   rmdir_safer "${directory}"
+}
+
+
+main "$@"
+

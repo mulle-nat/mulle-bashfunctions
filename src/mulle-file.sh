@@ -78,7 +78,7 @@ function mkdir_if_missing()
       r_resolve_symlinks "$1"
       if [ ! -d "${RVAL}" ]
       then
-         fail "failed to create directory \"$1\" as a symlink is there"
+         fail "failed to create directory \"$1\" as a symlink to a file is there"
       fi
       return 0
    fi
@@ -154,10 +154,21 @@ rmdir_safer()
 {
    [ -z "$1" ] && _internal_fail "empty path"
 
+   # solaris can't do it so catch this relatively cheaply early on
+   [ $"PWD" = "${directory}" ] && fail "Refuse to remove PWD"
+
    if [ -d "$1" ]
    then
       r_assert_sane_path "$1"
-      exekutor chmod -R ugo+wX "${RVAL}" >&2 || fail "Failed to make \"${RVAL}\" writable"
+
+      case "${MULLE_UNAME}" in
+         'android'|'sunos')
+            exekutor chmod -R ugo+wX "${RVAL}" 2> /dev/null
+         ;;
+         *)
+            exekutor chmod -R ugo+wX "${RVAL}"  || fail "Failed to make \"${RVAL}\" writable"
+         ;;
+      esac
       exekutor rm -rf "${RVAL}"  >&2 || fail "failed to remove \"${RVAL}\""
    fi
 }
@@ -232,7 +243,7 @@ function merge_line_into_file()
   local line="$1"
   local filepath="$2"
 
-  if fgrep -s -q -x "${line}" "${filepath}" 2> /dev/null
+  if grep -F -q -x "${line}" "${filepath}" > /dev/null 2>&1
   then
      return
   fi
@@ -257,7 +268,15 @@ _remove_file_if_present()
    if ! rm -f "$1" 2> /dev/null
    then
       # oughta be superflous on macOS but gives error codes...
-      exekutor chmod u+w "$1"  || fail "Failed to make $1 writable"
+      # and sun gives warnings for symlinks
+      case "${MULLE_UNAME}" in
+         'sunos')
+            exekutor chmod u+w "$1" 2> /dev/null
+         ;;
+         *)
+            exekutor chmod u+w "$1"  || fail "Failed to make $1 writable"
+         ;;
+      esac
       exekutor rm -f "$1"      || fail "failed to remove \"$1\""
    else
       # print this a little later, because of /dev/null
@@ -283,6 +302,48 @@ remove_file_if_present()
       return 0
    fi
    return 1
+}
+
+
+r_uuidgen()
+{
+   # https://www.bsdhowto.ch/uuid.html
+   local i
+
+   local -a v
+
+   #
+   # this zsh trouble (actually hit me)
+   # https://superuser.com/questions/1210435/different-behavior-of-random-in-zsh-and-bash-functions
+   #
+   if [ ${ZSH_VERSION+x} ]
+   then
+      if [ -e "/dev/urandom" ]
+      then
+         RANDOM="`od -vAn -N4 -t u4 < /dev/urandom`"
+      else
+         if [ -e "/dev/random" ]
+         then
+            RANDOM="`od -vAn -N4 -t u4 < /dev/random`"
+         else
+            sleep 1 # need something unique between two calls
+            RANDOM="`date +%s`"
+         fi
+      fi
+   fi
+
+   # start with one for zsh :(
+   for i in 1 2 3 4 5 6 7 8
+   do
+      v[$i]=$(($RANDOM+$RANDOM))
+   done
+   v[4]=$((${v[4]}|16384))
+   v[4]=$((${v[4]}&20479))
+   v[5]=$((${v[5]}|32768))
+   v[5]=$((${v[5]}&49151))
+   printf -v RVAL "%04x%04x-%04x-%04x-%04x-%04x%04x%04x" \
+                  ${v[1]} ${v[2]} ${v[3]} ${v[4]} \
+                  ${v[5]} ${v[6]} ${v[7]} ${v[8]}
 }
 
 
@@ -336,7 +397,14 @@ _r_make_tmp_in_dir_uuidgen()
 
    while :
    do
-      uuid="`"${UUIDGEN}"`" || _internal_fail "uuidgen failed"
+      if [ -z "${UUIDGEN}" ]
+      then
+         r_uuidgen
+         uuid="${RVAL}"
+      else
+         uuid="`${UUIDGEN}`" || fail "uuidgen failed"
+      fi
+
       RVAL="${tmpdir}/${name}-${uuid}${extension}"
 
       case "${filetype}" in
@@ -379,16 +447,7 @@ _r_make_tmp_in_dir()
       extension=".${extension}"
    fi 
 
-   local UUIDGEN
-
-   UUIDGEN="`command -v "uuidgen"`"
-   if [ ! -z "${UUIDGEN}" ]
-   then
-      _r_make_tmp_in_dir_uuidgen "${UUIDGEN}" "${tmpdir}" "${name}" "${filetype}" "${extension}"
-      return $?
-   fi
-
-   RVAL="`_make_tmp_in_dir_mktemp "${tmpdir}" "${name}" "${filetype}" "${extension}"`"
+   _r_make_tmp_in_dir_uuidgen "" "${tmpdir}" "${name}" "${filetype}" "${extension}"
    return $?
 }
 
@@ -680,12 +739,12 @@ function create_symlink()
 function modification_timestamp()
 {
    case "${MULLE_UNAME}" in
-      linux|mingw)
-         stat --printf "%Y\n" "$1"
+      macos|*bsd|dragonfly)
+         stat -f "%m" "$1"
       ;;
 
-      * )
-         stat -f "%m" "$1"
+      *)
+         stat --printf "%Y\n" "$1"
       ;;
    esac
 }
@@ -701,7 +760,7 @@ function modification_timestamp()
 function lso()
 {
 # http://askubuntu.com/questions/152001/how-can-i-get-octal-file-permissions-from-command-line
-   ls -aldG "$@" | \
+   ls -ald "$@" | \
    awk '{k=0;for(i=0;i<=8;i++)k+=((substr($1,i+2,1)~/[rwx]/)*2^(8-i));if(k)printf(" %0o ",k);print }' | \
    awk '{print $1}'
 }
@@ -717,6 +776,19 @@ function lso()
 function file_is_binary()
 {
    local result
+
+   # simple little heurisic
+   case "${MULLE_UNAME}" in
+      sunos)
+         result="`file "$1"`"
+         case "${result}" in
+            *\ text*|*\ script|*\ document)
+               return 1
+            ;;
+         esac
+         return 0
+      ;;
+   esac
 
    result="`file -b --mime-encoding "$1"`"
    [ "${result}" = "binary" ]
@@ -736,7 +808,7 @@ function file_size_in_bytes()
    fi
 
    case "${MULLE_UNAME}" in
-      darwin|*bsd)
+      darwin|*bsd|dragonfly)
          stat -f '%z' "$1"
       ;;
 
@@ -755,11 +827,53 @@ function file_size_in_bytes()
 # dir_has_files <directory> <filetype>
 #
 #    This does not check for hidden files, ignores directories
-#    optionally given <filetype> "f" or "d" as the second argument.
+#    optionally given <filetype> "f" or "d" or "l" as the second argument.
+#    Only one filetype is allowed (dir_list_files can take multiple).
 #
 function dir_has_files()
 {
    local dirpath="$1"; shift
+
+   case "${MULLE_UNAME}" in
+      sunos)
+         local lines
+
+         if ! lines="`( rexekutor cd "${dirpath}" && rexekutor ls -1 ) 2> /dev/null `"
+         then
+            return 1
+         fi
+
+         local line
+
+         .foreachline line in ${lines}
+         .do
+            case "${line}" in
+               '.'|'..')
+                  .continue
+               ;;
+
+               *)
+                  case "$1" in
+                     f)
+                        [ ! -f "${dirpath}/${line}" ] && .continue
+                     ;;
+
+                     d)
+                        [ ! -d "${dirpath}/${line}" ] && .continue
+                     ;;
+
+                     l)
+                        [ ! -L "${dirpath}/${line}" ] && .continue
+                     ;;
+                  esac
+
+                  return 0
+               ;;
+            esac
+         .done
+         return 1
+      ;;
+   esac
 
    local flags
 
@@ -771,6 +885,11 @@ function dir_has_files()
 
       d)
          flags="-type d"
+         shift
+      ;;
+
+      l)
+         flags="-type l"
          shift
       ;;
    esac
@@ -789,37 +908,120 @@ function dir_has_files()
 
 
 #
-# dir_list_files <directory> [pattern] [filetype]
+# dir_list_files <directory> [pattern] [filetypes]
 #
 #    Lists file in <directory> (or directories as <directory> may contain
 #    wildcards) line by line.
-#    <directory> may contain whitespace but no tabs. filetype may be "f" for
-#    files only or "d" for diretorries only.
+#    <directory> may contain white space but no tabs. filetypes may be "f" for
+#    files or "d" for directories or "l" for symlinks. It can be a combination
+#    of these filetypes.
 #    Expects glob to be enabled. Resets IFS to default.
+#    Leave pattern empty for '*'
 #
 function dir_list_files()
 {
-   local directory="$1" ; shift
-   local pattern="${1:-*}" ; [ $# -eq 0 ] || shift
-   local flagchar="${1:-}"
+   local directory="$1"
+   local pattern="${2:-*}"
+   local flagchars="${3:-}"
 
    [ ! -z "${directory}" ] || _internal_fail "directory is empty"
 
-   local flags
+   log_debug "flagchars=${flagchars}"
 
-   case "${flagchar}" in
-      [fdl])
-         flags="-type"$'\n'"'$1'"
-         shift
+   case "${MULLE_UNAME}" in
+      sunos)
+         local line
+         local dirpath
+         local lines
+
+         for dirpath in ${directory}
+         do
+            lines="`( cd "${dirpath}"; ls -1 ) 2> /dev/null`"
+
+            .foreachline line in ${lines}
+            .do
+               case "${line}" in
+                  '.'|'..')
+                     .continue
+                  ;;
+
+                  *)
+                     if [[ $line != ${pattern} ]]
+                     then
+                        continue
+                     fi
+
+                     local match 
+                     
+                     match='YES'
+                     if [ ! -z "${flagchars}" ]
+                     then
+                        match='NO'
+                     fi
+
+                     case "${flagchars}" in
+                        *f*)
+                           [ -f "${dirpath}/${line}" ] && match='YES'
+                        ;;
+                     esac
+                     case "${flagchars}" in
+                        *d*)
+                           [ -d "${dirpath}/${line}" ] && match='YES'
+                        ;;
+                     esac
+                     case "${flagchars}" in
+                        *l*)
+                           [ ! -L "${dirpath}/${line}" ] && match='YES'
+                        ;;
+                     esac
+
+                     if [ "${match}" = 'NO' ]
+                     then
+                        .continue
+                     fi
+                  ;;
+               esac
+               printf "%s\n" "${dirpath}/${line}"
+            .done
+         done
+
+         IFS=' '$'\t'$'\n'
+         return
       ;;
    esac
+
+
+   local flags
+
+   if [ ! -z "${flagchars}" ]
+   then
+      case "${flagchars}" in
+         *f*)
+            flags="-type f"
+         ;;
+      esac
+      case "${flagchars}" in
+         *d*)
+            r_concat "${flags}" "-type d" " -o "
+            flags="${RVAL}"
+         ;;
+      esac
+      case "${flagchars}" in
+         *l*)
+            r_concat "${flags}" "-type l"  " -o "
+            flags="${RVAL}"
+         ;;
+      esac
+
+      flags="\\( ${flags} \\)"
+   fi
 
    # need to eval for zsh
    IFS=$'\n'
    eval_rexekutor find ${directory} -xdev \
                                     -mindepth 1 \
                                     -maxdepth 1 \
-                                    -name "'${pattern}'" \
+                                    -name "'${pattern:-*}'" \
                                     ${flags} \
                                     -print  | sort -n
    IFS=' '$'\t'$'\n'
@@ -849,16 +1051,24 @@ function dirs_contain_same_files()
    etcdir="${etcdir%%/}"
    sharedir="${sharedir%%/}"
 
+   local DIFF
+
+   if ! DIFF="`command -v diff`"
+   then
+      fail "diff command not installed"
+   fi
+
    local etcfile
    local sharefile
    local filename 
 
-   .foreachline sharefile in `find ${sharedir}  \! -type d -print`
+   .foreachline sharefile in `find ${sharedir} \! -type d -print`
    .do
       filename="${sharefile#${sharedir}/}"
       etcfile="${etcdir}/${filename}"
 
-      if ! diff -q -b "${etcfile}" "${sharefile}" > /dev/null
+      # ignore actual text and "missing file" errors
+      if ! "${DIFF}" -b "${etcfile}" "${sharefile}" > /dev/null 2>&1
       then
          return 2
       fi
@@ -920,7 +1130,7 @@ function inplace_sed()
    # }
 
    case "${MULLE_UNAME}" in
-      darwin|freebsd)
+      darwin|*bsd|sun*|dragonfly)
          # exekutor sed -i '' "$@"
 
          while [ $# -ne 1 ]

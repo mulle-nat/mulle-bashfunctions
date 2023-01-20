@@ -39,6 +39,7 @@ then
    then
      setopt sh_word_split
      setopt POSIX_ARGZERO
+     set -o GLOB_SUBST        # neede for [[ $i == $pattern ]]
    fi
 
    if [ -z "${MULLE_EXECUTABLE:-}" ]
@@ -93,22 +94,36 @@ then
             fi
          ;;
       esac
+      
       MULLE_UNAME="${MULLE_UNAME%%_*}"
       MULLE_UNAME="${MULLE_UNAME%[36][24]}" # remove 32 64 (hax)
 
-      if [ "${MULLE_UNAME}" = "linux" ]
-      then
-         read -r MULLE_UNAME < /proc/sys/kernel/osrelease
-         case "${MULLE_UNAME}" in
-            *-Microsoft)
-               MULLE_UNAME="windows"
-            ;;
-  
-            *)
-               MULLE_UNAME="linux"
-            ;;
-         esac
-      fi
+      case "${MULLE_UNAME}" in 
+         linux)
+            read -r MULLE_UNAME < /proc/sys/kernel/osrelease
+            case "${MULLE_UNAME}" in
+               *-[Mm]icrosoft-*)
+                  MULLE_UNAME="windows" # wsl2, this is super slow on NTFS
+               ;;
+
+               *-[Mm]icrosoft)
+                  MULLE_UNAME="windows" # wsl1
+               ;;
+
+               *-android-*|*-android)
+                  MULLE_UNAME="android"
+               ;;
+     
+               *)
+                  MULLE_UNAME="linux"
+               ;;
+            esac
+         ;;
+
+         msys|cygwin)
+            MULLE_UNAME='msys'
+         ;;
+      esac
    fi
 
    if [ "${MULLE_UNAME}" = "windows" ]
@@ -119,7 +134,7 @@ then
    if [ -z "${MULLE_HOSTNAME:-}" ]
    then
       case "${MULLE_UNAME}" in
-         'mingw'*)
+         'mingw'|'msys'|'sunos')
             MULLE_HOSTNAME="`hostname`"
          ;;
 
@@ -351,7 +366,6 @@ alias .break="break"
 alias .continue="continue"
 
 
-
 shell_enable_extglob
 shell_enable_pipefail
 
@@ -448,9 +462,10 @@ _log_debug()
    fi
 
    case "${MULLE_UNAME}" in
-      linux)
+      'linux'|'windows')
          _log_printf "${C_DEBUG}$(date "+%s.%N") %b${C_RESET}\n" "$*"
       ;;
+
       *)
          _log_printf "${C_DEBUG}$(date "+%s") %b${C_RESET}\n" "$*"
       ;;
@@ -1665,7 +1680,6 @@ function r_escaped_grep_pattern()
    s="${s//\\/\\\\}"
    s="${s//\[/\\[}"
    s="${s//\]/\\]}"
-   s="${s//\//\\/}"
    s="${s//\$/\\$}"
    s="${s//\*/\\*}"
    s="${s//\./\\.}"
@@ -1756,6 +1770,33 @@ function string_has_suffix()
 {
   [ "${1%"$2"}" != "$1" ]
 }
+
+
+
+
+
+function r_fnv1a_32()
+{
+   local i
+   local len
+
+   i=0
+   len="${#1}"
+
+   local hash
+   local value
+
+   hash=2166136261
+   while [ $i -lt $len ]
+   do
+      printf -v value "%u" "'${1:$i:1}"
+      hash=$(( ((hash ^ (value & 0xFF)) * 16777619) & 0xFFFFFFFF ))
+      i=$(( i + 1 ))
+   done
+
+   RVAL=${hash}
+}
+
 
 
 
@@ -1996,7 +2037,6 @@ function r_resolve_symlinks()
 }
 
 
-
 function r_get_libexec_dir()
 {
    local executablepath="$1"
@@ -2024,11 +2064,14 @@ function r_get_libexec_dir()
    r_dirname "${exedirpath}"
    prefix="${RVAL}"
 
+   local is_present
 
    RVAL="${prefix}/libexec/${subdir}"
    if [ ! -f "${RVAL}/${matchfile}" ]
    then
       RVAL="${exedirpath}/src"
+   else
+      is_present="${RVAL}/${matchfile}"
    fi
 
    case "$RVAL" in
@@ -2043,6 +2086,11 @@ function r_get_libexec_dir()
          RVAL="$PWD/${RVAL}"
       ;;
    esac
+
+   if [ "${is_present}" = "${RVAL}/${matchfile}" ]
+   then
+      return 0
+   fi
 
    if [ ! -f "${RVAL}/${matchfile}" ]
    then
@@ -2189,14 +2237,14 @@ function options_technical_flags_usage()
 before_trace_fail()
 {
    [ "${MULLE_TRACE:-}" = '1848' ] || \
-      fail "option \"$1\" must be specified after -t"
+      fail "option \"$1\" must be specified after -lt"
 }
 
 
 after_trace_warning()
 {
    [ "${MULLE_TRACE:-}" = '1848' ] && \
-      log_warning "warning: ${MULLE_EXECUTABLE_FAIL_PREFIX}: $1 after -t invalidates -t"
+      log_warning "warning: ${MULLE_EXECUTABLE_FAIL_PREFIX}: $1 after -lt invalidates -lt"
 }
 
 
@@ -2321,7 +2369,6 @@ function options_technical_flags()
       ;;
 
       -tp|--trace-profile)
-            before_trace_fail "${flag}"
    
             case "${MULLE_UNAME}" in
                '')
@@ -3115,7 +3162,7 @@ function mkdir_if_missing()
       r_resolve_symlinks "$1"
       if [ ! -d "${RVAL}" ]
       then
-         fail "failed to create directory \"$1\" as a symlink is there"
+         fail "failed to create directory \"$1\" as a symlink to a file is there"
       fi
       return 0
    fi
@@ -3169,10 +3216,20 @@ rmdir_safer()
 {
    [ -z "$1" ] && _internal_fail "empty path"
 
+   [ $"PWD" = "${directory}" ] && fail "Refuse to remove PWD"
+
    if [ -d "$1" ]
    then
       r_assert_sane_path "$1"
-      exekutor chmod -R ugo+wX "${RVAL}" >&2 || fail "Failed to make \"${RVAL}\" writable"
+
+      case "${MULLE_UNAME}" in
+         'android'|'sunos')
+            exekutor chmod -R ugo+wX "${RVAL}" 2> /dev/null
+         ;;
+         *)
+            exekutor chmod -R ugo+wX "${RVAL}"  || fail "Failed to make \"${RVAL}\" writable"
+         ;;
+      esac
       exekutor rm -rf "${RVAL}"  >&2 || fail "failed to remove \"${RVAL}\""
    fi
 }
@@ -3230,7 +3287,7 @@ function merge_line_into_file()
   local line="$1"
   local filepath="$2"
 
-  if fgrep -s -q -x "${line}" "${filepath}" 2> /dev/null
+  if grep -F -q -x "${line}" "${filepath}" > /dev/null 2>&1
   then
      return
   fi
@@ -3249,7 +3306,14 @@ _remove_file_if_present()
 
    if ! rm -f "$1" 2> /dev/null
    then
-      exekutor chmod u+w "$1"  || fail "Failed to make $1 writable"
+      case "${MULLE_UNAME}" in
+         'sunos')
+            exekutor chmod u+w "$1" 2> /dev/null
+         ;;
+         *)
+            exekutor chmod u+w "$1"  || fail "Failed to make $1 writable"
+         ;;
+      esac
       exekutor rm -f "$1"      || fail "failed to remove \"$1\""
    else
       exekutor_trace "exekutor_print" rm -f "$1"
@@ -3266,6 +3330,42 @@ remove_file_if_present()
       return 0
    fi
    return 1
+}
+
+
+r_uuidgen()
+{
+   local i
+
+   local -a v
+
+   if [ ${ZSH_VERSION+x} ]
+   then
+      if [ -e "/dev/urandom" ]
+      then
+         RANDOM="`od -vAn -N4 -t u4 < /dev/urandom`"
+      else
+         if [ -e "/dev/random" ]
+         then
+            RANDOM="`od -vAn -N4 -t u4 < /dev/random`"
+         else
+            sleep 1 # need something unique between two calls
+            RANDOM="`date +%s`"
+         fi
+      fi
+   fi
+
+   for i in 1 2 3 4 5 6 7 8
+   do
+      v[$i]=$(($RANDOM+$RANDOM))
+   done
+   v[4]=$((${v[4]}|16384))
+   v[4]=$((${v[4]}&20479))
+   v[5]=$((${v[5]}|32768))
+   v[5]=$((${v[5]}&49151))
+   printf -v RVAL "%04x%04x-%04x-%04x-%04x-%04x%04x%04x" \
+                  ${v[1]} ${v[2]} ${v[3]} ${v[4]} \
+                  ${v[5]} ${v[6]} ${v[7]} ${v[8]}
 }
 
 
@@ -3314,7 +3414,14 @@ _r_make_tmp_in_dir_uuidgen()
 
    while :
    do
-      uuid="`"${UUIDGEN}"`" || _internal_fail "uuidgen failed"
+      if [ -z "${UUIDGEN}" ]
+      then
+         r_uuidgen
+         uuid="${RVAL}"
+      else
+         uuid="`${UUIDGEN}`" || fail "uuidgen failed"
+      fi
+
       RVAL="${tmpdir}/${name}-${uuid}${extension}"
 
       case "${filetype}" in
@@ -3357,16 +3464,7 @@ _r_make_tmp_in_dir()
       extension=".${extension}"
    fi 
 
-   local UUIDGEN
-
-   UUIDGEN="`command -v "uuidgen"`"
-   if [ ! -z "${UUIDGEN}" ]
-   then
-      _r_make_tmp_in_dir_uuidgen "${UUIDGEN}" "${tmpdir}" "${name}" "${filetype}" "${extension}"
-      return $?
-   fi
-
-   RVAL="`_make_tmp_in_dir_mktemp "${tmpdir}" "${name}" "${filetype}" "${extension}"`"
+   _r_make_tmp_in_dir_uuidgen "" "${tmpdir}" "${name}" "${filetype}" "${extension}"
    return $?
 }
 
@@ -3572,12 +3670,12 @@ function create_symlink()
 function modification_timestamp()
 {
    case "${MULLE_UNAME}" in
-      linux|mingw)
-         stat --printf "%Y\n" "$1"
+      macos|*bsd|dragonfly)
+         stat -f "%m" "$1"
       ;;
 
-      * )
-         stat -f "%m" "$1"
+      *)
+         stat --printf "%Y\n" "$1"
       ;;
    esac
 }
@@ -3585,7 +3683,7 @@ function modification_timestamp()
 
 function lso()
 {
-   ls -aldG "$@" | \
+   ls -ald "$@" | \
    awk '{k=0;for(i=0;i<=8;i++)k+=((substr($1,i+2,1)~/[rwx]/)*2^(8-i));if(k)printf(" %0o ",k);print }' | \
    awk '{print $1}'
 }
@@ -3595,6 +3693,18 @@ function lso()
 function file_is_binary()
 {
    local result
+
+   case "${MULLE_UNAME}" in
+      sunos)
+         result="`file "$1"`"
+         case "${result}" in
+            *\ text*|*\ script|*\ document)
+               return 1
+            ;;
+         esac
+         return 0
+      ;;
+   esac
 
    result="`file -b --mime-encoding "$1"`"
    [ "${result}" = "binary" ]
@@ -3609,7 +3719,7 @@ function file_size_in_bytes()
    fi
 
    case "${MULLE_UNAME}" in
-      darwin|*bsd)
+      darwin|*bsd|dragonfly)
          stat -f '%z' "$1"
       ;;
 
@@ -3625,6 +3735,47 @@ function dir_has_files()
 {
    local dirpath="$1"; shift
 
+   case "${MULLE_UNAME}" in
+      sunos)
+         local lines
+
+         if ! lines="`( rexekutor cd "${dirpath}" && rexekutor ls -1 ) 2> /dev/null `"
+         then
+            return 1
+         fi
+
+         local line
+
+         .foreachline line in ${lines}
+         .do
+            case "${line}" in
+               '.'|'..')
+                  .continue
+               ;;
+
+               *)
+                  case "$1" in
+                     f)
+                        [ ! -f "${dirpath}/${line}" ] && .continue
+                     ;;
+
+                     d)
+                        [ ! -d "${dirpath}/${line}" ] && .continue
+                     ;;
+
+                     l)
+                        [ ! -L "${dirpath}/${line}" ] && .continue
+                     ;;
+                  esac
+
+                  return 0
+               ;;
+            esac
+         .done
+         return 1
+      ;;
+   esac
+
    local flags
 
    case "$1" in
@@ -3635,6 +3786,11 @@ function dir_has_files()
 
       d)
          flags="-type d"
+         shift
+      ;;
+
+      l)
+         flags="-type l"
          shift
       ;;
    esac
@@ -3654,26 +3810,107 @@ function dir_has_files()
 
 function dir_list_files()
 {
-   local directory="$1" ; shift
-   local pattern="${1:-*}" ; [ $# -eq 0 ] || shift
-   local flagchar="${1:-}"
+   local directory="$1"
+   local pattern="${2:-*}"
+   local flagchars="${3:-}"
 
    [ ! -z "${directory}" ] || _internal_fail "directory is empty"
 
-   local flags
+   log_debug "flagchars=${flagchars}"
 
-   case "${flagchar}" in
-      [fdl])
-         flags="-type"$'\n'"'$1'"
-         shift
+   case "${MULLE_UNAME}" in
+      sunos)
+         local line
+         local dirpath
+         local lines
+
+         for dirpath in ${directory}
+         do
+            lines="`( cd "${dirpath}"; ls -1 ) 2> /dev/null`"
+
+            .foreachline line in ${lines}
+            .do
+               case "${line}" in
+                  '.'|'..')
+                     .continue
+                  ;;
+
+                  *)
+                     if [[ $line != ${pattern} ]]
+                     then
+                        continue
+                     fi
+
+                     local match 
+                     
+                     match='YES'
+                     if [ ! -z "${flagchars}" ]
+                     then
+                        match='NO'
+                     fi
+
+                     case "${flagchars}" in
+                        *f*)
+                           [ -f "${dirpath}/${line}" ] && match='YES'
+                        ;;
+                     esac
+                     case "${flagchars}" in
+                        *d*)
+                           [ -d "${dirpath}/${line}" ] && match='YES'
+                        ;;
+                     esac
+                     case "${flagchars}" in
+                        *l*)
+                           [ ! -L "${dirpath}/${line}" ] && match='YES'
+                        ;;
+                     esac
+
+                     if [ "${match}" = 'NO' ]
+                     then
+                        .continue
+                     fi
+                  ;;
+               esac
+               printf "%s\n" "${dirpath}/${line}"
+            .done
+         done
+
+         IFS=' '$'\t'$'\n'
+         return
       ;;
    esac
+
+
+   local flags
+
+   if [ ! -z "${flagchars}" ]
+   then
+      case "${flagchars}" in
+         *f*)
+            flags="-type f"
+         ;;
+      esac
+      case "${flagchars}" in
+         *d*)
+            r_concat "${flags}" "-type d" " -o "
+            flags="${RVAL}"
+         ;;
+      esac
+      case "${flagchars}" in
+         *l*)
+            r_concat "${flags}" "-type l"  " -o "
+            flags="${RVAL}"
+         ;;
+      esac
+
+      flags="\\( ${flags} \\)"
+   fi
 
    IFS=$'\n'
    eval_rexekutor find ${directory} -xdev \
                                     -mindepth 1 \
                                     -maxdepth 1 \
-                                    -name "'${pattern}'" \
+                                    -name "'${pattern:-*}'" \
                                     ${flags} \
                                     -print  | sort -n
    IFS=' '$'\t'$'\n'
@@ -3695,16 +3932,23 @@ function dirs_contain_same_files()
    etcdir="${etcdir%%/}"
    sharedir="${sharedir%%/}"
 
+   local DIFF
+
+   if ! DIFF="`command -v diff`"
+   then
+      fail "diff command not installed"
+   fi
+
    local etcfile
    local sharefile
    local filename 
 
-   .foreachline sharefile in `find ${sharedir}  \! -type d -print`
+   .foreachline sharefile in `find ${sharedir} \! -type d -print`
    .do
       filename="${sharefile#${sharedir}/}"
       etcfile="${etcdir}/${filename}"
 
-      if ! diff -q -b "${etcfile}" "${sharefile}" > /dev/null
+      if ! "${DIFF}" -b "${etcfile}" "${sharefile}" > /dev/null 2>&1
       then
          return 2
       fi
@@ -3736,7 +3980,7 @@ function inplace_sed()
 
 
    case "${MULLE_UNAME}" in
-      darwin|freebsd)
+      darwin|*bsd|sun*|dragonfly)
 
          while [ $# -ne 1 ]
          do
@@ -4218,7 +4462,7 @@ very_short_sleep()
    us="0.${us:-0001}"
    us="${us%%0}"
    case "${MULLE_UNAME}" in 
-      darwin)
+      darwin|*bsd|dragonfly)
       ;;
 
       *)
@@ -4233,19 +4477,22 @@ r_get_core_count()
 {
    if ! [ ${MULLE_CORES+x} ]
    then
-      MULLE_CORES="`/usr/bin/nproc 2> /dev/null`"
+      MULLE_CORES="`PATH="$PATH:/usr/sbin:/sbin" nproc 2> /dev/null`"
       if [ -z "${MULLE_CORES}" ]
       then
-         MULLE_CORES="`/usr/sbin/sysctl -n hw.ncpu 2> /dev/null`"
+         MULLE_CORES="`PATH="$PATH:/usr/sbin:/sbin" sysctl -n hw.ncpu 2> /dev/null`"
       fi
 
       if [ -z "${MULLE_CORES}" ]
       then
          MULLE_CORES=4
          log_verbose "Unknown core count, setting it to 4 as default"
+         return 2
       fi
    fi
+
    RVAL=${MULLE_CORES}
+   return 0
 }
 
 
@@ -4299,11 +4546,11 @@ wait_for_available_job()
 get_current_load_average()
 {
    case "${MULLE_UNAME}" in
-      freebsd|darwin)
+      'freebsd'|'darwin')
          sysctl -n vm.loadavg | sed -n -e 's/.*{[ ]*\([0-9]*\).*/\1/p'
       ;;
 
-      mingw)
+      'mingw'|'msys')
          echo "7"  # no way to know
       ;;
 
@@ -4794,7 +5041,14 @@ function etc_make_file_from_symlinked_file()
 
    if [ "${MULLE_FLAG_LOG_FLUFF}" = 'YES' ]
    then
-      flags="-v"
+      case "${MULLE_UNAME}" in
+         'sunos')
+         ;;
+
+         *)
+            flags=-v
+         ;;
+      esac
    fi
 
    log_verbose "Turn symlink \"${dstfile}\" into a file"
@@ -4872,12 +5126,19 @@ function etc_make_symlink_if_possible()
       return 2
    fi
 
+   local DIFF
+
+   if ! DIFF="`command -v diff`"
+   then
+      fail "diff command not installed"
+   fi
+
    local dstdir
 
    r_dirname "${dstfile}"
    dstdir="${RVAL}"
 
-   if ! diff -q -b "${dstfile}" "${srcfile}" > /dev/null
+   if ! "${DIFF}" -b "${dstfile}" "${srcfile}" > /dev/null
    then
       return 3
    fi
@@ -4928,13 +5189,20 @@ function etc_symlink_or_copy_file()
 
    if [ "${MULLE_FLAG_LOG_FLUFF}" = 'YES' ]
    then
-      flags="-v"
+      case "${MULLE_UNAME}" in
+         'sunos')
+         ;;
+
+         *)
+            flags=-v
+         ;;
+      esac
    fi
 
    if [ -z "${symlink}" ]
    then
       case "${MULLE_UNAME}" in
-         mingw)
+         'mingw'|'msys')
             symlink="NO"
          ;;
 
@@ -4980,7 +5248,14 @@ function etc_setup_from_share_if_needed()
 
    if [ "${MULLE_FLAG_LOG_FLUFF}" = 'YES' ]
    then
-      flags="-v"
+      case "${MULLE_UNAME}" in
+         'sunos')
+         ;;
+
+         *)
+            flags=-v
+         ;;
+      esac
    fi
 
    local filename
@@ -5047,6 +5322,13 @@ function etc_repair_files()
    dstdir="${dstdir%%/}"
    srcdir="${srcdir%%/}"
 
+   local DIFF
+
+   if ! DIFF="`command -v diff`"
+   then
+      fail "diff command not installed"
+   fi
+
    .foreachline dstfile in `find "${dstdir}" ! -type d -print` # dstdir is etc
    .do
       filename="${dstfile#${dstdir}/}"
@@ -5075,7 +5357,7 @@ function etc_repair_files()
       else
          if [ -f "${srcfile}" ]
          then
-            if diff -q -b "${dstfile}" "${srcfile}" > /dev/null
+            if "${DIFF}" -b "${dstfile}" "${srcfile}" > /dev/null
             then
                log_verbose "\"${filename}\" has no user edits: replace with symlink"
                remove_file_if_present "${dstfile}"
@@ -5125,4 +5407,404 @@ function etc_repair_files()
 
 fi
 :
+
+
+mulle_isbase64_char()
+{
+   [ -z "${1//[A-Za-z0-9\/+]/}" ]
+}
+
+
+r_mulle_base64_encode_string()
+{
+   local width="$1"
+   local _src="$2"
+
+   _src="${_src}"$'\n'     # stay compatible
+
+   local inLen="${#_src}"
+   local inPos=0
+   local breakPos=0
+   local out
+   local c1
+   local c2
+   local c3
+   local d1
+   local d2
+   local d3
+   local d4
+   local i
+   local n
+   local index
+
+   local mulle_base64tab_string="\
+ABCDEFGHIJKLMNOPQRSTUVWXYZ\
+abcdefghijklmnopqrstuvwxyz0123456789+/"
+
+   breakPos=${width}
+
+   n=$(( inLen / 3 ))
+   remain=$(( inLen % 0x3 ))
+
+   i=0
+   while [ $i -lt $n ]
+   do
+      printf -v c1 "%d" "'${_src:${inPos}:1}"
+      inPos=$(( inPos + 1 ))
+      printf -v c2 "%d" "'${_src:${inPos}:1}"
+      inPos=$(( inPos + 1 ))
+      printf -v c3 "%d" "'${_src:${inPos}:1}"
+      inPos=$(( inPos + 1 ))
+
+      index=$(( c1 >> 2 ))
+      d1="${mulle_base64tab_string:${index}:1}"
+      index=$(( ((c1 & 0x03) << 4) | (c2 >> 4) ))
+      d2="${mulle_base64tab_string:${index}:1}"
+      index=$(( ((c2 & 0x0F) << 2) | ((c3 & 0xC0) >> 6) ))
+      d3="${mulle_base64tab_string:${index}:1}"
+      index=$(( c3 & 0x3F ))
+      d4="${mulle_base64tab_string:${index}:1}"
+
+      out="${out}${d1}${d2}${d3}${d4}"
+      outPos=$(( outPos + 4 ))
+
+      if [ "${width}" -gt 0  -a ${outPos} -ge ${breakPos} ]
+      then
+         out="${out}"$'\n'
+         outPos=$(( outPos + 1 ))
+         breakPos=$(( outPos + $width ))
+      fi
+      i=$(( i + 1))
+   done
+
+   case $remain in
+      2)
+         printf -v c1 "%d" "'${_src:${inPos}:1}"
+         inPos=$(( inPos + 1 ))
+         printf -v c2 "%d" "'${_src:${inPos}:1}"
+
+         index=$(( (c1 & 0xFC) >> 2 ))
+         d1="${mulle_base64tab_string:${index}:1}"
+         index=$(( ((c1 & 0x03) << 4) | ((c2 & 0xF0) >> 4) ))
+         d2="${mulle_base64tab_string:${index}:1}"
+         index=$(( ((c2 & 0x0F) << 2) ))
+         d3="${mulle_base64tab_string:${index}:1}"
+
+         out="${out}${d1}${d2}${d3}="
+      ;;
+
+      1)
+         printf -v c1 "%d" "'${_src:${inPos}:1}"
+         index=$(( (c1 & 0xFC) >> 2 ))
+         d1="${mulle_base64tab_string:${index}:1}"
+         index=$(( (c1 & 0x03) << 4 ))
+         d2="${mulle_base64tab_string:${index}:1}"
+         out="${out}${d1}${d2}=="
+      ;;
+
+      0)
+      ;;
+   esac
+
+   RVAL="${out}"
+}
+
+
+mulle_base64_encode()
+{
+   local width="$1"
+   local filename="${2:--}"
+
+   local _src
+
+   if [ "${filename}" = '-' ]
+   then
+      _src="`cat`" || return 1
+   else
+      _src="`cat "${filename}"`" || return 1
+   fi
+
+   if ! r_mulle_base64_encode_string "${width}" "${_src}"
+   then
+      return 1
+   fi
+
+   printf "%s\n" "${RVAL}"
+}
+
+
+mulle_base64idx_string=\
+$'\377\377\377\377\377\377\377\377'\
+$'\377\377\377\377\377\377\377\377'\
+$'\377\377\377\377\377\377\377\377'\
+$'\377\377\377\377\377\377\377\377'\
+$'\377\377\377\377\377\377\377\377'\
+$'\377\377\377\076\377\377\377\077'\
+$'\064\065\066\067\070\071\072\073'\
+$'\074\075\377\377\377\377\377\377'\
+$'\377'_$'\001\002\003\004\005\006'\
+$'\007\010\011\012\013\014\015\016'\
+$'\017\020\021\022\023\024\025\026'\
+$'\027\030\031\377\377\377\377\377'\
+$'\377\032\033\034\035\036\037\040'\
+$'\041\042\043\044\045\046\047\050'\
+$'\051\052\053\054\055\056\057\060'\
+$'\061\062\063\377\377\377\377\377'
+
+
+r_mulle_base64_decode_char()
+{
+   local c="$1"
+
+   if [ "$c" -eq 65 ]
+   then
+      RVAL=0
+      return
+   fi
+   printf -v RVAL "%d" "'${mulle_base64idx_string:${c}:1}"
+}
+
+
+r_mulle_base64_decode_string()
+{
+   local _src="$1"
+
+   local isErr=0
+   local isEndSeen=0
+   local b1
+   local b2
+   local b3
+   local a1
+   local a2
+   local a3
+   local a4
+   local inPos=0
+   local outPos=0
+   local inLen
+   local c
+   local out
+
+
+   inLen="${#_src}"
+
+   while [ $inPos -lt $inLen ]
+   do
+      for i in 1 2 3 4
+      do
+         while [ $inPos -lt $inLen ]
+         do
+            c="${_src:${inPos}:1}"
+            inPos=$(( inPos + 1 ))
+
+            if mulle_isbase64_char "${c}"
+            then
+               printf -v "a${i}" "${c}"
+               break
+            fi
+
+            case "${c}" in
+               '=')
+                  printf -v "a${i}" "0"
+                  isEndSeen=1
+                  break
+               ;;
+
+               $'\r'|$'\n'|' '|$'\t')
+               ;;
+
+               *)
+                  log_error "garbage character ${c} in base64 string"
+                  RVAL=
+                  return 1
+               ;;
+            esac
+         done
+
+         if [ $isEndSeen -ne 0 ]
+         then
+            i=$((i - 1))
+            break
+         fi
+      done
+
+      case "${i}" in
+         4)
+            printf -v a1 "%d" "'${a1}"
+            printf -v a2 "%d" "'${a2}"
+            printf -v a3 "%d" "'${a3}"
+            printf -v a4 "%d" "'${a4}"
+
+            r_mulle_base64_decode_char "$a1"
+            a1=${RVAL}
+            r_mulle_base64_decode_char "$a2"
+            a2=${RVAL}
+            r_mulle_base64_decode_char "$a3"
+            a3=${RVAL}
+            r_mulle_base64_decode_char "$a4"
+            a4=${RVAL}
+
+            b1=$(( ((a1 << 2) & 0xFC) | ((a2 >> 4) & 0x03) ))
+            b2=$(( ((a2 << 4) & 0xF0) | ((a3 >> 2) & 0x0F) ))
+            b3=$(( ((a3 << 6) & 0xC0) | ( a4     & 0x3F) ))
+
+            printf -v b1 \\$(printf '%03o' $b1)
+            printf -v b2 \\$(printf '%03o' $b2)
+            printf -v b3 \\$(printf '%03o' $b3)
+
+            out="${out}${b1}${b2}${b3}"
+         ;;
+
+         3)
+            printf -v a1 "%d" "'${a1}"
+            printf -v a2 "%d" "'${a2}"
+            printf -v a3 "%d" "'${a3}"
+
+            r_mulle_base64_decode_char "$a1"
+            a1=${RVAL}
+            r_mulle_base64_decode_char "$a2"
+            a2=${RVAL}
+            r_mulle_base64_decode_char "$a3"
+            a3=${RVAL}
+
+            b1=$(( ((a1 << 2) & 0xFC) | ((a2 >> 4) & 0x03) ))
+            b2=$(( ((a2 << 4) & 0xF0) | ((a3 >> 2) & 0x0F) ))
+
+            printf -v b1 \\$(printf '%03o' $b1)
+            printf -v b2 \\$(printf '%03o' $b2)
+
+            out="${out}${b1}${b2}"
+         ;;
+
+         2)
+            printf -v a1 "%d" "'${a1}"
+            printf -v a2 "%d" "'${a2}"
+
+            r_mulle_base64_decode_char "$a1"
+            a1=${RVAL}
+            r_mulle_base64_decode_char "$a2"
+            a2=${RVAL}
+
+            b1=$(( ((a1 << 2) & 0xFC) | ((a2 >> 4) & 0x03) ))
+
+            printf -v b1 \\$(printf '%03o' $b1)
+
+            out="${out}${b1}"
+         ;;
+
+         *)
+            if [ "${ignore_garbage}" = 'YES' ]
+            then
+               continue
+            fi
+
+            log_error "garbage character in base64 string"
+            RVAL=
+            return 1
+         ;;
+      esac
+
+      if [ $isEndSeen -eq 1 ]
+      then
+         break
+      fi
+   done
+
+   RVAL="${out%$'\n'}"
+   return 0
+}
+
+
+mulle_base64_decode()
+{
+   local filename="${1:--}"
+
+   local _src
+
+   if [ "${filename}" = '-' ]
+   then
+      _src="`cat`" || return 1
+   else
+      _src="`cat "${filename}"`" || return 1
+   fi
+
+   if ! r_mulle_base64_decode_string "${_src}"
+   then
+      return 1
+   fi
+
+   printf "%s\n" "${RVAL}"
+}
+
+
+mulle_base64()
+{
+   local decode
+   local ignore
+   local width=76
+
+   while [ $# -ne 0 ]
+   do
+      case "$1" in
+         -d|--decode)
+            decode="YES"
+         ;;
+
+         -i)
+            ignore_garbage='YES'
+         ;;
+
+         -w|--width|-b)
+            shift
+            width="$1"
+         ;;
+
+         *)
+            break
+         ;;
+      esac
+
+      shift
+   done
+
+   case "${MULLE_UNAME}" in
+      openbsd|netbsd)
+      ;;
+
+      *)
+         local base64
+
+         if base64="`command -v base64`"
+         then
+            if [ "${decode}" = 'YES' ]
+            then
+               rexekutor "${base64}" -d "$@"
+               return $?
+            fi
+
+            case "${MULLE_UNAME}" in
+               openbsd)
+                  rexekutor "${base64}" "$@"
+                  return $?
+               ;;
+
+               macos|*bsd|dragonfly)
+                  rexekutor "${base64}" -b "${width}" "$@"
+                  return $?
+               ;;
+            esac
+
+            rexekutor "${base64}" -w "${width}"
+            return $?
+         fi
+      ;;
+   esac
+
+   if [ "${decode}" ]
+   then
+      mulle_base64_decode "${ignore_garbage}" "$@"
+      return $?
+   fi
+
+   mulle_base64_encode "${width}" "$@"
+}
 ### << END OF mulle-bashfunctions-embed.sh <<

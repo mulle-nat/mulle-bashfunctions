@@ -1,0 +1,147 @@
+#! /bin/sh
+
+[ "${TRACE}" = 'YES' ] && set -x && : "$0" "$@"
+
+###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
+MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${MULLE_BASHFUNCTIONS_LIBEXEC_DIR:-`mulle-bashfunctions libexec-dir`}" || exit 1
+
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-boot.sh"          || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashglobal.sh"    || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-compatibility.sh" || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-logging.sh"       || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-options.sh"       || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-string.sh"        || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-path.sh"          || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-exekutor.sh"      || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-file.sh"          || exit 1
+###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
+
+
+
+test_dir_list_files()
+{
+   local expect="$1" ; shift
+
+   local result
+
+   result="`dir_list_files "$@" `"
+   if [ "${result}" != "${expect}" ]
+   then
+      _internal_fail "\`dir_list_files $*\` should have produced \"${expect}\" but did produce \"${result}\""
+   fi
+}
+
+
+
+main()
+{
+   _options_mini_main "$@" && set -x
+
+   if ! dir_has_files "."
+   then
+      _internal_fail "Should have this file"
+   fi
+
+   test_dir_list_files "./run-test" . ""
+   test_dir_list_files "./run-test" . "" f
+   test_dir_list_files ""           . "" d
+   test_dir_list_files "./run-test" . "" df
+
+   test_dir_list_files "./run-test" . "*"
+   test_dir_list_files "./run-test" . "*" f
+   test_dir_list_files ""           . "*" d
+   test_dir_list_files "./run-test" . "run-test"
+   test_dir_list_files "./run-test" . "run-test" f
+   test_dir_list_files ""           . "run-test" d
+
+   r_make_tmp_directory
+   directory="${RVAL}"
+
+   # 0. empty
+   if dir_has_files "${directory}"
+   then
+      _internal_fail "0. Should not have anything"
+   fi
+   if dir_has_files "${directory}" f
+   then
+      _internal_fail "0. Should not have any file"
+   fi
+   if dir_has_files "${directory}" d
+   then
+      _internal_fail "0. Should not have any dir"
+   fi
+
+   # 1. hidden
+   touch "${directory}/.a"
+
+   if dir_has_files "${directory}"
+   then
+      _internal_fail "1. Should not have anything"
+   fi
+   if dir_has_files "${directory}" f
+   then
+      _internal_fail "1. Should not have any file"
+   fi
+   if dir_has_files "${directory}" d
+   then
+      _internal_fail "1. Should not have any dir"
+   fi
+
+   # 2. dir
+   mkdir "${directory}/b"
+
+   if ! dir_has_files "${directory}"
+   then
+      _internal_fail "2. Should have something"
+   fi
+   if dir_has_files "${directory}" f
+   then
+      _internal_fail "2. Should not have any file"
+   fi
+   if ! dir_has_files "${directory}" d
+   then
+      _internal_fail "2. Should not have a dir"
+   fi
+
+   rmdir "${directory}/b"
+
+   # 3. file
+
+   touch "${directory}/c"
+
+   if ! dir_has_files "${directory}"
+   then
+      _internal_fail "3. Should have something"
+   fi
+   if ! dir_has_files "${directory}" f
+   then
+      _internal_fail "3. Should have a file"
+   fi
+   if dir_has_files "${directory}" d
+   then
+      _internal_fail "3. Should not have a dir"
+   fi
+
+   # 4. file and dir
+   mkdir "${directory}/b"
+
+   if ! dir_has_files "${directory}"
+   then
+      _internal_fail "4. Should have something"
+   fi
+   if ! dir_has_files "${directory}" f
+   then
+      _internal_fail "4. Should have a file"
+   fi
+   if ! dir_has_files "${directory}" d
+   then
+      _internal_fail "4. Should have a dir"
+   fi
+
+
+   log_info "----- ALL PASSED -----"
+}
+
+
+main "$@"
+

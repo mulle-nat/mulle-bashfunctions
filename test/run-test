@@ -2,38 +2,45 @@
 
 [ "${TRACE:-}" = 'YES' ] && set -x && : "$0" "$@"
 
-###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
-MULLE_BASHFUNCTIONS_LIBEXEC_DIR="`mulle-bashfunctions libexec-dir`" || exit 1
-export MULLE_BASHFUNCTIONS_LIBEXEC_DIR
-. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-boot.sh" || exit 1
-. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions.sh" || exit 1
-###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
-
 TEST_DIR="`dirname -- "$0"`"
 PROJECT_DIR="$( cd "${TEST_DIR}/.." ; pwd -P)"
 
-MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${MULLE_BASHFUNCTIONS_LIBEXEC_DIR:-../../src}"
+MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${MULLE_BASHFUNCTIONS_LIBEXEC_DIR:-${PROJECT_DIR}/src}"
 export MULLE_BASHFUNCTIONS_LIBEXEC_DIR
 
 
 
 run_shell()
 {
-   local shell="$1"; shift
-   local script="$1" ; shift
+   shell="$1"; shift
+   script="$1" ; shift
 
-   local quote
-   local args
-
-   quote="'"
+   # shellcheck disable=SC2034
+   #
+   # Quote incoming arguments for shell expansion
+   #
    args=""
    for arg in "$@"
    do
-      arg="${arg//${quote}/${quote}\"${quote}\"${quote}}"
-      args="${args} '${arg}'"
+      # True bourne sh doesn't know ${a//b/c} and <<<
+      case "${arg}" in
+         *\'*)
+            # Use cat instead of echo to avoid possible echo -n
+            # problems. Escape single quotes in string.
+            arg="`cat <<EOF | sed -e s/\'/\'\\\"\'\\\"\'/g
+${arg}
+EOF
+`"
+         ;;
+      esac
+      if [ -z "${args}" ]
+      then
+         args="'${arg}'"
+      else
+         args="${args} '${arg}'"
+      fi
    done
 
-   local exe
 
    if exe="`command -v "${shell}"`"
    then
@@ -50,30 +57,62 @@ run_shell()
 
 main()
 {
-   local i
+   OPTION_LENIENT='NO'
+   OPTION_SHELL=
 
-   local OPTION_LENIENT='NO'
+   while [ $# -ne 0 ]
+   do
+      case "${1:-}" in
+         -l|--lenient)
+            OPTION_LENIENT=YES
+         ;;
 
-   case "${1:-}" in
-      -l|--lenient)
-         OPTION_LENIENT=YES
-         shift
-      ;;
-   esac
+         --zsh)
+            OPTION_SHELL=zsh
+         ;;
 
-   for i in "${TEST_DIR}"/*
+         --bash)
+            OPTION_SHELL=bash
+         ;;
+
+         *)
+            break
+         ;;
+      esac
+
+      shift
+   done
+
+   if [ $# -ne 0 ]
+   then
+      if [ "$1" != '--' ]
+      then
+         pattern="$1"
+      fi
+      shift
+   fi
+   pattern=${pattern:-*}
+
+   for i in "${TEST_DIR}"/${pattern}
    do
       if [ -x "$i/run-test" ]
       then
          (
             cd "$i"
-            if ! run_shell bash ./run-test "$@"
+
+            if [ -z "${OPTION_SHELL}" -o "${OPTION_SHELL}" = "bash" ]
             then
-               [ "${OPTION_LENIENT}" != 'YES' ] && exit 1
+               if ! run_shell bash ./run-test "$@"
+               then
+                  [ "${OPTION_LENIENT}" != 'YES' ] && exit 1
+               fi
             fi
-            if ! run_shell zsh ./run-test "$@"
+            if [ -z "${OPTION_SHELL}" -o "${OPTION_SHELL}" = "zsh" ]
             then
-               [ "${OPTION_LENIENT}" != 'YES' ] && exit 1
+               if ! run_shell zsh ./run-test "$@"
+               then
+                  [ "${OPTION_LENIENT}" != 'YES' ] && exit 1
+               fi
             fi
 #
 # Dash chokes on <<< as redirection. But I don't want to live without it

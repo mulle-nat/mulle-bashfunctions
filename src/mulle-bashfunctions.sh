@@ -38,6 +38,7 @@ then
    then
      setopt sh_word_split
      setopt POSIX_ARGZERO
+     set -o GLOB_SUBST        # neede for [[ $i == $pattern ]]
    fi
 
    if [ -z "${MULLE_EXECUTABLE:-}" ]
@@ -92,22 +93,36 @@ then
             fi
          ;;
       esac
+      
       MULLE_UNAME="${MULLE_UNAME%%_*}"
       MULLE_UNAME="${MULLE_UNAME%[36][24]}" # remove 32 64 (hax)
 
-      if [ "${MULLE_UNAME}" = "linux" ]
-      then
-         read -r MULLE_UNAME < /proc/sys/kernel/osrelease
-         case "${MULLE_UNAME}" in
-            *-Microsoft)
-               MULLE_UNAME="windows"
-            ;;
-  
-            *)
-               MULLE_UNAME="linux"
-            ;;
-         esac
-      fi
+      case "${MULLE_UNAME}" in 
+         linux)
+            read -r MULLE_UNAME < /proc/sys/kernel/osrelease
+            case "${MULLE_UNAME}" in
+               *-[Mm]icrosoft-*)
+                  MULLE_UNAME="windows" # wsl2, this is super slow on NTFS
+               ;;
+
+               *-[Mm]icrosoft)
+                  MULLE_UNAME="windows" # wsl1
+               ;;
+
+               *-android-*|*-android)
+                  MULLE_UNAME="android"
+               ;;
+     
+               *)
+                  MULLE_UNAME="linux"
+               ;;
+            esac
+         ;;
+
+         msys|cygwin)
+            MULLE_UNAME='msys'
+         ;;
+      esac
    fi
 
    if [ "${MULLE_UNAME}" = "windows" ]
@@ -118,7 +133,7 @@ then
    if [ -z "${MULLE_HOSTNAME:-}" ]
    then
       case "${MULLE_UNAME}" in
-         'mingw'*)
+         'mingw'|'msys'|'sunos')
             MULLE_HOSTNAME="`hostname`"
          ;;
 
@@ -259,7 +274,7 @@ then
 
       tool="${s%::*}"
 
-      local upper_tool
+      local namespace
 
       case "${s}" in
          *-*)
@@ -275,14 +290,11 @@ then
       r_concat "${namespace}" "${tool}" "-"
       tool="${RVAL}"
 
+      local upper_tool
+
       r_identifier "${tool}"
       r_uppercase "${RVAL}"
       upper_tool="${RVAL}"
-
-
-      r_identifier "${name}"
-      r_uppercase "${RVAL}"
-      upper_name="${RVAL}"
 
       _executable="${tool}"
       _filename="${tool}-${name}.sh"
@@ -536,7 +548,6 @@ alias .break="break"
 alias .continue="continue"
 
 
-
 shell_enable_extglob
 shell_enable_pipefail
 
@@ -633,9 +644,10 @@ _log_debug()
    fi
 
    case "${MULLE_UNAME}" in
-      linux)
+      'linux'|'windows')
          _log_printf "${C_DEBUG}$(date "+%s.%N") %b${C_RESET}\n" "$*"
       ;;
+
       *)
          _log_printf "${C_DEBUG}$(date "+%s") %b${C_RESET}\n" "$*"
       ;;
@@ -1850,7 +1862,6 @@ function r_escaped_grep_pattern()
    s="${s//\\/\\\\}"
    s="${s//\[/\\[}"
    s="${s//\]/\\]}"
-   s="${s//\//\\/}"
    s="${s//\$/\\$}"
    s="${s//\*/\\*}"
    s="${s//\./\\.}"
@@ -1941,6 +1952,33 @@ function string_has_suffix()
 {
   [ "${1%"$2"}" != "$1" ]
 }
+
+
+
+
+
+function r_fnv1a_32()
+{
+   local i
+   local len
+
+   i=0
+   len="${#1}"
+
+   local hash
+   local value
+
+   hash=2166136261
+   while [ $i -lt $len ]
+   do
+      printf -v value "%u" "'${1:$i:1}"
+      hash=$(( ((hash ^ (value & 0xFF)) * 16777619) & 0xFFFFFFFF ))
+      i=$(( i + 1 ))
+   done
+
+   RVAL=${hash}
+}
+
 
 
 
@@ -2181,7 +2219,6 @@ function r_resolve_symlinks()
 }
 
 
-
 function r_get_libexec_dir()
 {
    local executablepath="$1"
@@ -2209,11 +2246,14 @@ function r_get_libexec_dir()
    r_dirname "${exedirpath}"
    prefix="${RVAL}"
 
+   local is_present
 
    RVAL="${prefix}/libexec/${subdir}"
    if [ ! -f "${RVAL}/${matchfile}" ]
    then
       RVAL="${exedirpath}/src"
+   else
+      is_present="${RVAL}/${matchfile}"
    fi
 
    case "$RVAL" in
@@ -2228,6 +2268,11 @@ function r_get_libexec_dir()
          RVAL="$PWD/${RVAL}"
       ;;
    esac
+
+   if [ "${is_present}" = "${RVAL}/${matchfile}" ]
+   then
+      return 0
+   fi
 
    if [ ! -f "${RVAL}/${matchfile}" ]
    then
@@ -2374,14 +2419,14 @@ function options_technical_flags_usage()
 before_trace_fail()
 {
    [ "${MULLE_TRACE:-}" = '1848' ] || \
-      fail "option \"$1\" must be specified after -t"
+      fail "option \"$1\" must be specified after -lt"
 }
 
 
 after_trace_warning()
 {
    [ "${MULLE_TRACE:-}" = '1848' ] && \
-      log_warning "warning: ${MULLE_EXECUTABLE_FAIL_PREFIX}: $1 after -t invalidates -t"
+      log_warning "warning: ${MULLE_EXECUTABLE_FAIL_PREFIX}: $1 after -lt invalidates -lt"
 }
 
 
@@ -2506,7 +2551,6 @@ function options_technical_flags()
       ;;
 
       -tp|--trace-profile)
-            before_trace_fail "${flag}"
    
             case "${MULLE_UNAME}" in
                '')
@@ -3300,7 +3344,7 @@ function mkdir_if_missing()
       r_resolve_symlinks "$1"
       if [ ! -d "${RVAL}" ]
       then
-         fail "failed to create directory \"$1\" as a symlink is there"
+         fail "failed to create directory \"$1\" as a symlink to a file is there"
       fi
       return 0
    fi
@@ -3354,10 +3398,20 @@ rmdir_safer()
 {
    [ -z "$1" ] && _internal_fail "empty path"
 
+   [ $"PWD" = "${directory}" ] && fail "Refuse to remove PWD"
+
    if [ -d "$1" ]
    then
       r_assert_sane_path "$1"
-      exekutor chmod -R ugo+wX "${RVAL}" >&2 || fail "Failed to make \"${RVAL}\" writable"
+
+      case "${MULLE_UNAME}" in
+         'android'|'sunos')
+            exekutor chmod -R ugo+wX "${RVAL}" 2> /dev/null
+         ;;
+         *)
+            exekutor chmod -R ugo+wX "${RVAL}"  || fail "Failed to make \"${RVAL}\" writable"
+         ;;
+      esac
       exekutor rm -rf "${RVAL}"  >&2 || fail "failed to remove \"${RVAL}\""
    fi
 }
@@ -3415,7 +3469,7 @@ function merge_line_into_file()
   local line="$1"
   local filepath="$2"
 
-  if fgrep -s -q -x "${line}" "${filepath}" 2> /dev/null
+  if grep -F -q -x "${line}" "${filepath}" > /dev/null 2>&1
   then
      return
   fi
@@ -3434,7 +3488,14 @@ _remove_file_if_present()
 
    if ! rm -f "$1" 2> /dev/null
    then
-      exekutor chmod u+w "$1"  || fail "Failed to make $1 writable"
+      case "${MULLE_UNAME}" in
+         'sunos')
+            exekutor chmod u+w "$1" 2> /dev/null
+         ;;
+         *)
+            exekutor chmod u+w "$1"  || fail "Failed to make $1 writable"
+         ;;
+      esac
       exekutor rm -f "$1"      || fail "failed to remove \"$1\""
    else
       exekutor_trace "exekutor_print" rm -f "$1"
@@ -3451,6 +3512,42 @@ remove_file_if_present()
       return 0
    fi
    return 1
+}
+
+
+r_uuidgen()
+{
+   local i
+
+   local -a v
+
+   if [ ${ZSH_VERSION+x} ]
+   then
+      if [ -e "/dev/urandom" ]
+      then
+         RANDOM="`od -vAn -N4 -t u4 < /dev/urandom`"
+      else
+         if [ -e "/dev/random" ]
+         then
+            RANDOM="`od -vAn -N4 -t u4 < /dev/random`"
+         else
+            sleep 1 # need something unique between two calls
+            RANDOM="`date +%s`"
+         fi
+      fi
+   fi
+
+   for i in 1 2 3 4 5 6 7 8
+   do
+      v[$i]=$(($RANDOM+$RANDOM))
+   done
+   v[4]=$((${v[4]}|16384))
+   v[4]=$((${v[4]}&20479))
+   v[5]=$((${v[5]}|32768))
+   v[5]=$((${v[5]}&49151))
+   printf -v RVAL "%04x%04x-%04x-%04x-%04x-%04x%04x%04x" \
+                  ${v[1]} ${v[2]} ${v[3]} ${v[4]} \
+                  ${v[5]} ${v[6]} ${v[7]} ${v[8]}
 }
 
 
@@ -3499,7 +3596,14 @@ _r_make_tmp_in_dir_uuidgen()
 
    while :
    do
-      uuid="`"${UUIDGEN}"`" || _internal_fail "uuidgen failed"
+      if [ -z "${UUIDGEN}" ]
+      then
+         r_uuidgen
+         uuid="${RVAL}"
+      else
+         uuid="`${UUIDGEN}`" || fail "uuidgen failed"
+      fi
+
       RVAL="${tmpdir}/${name}-${uuid}${extension}"
 
       case "${filetype}" in
@@ -3542,16 +3646,7 @@ _r_make_tmp_in_dir()
       extension=".${extension}"
    fi 
 
-   local UUIDGEN
-
-   UUIDGEN="`command -v "uuidgen"`"
-   if [ ! -z "${UUIDGEN}" ]
-   then
-      _r_make_tmp_in_dir_uuidgen "${UUIDGEN}" "${tmpdir}" "${name}" "${filetype}" "${extension}"
-      return $?
-   fi
-
-   RVAL="`_make_tmp_in_dir_mktemp "${tmpdir}" "${name}" "${filetype}" "${extension}"`"
+   _r_make_tmp_in_dir_uuidgen "" "${tmpdir}" "${name}" "${filetype}" "${extension}"
    return $?
 }
 
@@ -3757,12 +3852,12 @@ function create_symlink()
 function modification_timestamp()
 {
    case "${MULLE_UNAME}" in
-      linux|mingw)
-         stat --printf "%Y\n" "$1"
+      macos|*bsd|dragonfly)
+         stat -f "%m" "$1"
       ;;
 
-      * )
-         stat -f "%m" "$1"
+      *)
+         stat --printf "%Y\n" "$1"
       ;;
    esac
 }
@@ -3770,7 +3865,7 @@ function modification_timestamp()
 
 function lso()
 {
-   ls -aldG "$@" | \
+   ls -ald "$@" | \
    awk '{k=0;for(i=0;i<=8;i++)k+=((substr($1,i+2,1)~/[rwx]/)*2^(8-i));if(k)printf(" %0o ",k);print }' | \
    awk '{print $1}'
 }
@@ -3780,6 +3875,18 @@ function lso()
 function file_is_binary()
 {
    local result
+
+   case "${MULLE_UNAME}" in
+      sunos)
+         result="`file "$1"`"
+         case "${result}" in
+            *\ text*|*\ script|*\ document)
+               return 1
+            ;;
+         esac
+         return 0
+      ;;
+   esac
 
    result="`file -b --mime-encoding "$1"`"
    [ "${result}" = "binary" ]
@@ -3794,7 +3901,7 @@ function file_size_in_bytes()
    fi
 
    case "${MULLE_UNAME}" in
-      darwin|*bsd)
+      darwin|*bsd|dragonfly)
          stat -f '%z' "$1"
       ;;
 
@@ -3810,6 +3917,47 @@ function dir_has_files()
 {
    local dirpath="$1"; shift
 
+   case "${MULLE_UNAME}" in
+      sunos)
+         local lines
+
+         if ! lines="`( rexekutor cd "${dirpath}" && rexekutor ls -1 ) 2> /dev/null `"
+         then
+            return 1
+         fi
+
+         local line
+
+         .foreachline line in ${lines}
+         .do
+            case "${line}" in
+               '.'|'..')
+                  .continue
+               ;;
+
+               *)
+                  case "$1" in
+                     f)
+                        [ ! -f "${dirpath}/${line}" ] && .continue
+                     ;;
+
+                     d)
+                        [ ! -d "${dirpath}/${line}" ] && .continue
+                     ;;
+
+                     l)
+                        [ ! -L "${dirpath}/${line}" ] && .continue
+                     ;;
+                  esac
+
+                  return 0
+               ;;
+            esac
+         .done
+         return 1
+      ;;
+   esac
+
    local flags
 
    case "$1" in
@@ -3820,6 +3968,11 @@ function dir_has_files()
 
       d)
          flags="-type d"
+         shift
+      ;;
+
+      l)
+         flags="-type l"
          shift
       ;;
    esac
@@ -3839,26 +3992,107 @@ function dir_has_files()
 
 function dir_list_files()
 {
-   local directory="$1" ; shift
-   local pattern="${1:-*}" ; [ $# -eq 0 ] || shift
-   local flagchar="${1:-}"
+   local directory="$1"
+   local pattern="${2:-*}"
+   local flagchars="${3:-}"
 
    [ ! -z "${directory}" ] || _internal_fail "directory is empty"
 
-   local flags
+   log_debug "flagchars=${flagchars}"
 
-   case "${flagchar}" in
-      [fdl])
-         flags="-type"$'\n'"'$1'"
-         shift
+   case "${MULLE_UNAME}" in
+      sunos)
+         local line
+         local dirpath
+         local lines
+
+         for dirpath in ${directory}
+         do
+            lines="`( cd "${dirpath}"; ls -1 ) 2> /dev/null`"
+
+            .foreachline line in ${lines}
+            .do
+               case "${line}" in
+                  '.'|'..')
+                     .continue
+                  ;;
+
+                  *)
+                     if [[ $line != ${pattern} ]]
+                     then
+                        continue
+                     fi
+
+                     local match 
+                     
+                     match='YES'
+                     if [ ! -z "${flagchars}" ]
+                     then
+                        match='NO'
+                     fi
+
+                     case "${flagchars}" in
+                        *f*)
+                           [ -f "${dirpath}/${line}" ] && match='YES'
+                        ;;
+                     esac
+                     case "${flagchars}" in
+                        *d*)
+                           [ -d "${dirpath}/${line}" ] && match='YES'
+                        ;;
+                     esac
+                     case "${flagchars}" in
+                        *l*)
+                           [ ! -L "${dirpath}/${line}" ] && match='YES'
+                        ;;
+                     esac
+
+                     if [ "${match}" = 'NO' ]
+                     then
+                        .continue
+                     fi
+                  ;;
+               esac
+               printf "%s\n" "${dirpath}/${line}"
+            .done
+         done
+
+         IFS=' '$'\t'$'\n'
+         return
       ;;
    esac
+
+
+   local flags
+
+   if [ ! -z "${flagchars}" ]
+   then
+      case "${flagchars}" in
+         *f*)
+            flags="-type f"
+         ;;
+      esac
+      case "${flagchars}" in
+         *d*)
+            r_concat "${flags}" "-type d" " -o "
+            flags="${RVAL}"
+         ;;
+      esac
+      case "${flagchars}" in
+         *l*)
+            r_concat "${flags}" "-type l"  " -o "
+            flags="${RVAL}"
+         ;;
+      esac
+
+      flags="\\( ${flags} \\)"
+   fi
 
    IFS=$'\n'
    eval_rexekutor find ${directory} -xdev \
                                     -mindepth 1 \
                                     -maxdepth 1 \
-                                    -name "'${pattern}'" \
+                                    -name "'${pattern:-*}'" \
                                     ${flags} \
                                     -print  | sort -n
    IFS=' '$'\t'$'\n'
@@ -3880,16 +4114,23 @@ function dirs_contain_same_files()
    etcdir="${etcdir%%/}"
    sharedir="${sharedir%%/}"
 
+   local DIFF
+
+   if ! DIFF="`command -v diff`"
+   then
+      fail "diff command not installed"
+   fi
+
    local etcfile
    local sharefile
    local filename 
 
-   .foreachline sharefile in `find ${sharedir}  \! -type d -print`
+   .foreachline sharefile in `find ${sharedir} \! -type d -print`
    .do
       filename="${sharefile#${sharedir}/}"
       etcfile="${etcdir}/${filename}"
 
-      if ! diff -q -b "${etcfile}" "${sharefile}" > /dev/null
+      if ! "${DIFF}" -b "${etcfile}" "${sharefile}" > /dev/null 2>&1
       then
          return 2
       fi
@@ -3921,7 +4162,7 @@ function inplace_sed()
 
 
    case "${MULLE_UNAME}" in
-      darwin|freebsd)
+      darwin|*bsd|sun*|dragonfly)
 
          while [ $# -ne 1 ]
          do

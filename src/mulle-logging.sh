@@ -186,9 +186,10 @@ _log_debug()
    fi
 
    case "${MULLE_UNAME}" in
-      linux)
+      'linux'|'windows')
          _log_printf "${C_DEBUG}$(date "+%s.%N") %b${C_RESET}\n" "$*"
       ;;
+
       *)
          _log_printf "${C_DEBUG}$(date "+%s") %b${C_RESET}\n" "$*"
       ;;

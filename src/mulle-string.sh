@@ -633,7 +633,7 @@ _find_empty_line_zsh()
 
 
 # zsh:
-# this is faster than calling fgrep externally
+# this is faster than calling grep -F externally
 # this is faster than while read line <<< lines
 # this is faster than case ${lines} in 
 #
@@ -678,7 +678,7 @@ _find_line_zsh()
 function find_line()
 {
    # bash:
-   # this is faster than calling fgrep externally
+   # this is faster than calling grep -F externally
    # this is faster than while read line <<< lines
    # this is faster than for line in lines
    #
@@ -926,7 +926,7 @@ function r_escaped_grep_pattern()
    s="${s//\\/\\\\}"
    s="${s//\[/\\[}"
    s="${s//\]/\\]}"
-   s="${s//\//\\/}"
+#   s="${s//\//\\/}"
    s="${s//\$/\\$}"
    s="${s//\*/\\*}"
    s="${s//\./\\.}"
@@ -1107,6 +1107,61 @@ function string_has_suffix()
 {
   [ "${1%"$2"}" != "$1" ]
 }
+
+
+# ####################################################################
+#                          Hash
+# ####################################################################
+#
+#
+# RESET
+# NOCOLOR
+#
+#    Hash strings with the fnv1a 32 bit hash.
+#
+# SUBTITLE Hash
+# COLOR
+#
+
+#
+# get prefix leading up to character 'c', but if 'c' is quoted deal with it
+# properly
+#
+
+#define MULLE_FNV1A_32_PRIME   0x01000193
+#define MULLE_FNV1A_64_PRIME   0x0100000001b3ULL
+#define MULLE_FNV1A_32_INIT    0x811c9dc5
+#define MULLE_FNV1A_64_INIT    0xcbf29ce484222325ULL
+
+#
+# r_fnv1a_32 <s>
+#
+#    Creates a hash integer for string and passes it back in RVAL.
+#    Example: r_fnv1a_32 "VfL Bochum 1848"
+#             echo "${RVAL}"  # expect 738118884 (decimal)
+#
+function r_fnv1a_32()
+{
+   local i
+   local len
+
+   i=0
+   len="${#1}"
+
+   local hash
+   local value
+
+   hash=2166136261
+   while [ $i -lt $len ]
+   do
+      printf -v value "%u" "'${1:$i:1}"
+      hash=$(( ((hash ^ (value & 0xFF)) * 16777619) & 0xFFFFFFFF ))
+      i=$(( i + 1 ))
+   done
+
+   RVAL=${hash}
+}
+
 
 
 # ####################################################################

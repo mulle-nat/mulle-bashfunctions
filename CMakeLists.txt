@@ -42,11 +42,12 @@ string( REPLACE ";" " " DEFAULT_SCRIPTS_STR "${DEFAULT_SCRIPTS}")
 set( ALL_SCRIPTS
 ${DEFAULT_SCRIPTS}
 "src/mulle-array.sh"
+"src/mulle-base64.sh"
 "src/mulle-case.sh"
+"src/mulle-etc.sh"
 "src/mulle-parallel.sh"
 "src/mulle-url.sh"
 "src/mulle-version.sh"
-"src/mulle-etc.sh"
 )
 string( REPLACE ";" " " ALL_SCRIPTS_STR "${ALL_SCRIPTS}")
 
@@ -67,13 +68,14 @@ set( EMBED_SCRIPTS
 "src/mulle-url.sh"
 "src/mulle-version.sh"
 "src/mulle-etc.sh"
+"src/mulle-base64.sh"
 )
 
 string( REPLACE ";" " " EMBED_SCRIPTS_STR "${EMBED_SCRIPTS}")
 
 execute_process( COMMAND bash -c "[ ! -f \"src/mulle-bashfunctions-embed.sh\" ] || chmod a+w \"src/mulle-bashfunctions-embed.sh\""
                  WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
-execute_process( COMMAND bash -c "cat src/embed-header.sh ; egrep -h -v \"^#|^\ *#\" ${EMBED_SCRIPTS_STR}; cat src/embed-footer.sh"
+execute_process( COMMAND bash -c "cat src/embed-header.sh ; grep -E -h -v \"^#|^\ *#\" ${EMBED_SCRIPTS_STR}; cat src/embed-footer.sh"
                  WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
                  OUTPUT_FILE "src/mulle-bashfunctions-embed.sh")
 execute_process( COMMAND chmod a-w "src/mulle-bashfunctions-embed.sh"
@@ -88,7 +90,7 @@ execute_process( COMMAND chmod a-w "src/mulle-bashfunctions-embed.sh"
 
 execute_process( COMMAND bash -c "[ ! -f \"src/mulle-bashfunctions-none.sh\" ] || chmod a+w \"src/mulle-bashfunctions-none.sh\""
                  WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
-execute_process( COMMAND bash -c "cat src/header.sh ; egrep -h -v \"^#|^\ *#\" ${NONE_SCRIPTS_STR}"
+execute_process( COMMAND bash -c "cat src/header.sh ; grep -E -h -v \"^#|^\ *#\" ${NONE_SCRIPTS_STR}"
                  WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
                  OUTPUT_FILE "src/mulle-bashfunctions-none.sh")
 execute_process( COMMAND chmod a-w "src/mulle-bashfunctions-none.sh"
@@ -96,7 +98,7 @@ execute_process( COMMAND chmod a-w "src/mulle-bashfunctions-none.sh"
 
 execute_process( COMMAND bash -c "[ ! -f \"src/mulle-bashfunctions.sh\" ] || chmod a+w \"src/mulle-bashfunctions.sh\""
                  WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
-execute_process( COMMAND bash -c "cat src/header.sh ; egrep -h -v \"^#|^\ *#\" ${DEFAULT_SCRIPTS_STR}"
+execute_process( COMMAND bash -c "cat src/header.sh ; grep -E -h -v \"^#|^\ *#\" ${DEFAULT_SCRIPTS_STR}"
                  WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
                  OUTPUT_FILE "src/mulle-bashfunctions.sh")
 execute_process( COMMAND chmod a-w "src/mulle-bashfunctions.sh"
@@ -104,7 +106,7 @@ execute_process( COMMAND chmod a-w "src/mulle-bashfunctions.sh"
 
 execute_process( COMMAND bash -c "[ ! -f \"src/mulle-bashfunctions-minimal.sh\" ] || chmod a+w \"src/mulle-bashfunctions-minimal.sh\""
                  WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
-execute_process( COMMAND bash -c "cat src/header.sh ; egrep -h -v \"^#|^\ *#\" ${MINIMAL_SCRIPTS_STR}"
+execute_process( COMMAND bash -c "cat src/header.sh ; grep -E -h -v \"^#|^\ *#\" ${MINIMAL_SCRIPTS_STR}"
                  WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
                  OUTPUT_FILE "src/mulle-bashfunctions-minimal.sh")
 execute_process( COMMAND chmod a-w "src/mulle-bashfunctions-minimal.sh"
@@ -112,7 +114,7 @@ execute_process( COMMAND chmod a-w "src/mulle-bashfunctions-minimal.sh"
 
 execute_process( COMMAND bash -c "[ ! -f \"src/mulle-bashfunctions-all.sh\" ] || chmod a+w \"src/mulle-bashfunctions-all.sh\""
                  WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
-execute_process( COMMAND bash -c "cat src/header.sh ; egrep -h -v \"^#|^\ *#\" ${ALL_SCRIPTS_STR}"
+execute_process( COMMAND bash -c "cat src/header.sh ; grep -E -h -v \"^#|^\ *#\" ${ALL_SCRIPTS_STR}"
                  WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
                  OUTPUT_FILE "src/mulle-bashfunctions-all.sh")
 execute_process( COMMAND chmod a-w "src/mulle-bashfunctions-all.sh"
@@ -169,7 +171,7 @@ DESTINATION "libexec/mulle-bashfunctions/${PROJECT_VERSION}")
 
 
 install( DIRECTORY ${MULLE_SDE_EXTENSION_DIRS}
-DESTINATION "share/mulle-sde/mulle-nat"
+DESTINATION "share/mulle-sde/extensions/mulle-nat"
 USE_SOURCE_PERMISSIONS
 PATTERN "*._DS_Store" EXCLUDE)
 

@@ -89,7 +89,7 @@ very_short_sleep()
    us="0.${us:-0001}"
    us="${us%%0}"
    case "${MULLE_UNAME}" in 
-      darwin)
+      darwin|*bsd|dragonfly)
       ;;
 
       *)
@@ -112,20 +112,23 @@ r_get_core_count()
    if ! [ ${MULLE_CORES+x} ]
    then
       # Linux (absolute path for restricted environments)
-      MULLE_CORES="`/usr/bin/nproc 2> /dev/null`"
+      MULLE_CORES="`PATH="$PATH:/usr/sbin:/sbin" nproc 2> /dev/null`"
       if [ -z "${MULLE_CORES}" ]
       then
          # Apple (absolute path for restricted environments)
-         MULLE_CORES="`/usr/sbin/sysctl -n hw.ncpu 2> /dev/null`"
+         MULLE_CORES="`PATH="$PATH:/usr/sbin:/sbin" sysctl -n hw.ncpu 2> /dev/null`"
       fi
 
       if [ -z "${MULLE_CORES}" ]
       then
          MULLE_CORES=4
          log_verbose "Unknown core count, setting it to 4 as default"
+         return 2
       fi
    fi
+
    RVAL=${MULLE_CORES}
+   return 0
 }
 
 
@@ -186,11 +189,11 @@ wait_for_available_job()
 get_current_load_average()
 {
    case "${MULLE_UNAME}" in
-      freebsd|darwin)
+      'freebsd'|'darwin')
          sysctl -n vm.loadavg | sed -n -e 's/.*{[ ]*\([0-9]*\).*/\1/p'
       ;;
 
-      mingw)
+      'mingw'|'msys')
          echo "7"  # no way to know
       ;;
 

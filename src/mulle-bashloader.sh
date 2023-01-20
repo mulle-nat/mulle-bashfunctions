@@ -159,7 +159,7 @@ then
       # here we are in "tool::file" (mulle) and "tool::file" "my"
       tool="${s%::*}"
 
-      local upper_tool
+      local namespace
 
       case "${s}" in
          *-*)
@@ -175,14 +175,11 @@ then
       r_concat "${namespace}" "${tool}" "-"
       tool="${RVAL}"
 
+      local upper_tool
+
       r_identifier "${tool}"
       r_uppercase "${RVAL}"
       upper_tool="${RVAL}"
-
-
-      r_identifier "${name}"
-      r_uppercase "${RVAL}"
-      upper_name="${RVAL}"
 
       _executable="${tool}"
       _filename="${tool}-${name}.sh"

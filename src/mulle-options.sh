@@ -186,14 +186,14 @@ function options_technical_flags_usage()
 before_trace_fail()
 {
    [ "${MULLE_TRACE:-}" = '1848' ] || \
-      fail "option \"$1\" must be specified after -t"
+      fail "option \"$1\" must be specified after -lt"
 }
 
 
 after_trace_warning()
 {
    [ "${MULLE_TRACE:-}" = '1848' ] && \
-      log_warning "warning: ${MULLE_EXECUTABLE_FAIL_PREFIX}: $1 after -t invalidates -t"
+      log_warning "warning: ${MULLE_EXECUTABLE_FAIL_PREFIX}: $1 after -lt invalidates -lt"
 }
 
 
@@ -346,7 +346,7 @@ function options_technical_flags()
 #            # can't trap global exit from within function :(
 #            MULLE_RUN_ZPROF_ON_EXIT="YES"
 #         else
-            before_trace_fail "${flag}"
+#            before_trace_fail "${flag}"
    
             case "${MULLE_UNAME}" in
                '')

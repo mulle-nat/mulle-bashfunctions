@@ -492,12 +492,28 @@ MULLE_HOSTNAME=\"${MULLE_HOSTNAME}\"
 MULLE_UNAME=\"${MULLE_UNAME}\""
       ;;
 
-      path)
-         local format
+      embed)
+         mulle_bashfunctions_embed "$@" | mulle_boot_embed "$@"
+      ;;
 
-         [ $# -ne 0 ] && format="-$1"
+      functions)
+         list_functions "$@" || exit 1
+      ;;
 
-         echo "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions${format}.sh"
+      hostname)
+         printf "%s\n" "${MULLE_HOSTNAME}"
+      ;;
+
+      init|script)
+         fail "Use mulle-sde add --extension \"mulle-nat/file.sh\" instead"
+      ;;
+
+      libexec-dir)
+         printf "%s\n" "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}"
+      ;;
+
+      libraries)
+         list_libraries "$@" || exit 1
       ;;
 
       load)
@@ -518,44 +534,49 @@ export MULLE_UNAME ;
 "
       ;;
 
-      embed)
-         mulle_bashfunctions_embed "$@" | mulle_boot_embed "$@"
+      ncores)
+         include "path"
+         include "file"
+         include "parallel"
+
+         r_get_core_count
+         printf "%s\n" "${RVAL}"
       ;;
 
-      init|script)
-         fail "Use mulle-sde add --extension \"mulle-nat/file.sh\" instead"
+      path)
+         local format
+
+         [ $# -ne 0 ] && format="-$1"
+
+         echo "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions${format}.sh"
       ;;
 
-      username)
-         printf "%s\n" "${MULLE_USERNAME}"
-      ;;
-
-      hostname)
-         printf "%s\n" "${MULLE_HOSTNAME}"
-      ;;
-
-      libexec-dir)
-         printf "%s\n" "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}"
-      ;;
-
-      versions)
-         list_versions "$@" || exit 1
-      ;;
-
-      functions)
-         list_functions "$@" || exit 1
-      ;;
-
-      libraries)
-         list_libraries "$@" || exit 1
+      shell)
+         printf "%s\n" `ps -h -o cmd -p $$ | awk '{ print $1 }'`
       ;;
 
       uname)
          printf "%s\n" "${MULLE_UNAME}"
       ;;
 
+      username)
+         printf "%s\n" "${MULLE_USERNAME}"
+      ;;
+
+      uuid)
+         include "path"
+         include "file"
+
+         r_uuidgen
+         printf "%s\n" "${RVAL}"
+      ;;
+
       version)
          printf "%s\n" "${MULLE_BASHFUNCTIONS_VERSION}"
+      ;;
+
+      versions)
+         list_versions "$@" || exit 1
       ;;
 
       *)

@@ -1,0 +1,79 @@
+#! /bin/sh
+
+[ "${TRACE}" = 'YES' ] && set -x && : "$0" "$@"
+
+###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
+MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${MULLE_BASHFUNCTIONS_LIBEXEC_DIR:-`mulle-bashfunctions libexec-dir`}" || exit 1
+
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-boot.sh"          || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashglobal.sh"    || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-compatibility.sh" || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-logging.sh"       || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-options.sh"       || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-string.sh"        || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-path.sh"          || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-exekutor.sh"      || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-file.sh"          || exit 1
+###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
+
+
+main()
+{
+   _options_mini_main "$@" && set -x
+
+   local a
+   local b
+
+   r_uuidgen
+   a="${RVAL}"
+
+   if [ -z "${a}" ]
+   then
+      _internal_fail "Empty uuid"
+   fi
+
+   if [ ${#a} -ne 36 ]
+   then
+      _internal_fail "Malformed uuid \"$a\""
+   fi
+
+   case "${a}" in
+      [0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]-\
+[0-9a-f][0-9a-f][0-9a-f][0-9a-f]-[0-9a-f][0-9a-f][0-9a-f][0-9a-f]-\
+[0-9a-f][0-9a-f][0-9a-f][0-9a-f]-\
+[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f])
+      ;;
+      *)
+         _internal_fail "Malformed uuid \"$a\""
+      ;;
+   esac
+
+   i=0
+   while [ $i -lt 1000 ]
+   do
+      r_uuidgen
+      b="${RVAL}"
+
+      case "${b}" in
+         [0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]-\
+[0-9a-f][0-9a-f][0-9a-f][0-9a-f]-[0-9a-f][0-9a-f][0-9a-f][0-9a-f]-\
+[0-9a-f][0-9a-f][0-9a-f][0-9a-f]-\
+[0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f])
+         ;;
+         *)
+            _internal_fail "Malformed uuid \"$b\""
+         ;;
+      esac
+
+      if [ "${a}" = "${b}" ]
+      then
+         _internal_fail "Not unique"
+      fi
+      i=$(( i + 1))
+   done
+   log_info "----- ALL PASSED -----"
+}
+
+
+main "$@"
+

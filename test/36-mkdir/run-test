@@ -1,0 +1,73 @@
+#! /bin/sh
+
+[ "${TRACE}" = 'YES' ] && set -x && : "$0" "$@"
+
+###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
+MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${MULLE_BASHFUNCTIONS_LIBEXEC_DIR:-`mulle-bashfunctions libexec-dir`}" || exit 1
+
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-boot.sh"          || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashglobal.sh"    || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-compatibility.sh" || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-logging.sh"       || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-options.sh"       || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-string.sh"        || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-path.sh"          || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-exekutor.sh"      || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-file.sh"          || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-init.sh"          || exit 1
+
+###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
+
+main()
+{
+   _options_mini_main "$@" && set -x
+
+
+   local directory
+
+   r_make_tmp_directory
+   directory="${RVAL}"
+
+   mkdir_if_missing "${directory}"/x
+   mkdir_if_missing "${directory}"/x
+
+   touch "${directory}"/y
+   (
+      mkdir_if_missing "${directory}"/y
+   )
+   if [ $? -eq 0 ]
+   then
+      _internal_fail "${directory}/y should have failed"
+   else
+      log_info "Failed as expected"
+   fi
+
+   ln -s "${directory}"/x "${directory}"/z
+   (
+      mkdir_if_missing "${directory}"/z
+   )
+   if [ $? -ne 0 ]
+   then
+      _internal_fail "${directory}/z should have succeeded as symlink is ok"
+   fi
+
+   ln -s "${directory}"/y "${directory}"/zz
+   (
+      mkdir_if_missing "${directory}"/zz
+   )
+   if [ $? -eq 0 ]
+   then
+      _internal_fail "${directory}/zz should have failed"
+   else
+      log_info "Failed as expected"
+   fi
+
+   log_info "----- ALL PASSED -----"
+
+   cd ..
+   rmdir_safer "${directory}"
+}
+
+
+main "$@"
+

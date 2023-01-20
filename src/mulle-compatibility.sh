@@ -334,7 +334,6 @@ fi
 alias .break="break"
 alias .continue="continue"
 
-
 #
 # extglob is enabled by default now. I see no real downside
 # noglob would be another good default for scripting, but that's possibly

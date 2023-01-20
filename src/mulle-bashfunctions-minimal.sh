@@ -38,6 +38,7 @@ then
    then
      setopt sh_word_split
      setopt POSIX_ARGZERO
+     set -o GLOB_SUBST        # neede for [[ $i == $pattern ]]
    fi
 
    if [ -z "${MULLE_EXECUTABLE:-}" ]
@@ -92,22 +93,36 @@ then
             fi
          ;;
       esac
+      
       MULLE_UNAME="${MULLE_UNAME%%_*}"
       MULLE_UNAME="${MULLE_UNAME%[36][24]}" # remove 32 64 (hax)
 
-      if [ "${MULLE_UNAME}" = "linux" ]
-      then
-         read -r MULLE_UNAME < /proc/sys/kernel/osrelease
-         case "${MULLE_UNAME}" in
-            *-Microsoft)
-               MULLE_UNAME="windows"
-            ;;
-  
-            *)
-               MULLE_UNAME="linux"
-            ;;
-         esac
-      fi
+      case "${MULLE_UNAME}" in 
+         linux)
+            read -r MULLE_UNAME < /proc/sys/kernel/osrelease
+            case "${MULLE_UNAME}" in
+               *-[Mm]icrosoft-*)
+                  MULLE_UNAME="windows" # wsl2, this is super slow on NTFS
+               ;;
+
+               *-[Mm]icrosoft)
+                  MULLE_UNAME="windows" # wsl1
+               ;;
+
+               *-android-*|*-android)
+                  MULLE_UNAME="android"
+               ;;
+     
+               *)
+                  MULLE_UNAME="linux"
+               ;;
+            esac
+         ;;
+
+         msys|cygwin)
+            MULLE_UNAME='msys'
+         ;;
+      esac
    fi
 
    if [ "${MULLE_UNAME}" = "windows" ]
@@ -118,7 +133,7 @@ then
    if [ -z "${MULLE_HOSTNAME:-}" ]
    then
       case "${MULLE_UNAME}" in
-         'mingw'*)
+         'mingw'|'msys'|'sunos')
             MULLE_HOSTNAME="`hostname`"
          ;;
 
@@ -259,7 +274,7 @@ then
 
       tool="${s%::*}"
 
-      local upper_tool
+      local namespace
 
       case "${s}" in
          *-*)
@@ -275,14 +290,11 @@ then
       r_concat "${namespace}" "${tool}" "-"
       tool="${RVAL}"
 
+      local upper_tool
+
       r_identifier "${tool}"
       r_uppercase "${RVAL}"
       upper_tool="${RVAL}"
-
-
-      r_identifier "${name}"
-      r_uppercase "${RVAL}"
-      upper_name="${RVAL}"
 
       _executable="${tool}"
       _filename="${tool}-${name}.sh"
@@ -536,7 +548,6 @@ alias .break="break"
 alias .continue="continue"
 
 
-
 shell_enable_extglob
 shell_enable_pipefail
 
@@ -633,9 +644,10 @@ _log_debug()
    fi
 
    case "${MULLE_UNAME}" in
-      linux)
+      'linux'|'windows')
          _log_printf "${C_DEBUG}$(date "+%s.%N") %b${C_RESET}\n" "$*"
       ;;
+
       *)
          _log_printf "${C_DEBUG}$(date "+%s") %b${C_RESET}\n" "$*"
       ;;
@@ -1850,7 +1862,6 @@ function r_escaped_grep_pattern()
    s="${s//\\/\\\\}"
    s="${s//\[/\\[}"
    s="${s//\]/\\]}"
-   s="${s//\//\\/}"
    s="${s//\$/\\$}"
    s="${s//\*/\\*}"
    s="${s//\./\\.}"
@@ -1941,6 +1952,33 @@ function string_has_suffix()
 {
   [ "${1%"$2"}" != "$1" ]
 }
+
+
+
+
+
+function r_fnv1a_32()
+{
+   local i
+   local len
+
+   i=0
+   len="${#1}"
+
+   local hash
+   local value
+
+   hash=2166136261
+   while [ $i -lt $len ]
+   do
+      printf -v value "%u" "'${1:$i:1}"
+      hash=$(( ((hash ^ (value & 0xFF)) * 16777619) & 0xFFFFFFFF ))
+      i=$(( i + 1 ))
+   done
+
+   RVAL=${hash}
+}
+
 
 
 
@@ -2181,7 +2219,6 @@ function r_resolve_symlinks()
 }
 
 
-
 function r_get_libexec_dir()
 {
    local executablepath="$1"
@@ -2209,11 +2246,14 @@ function r_get_libexec_dir()
    r_dirname "${exedirpath}"
    prefix="${RVAL}"
 
+   local is_present
 
    RVAL="${prefix}/libexec/${subdir}"
    if [ ! -f "${RVAL}/${matchfile}" ]
    then
       RVAL="${exedirpath}/src"
+   else
+      is_present="${RVAL}/${matchfile}"
    fi
 
    case "$RVAL" in
@@ -2228,6 +2268,11 @@ function r_get_libexec_dir()
          RVAL="$PWD/${RVAL}"
       ;;
    esac
+
+   if [ "${is_present}" = "${RVAL}/${matchfile}" ]
+   then
+      return 0
+   fi
 
    if [ ! -f "${RVAL}/${matchfile}" ]
    then
@@ -2374,14 +2419,14 @@ function options_technical_flags_usage()
 before_trace_fail()
 {
    [ "${MULLE_TRACE:-}" = '1848' ] || \
-      fail "option \"$1\" must be specified after -t"
+      fail "option \"$1\" must be specified after -lt"
 }
 
 
 after_trace_warning()
 {
    [ "${MULLE_TRACE:-}" = '1848' ] && \
-      log_warning "warning: ${MULLE_EXECUTABLE_FAIL_PREFIX}: $1 after -t invalidates -t"
+      log_warning "warning: ${MULLE_EXECUTABLE_FAIL_PREFIX}: $1 after -lt invalidates -lt"
 }
 
 
@@ -2506,7 +2551,6 @@ function options_technical_flags()
       ;;
 
       -tp|--trace-profile)
-            before_trace_fail "${flag}"
    
             case "${MULLE_UNAME}" in
                '')

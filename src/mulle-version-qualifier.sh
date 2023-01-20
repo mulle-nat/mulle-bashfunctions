@@ -2,8 +2,8 @@
 # shellcheck disable=SC2236
 # shellcheck disable=SC2166
 # shellcheck disable=SC2006
-# shellcheck disable=SC2196 # egrep
-# shellcheck disable=SC2197 # fgrep
+# shellcheck disable=SC2196 # grep -E
+# shellcheck disable=SC2197 # grep -F
 #
 #   Copyright (c) 2017 Nat! - Mulle kybernetiK
 #   All rights reserved.
@@ -79,7 +79,7 @@ _versions_find_next()
    #
    # If ours is not in there yet, plop it in
    #
-   if ! fgrep -q -s -x "${version}" <<< "${versions}"
+   if ! grep -F -q -s -x "${version}" <<< "${versions}"
    then
       r_add_line "${versions}" "${version}"
       versions="${RVAL}"
@@ -112,7 +112,7 @@ _versions_operation()
 
    case "${operation}" in
       '>=')
-         fgrep -x "${version}" <<< "${versions}"
+         grep -F -x "${version}" <<< "${versions}"
          _versions_find_next "${versions}" "${version}"
       ;;
 
@@ -122,7 +122,7 @@ _versions_operation()
 
       '<=')
          _versions_find_next "${versions}" "${version}" "r" | _versions_sort
-         fgrep -x "${version}" <<< "${versions}"
+         grep -F -x "${version}" <<< "${versions}"
       ;;
 
       '<')
@@ -130,12 +130,12 @@ _versions_operation()
       ;;
 
       '==')
-         fgrep -x "${version}" <<< "${versions}"
+         grep -F -x "${version}" <<< "${versions}"
       ;;
 
       '!=')
          _versions_sort <<< "${versions}"  | \
-            fgrep -x -v "${version}" | \
+            grep -F -x -v "${version}" | \
             "${_choose}" -1
       ;;
 
@@ -233,7 +233,7 @@ _r_versions_qualify_i()
       [Aa][Nn][Dd]*)
          _s="${_s:3}"
          r_versions_qualify "${versions}"
-         RVAL="`fgrep -x -f <( echo "${result}") <<< "${RVAL}" `"
+         RVAL="`grep -F -x -f <( echo "${result}") <<< "${RVAL}" `"
          return 0
       ;;
 
@@ -382,7 +382,7 @@ versions_filter()
 #    r_escaped_grep_pattern "${version}"
 #    pattern="^${RVAL}$|[a-zA-Z_-]${RVAL}\$"
 #
-#    egrep "${pattern}" <<< "${tags}" | head -1
+#    grep -E "${pattern}" <<< "${tags}" | head -1
 # }
 #
 #

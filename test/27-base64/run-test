@@ -1,0 +1,96 @@
+#! /bin/sh
+
+[ "${TRACE}" = 'YES' ] && set -x && : "$0" "$@"
+
+###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
+MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${MULLE_BASHFUNCTIONS_LIBEXEC_DIR:-`mulle-bashfunctions libexec-dir`}" || exit 1
+
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-boot.sh"          || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashglobal.sh"    || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-compatibility.sh" || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-logging.sh"       || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-options.sh"       || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-string.sh"        || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-path.sh"          || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-exekutor.sh"      || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-file.sh"          || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-base64.sh"        || exit 1
+###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
+
+
+r_test_encode()
+{
+   local s="$1"
+
+   local result
+   local expected
+
+   r_mulle_base64_encode_string 0 "${s}"
+   result="${RVAL}"
+
+   expected="`mulle_base64 -w 0 <<< "${s}"`"
+   if [ "${result}" != "${expected}" ]
+   then
+      _internal_fail "String \"${s}\" failed to encode as \"${expected}\" but got \"${result}\""
+   fi
+
+   RVAL="${expected}"
+}
+
+
+r_test_decode()
+{
+   local s="$1"
+
+   local result
+   local expected
+
+   r_mulle_base64_decode_string "${s}"
+   result="${RVAL}"
+
+   expected="`mulle_base64 -d <<< "${s}"`"
+   if [ "${result}" != "${expected}" ]
+   then
+      _internal_fail "String \"${s}\" failed to decode into \"${expected}\" but got \"${result}\""
+   fi
+
+   RVAL="${expected}"
+}
+
+
+test_encode_decode()
+{
+   r_test_encode "$1"
+   r_test_decode "${RVAL}"
+   if [ "${RVAL}" != "${1}" ]
+   then
+      _internal_fail "String \"${1}\" failed to en- and decode but got \"${RVAL}\""
+   fi
+}
+
+
+main()
+{
+   _options_mini_main "$@" && set -x
+
+   MULLE_UNAME=openbsd
+   export MULLE_UNAME
+
+   test_encode_decode  ""
+#   test_encode_decode  "a"
+#   test_encode_decode  "ab"
+#   test_encode_decode  "abc"
+#   test_encode_decode  "abcd"
+#   test_encode_decode  "abcde"
+#   test_encode_decode  "abcdef"
+#   test_encode_decode  "abcdefg"
+#   test_encode_decode  "abcdefgh"
+
+   test_encode_decode  "VfL Bochum 1848"
+
+   log_info "----- ALL PASSED -----"
+}
+
+
+main "$@"
+

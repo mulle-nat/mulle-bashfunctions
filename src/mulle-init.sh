@@ -136,7 +136,6 @@ function r_resolve_symlinks()
 }
 
 
-
 #
 # r_get_libexec_dir <executablepath> <subdir> <matchfile>
 #
@@ -177,11 +176,14 @@ function r_get_libexec_dir()
    prefix="${RVAL}"
 
    # now setup the global variable
+   local is_present
 
    RVAL="${prefix}/libexec/${subdir}"
    if [ ! -f "${RVAL}/${matchfile}" ]
    then
       RVAL="${exedirpath}/src"
+   else
+      is_present="${RVAL}/${matchfile}"
    fi
 
    case "$RVAL" in
@@ -196,6 +198,12 @@ function r_get_libexec_dir()
          RVAL="$PWD/${RVAL}"
       ;;
    esac
+
+   # small speed up on slow WSL
+   if [ "${is_present}" = "${RVAL}/${matchfile}" ]
+   then
+      return 0
+   fi
 
    if [ ! -f "${RVAL}/${matchfile}" ]
    then
