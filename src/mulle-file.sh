@@ -34,7 +34,7 @@
 #
 if ! [ ${MULLE_FILE_SH+x} ]
 then
-MULLE_FILE_SH="included"
+MULLE_FILE_SH='included'
 
 [ -z "${MULLE_BASHGLOBAL_SH}" ] && _fatal "mulle-bashglobal.sh must be included before mulle-file.sh"
 [ -z "${MULLE_PATH_SH}" ]       && _fatal "mulle-path.sh must be included before mulle-file.sh"
@@ -489,7 +489,7 @@ function r_make_tmp()
 
 
 #
-# r_make_tmp <name>
+# r_make_tmp_file <name>
 #
 #    Create a temporary file.
 #    You can leave name empty, in which case the name of the script will

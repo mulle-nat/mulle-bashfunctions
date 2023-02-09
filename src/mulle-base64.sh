@@ -387,7 +387,7 @@ mulle_base64()
    do
       case "$1" in
          -d|--decode)
-            decode="YES"
+            decode='YES'
          ;;
 
          -i)

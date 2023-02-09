@@ -30,7 +30,7 @@
 
 if ! [ ${MULLE_BASHGLOBAL_SH+x} ]
 then
-   MULLE_BASHGLOBAL_SH="included"
+   MULLE_BASHGLOBAL_SH='included'
 
    DEFAULT_IFS="${IFS}" # as early as possible
 
@@ -161,7 +161,7 @@ fi
 
 if ! [ ${MULLE_BASHLOADER_SH+x} ]
 then
-   MULLE_BASHLOADER_SH="included"
+   MULLE_BASHLOADER_SH='included'
 
    r_uppercase()
    {
@@ -231,7 +231,7 @@ then
 
        . "${RVAL}" || exit 1
 
-      printf -v "${includeguard}" "YES"
+      printf -v "${includeguard}" 'YES'
    }
 
    __parse_include_specifier()
@@ -343,7 +343,7 @@ then
 fi
 if ! [ ${MULLE_COMPATIBILITY_SH+x} ]
 then
-MULLE_COMPATIBILITY_SH="included"
+MULLE_COMPATIBILITY_SH='included'
 
 
 function shell_enable_pipefail()
@@ -555,7 +555,7 @@ fi
 :
 if ! [ ${MULLE_LOGGING_SH+x} ]
 then
-MULLE_LOGGING_SH="included"
+MULLE_LOGGING_SH='included'
 
 
 
@@ -885,6 +885,10 @@ logging_initialize_color()
       C_CYAN="\033[0;36m"
 
       C_BR_RED="\033[0;91m"
+      C_BR_GREEN="\033[0;92m"
+      C_BR_BLUE="\033[0;94m"
+      C_BR_CYAN="\033[0;96m"
+      C_BR_MAGENTA="\033[0;95m"
       C_BOLD="\033[1m"
       C_FAINT="\033[2m"
       C_SPECIAL_BLUE="\033[38;5;39;40m"
@@ -923,7 +927,7 @@ fi
 :
 if ! [ ${MULLE_EXEKUTOR_SH+x} ]
 then
-MULLE_EXEKUTOR_SH="included"
+MULLE_EXEKUTOR_SH='included'
 
 [ -z "${MULLE_LOGGING_SH}" ] && \
    echo "mulle-logging.sh must be included before mulle-exekutor.sh" 2>&1 && exit 1
@@ -1317,7 +1321,7 @@ fi
 :
 if ! [ ${MULLE_STRING_SH+x} ]
 then
-MULLE_STRING_SH="included"
+MULLE_STRING_SH='included'
 
 [ -z "${MULLE_BASHGLOBAL_SH}" ]    && _fatal "mulle-bashglobal.sh must be included before mulle-file.sh"
 [ -z "${MULLE_COMPATIBILITY_SH}" ] && _fatal "mulle-compatibility.sh must be included before mulle-string.sh"
@@ -1884,6 +1888,7 @@ function r_escaped_sed_pattern()
    s="${s//\*/\\*}"
    s="${s//\./\\.}"
    s="${s//\^/\\^}"
+   s="${s//$'\n'/\\$'\n'}" # assume
 
    RVAL="$s"
 }
@@ -1896,6 +1901,7 @@ function r_escaped_sed_replacement()
    s="${s//\\/\\\\}"
    s="${s//\//\\/}"
    s="${s//&/\\&}"
+   s="${s//$'\n'/\\$'\n'}"
 
    RVAL="$s"
 }
@@ -1978,6 +1984,7 @@ function r_fnv1a_32()
 
    RVAL=${hash}
 }
+
 
 
 
@@ -2141,7 +2148,7 @@ fi
 :
 if ! [ ${MULLE_INIT_SH+x} ]
 then
-MULLE_INIT_SH="included"
+MULLE_INIT_SH='included'
 
 [ -z "${MULLE_STRING_SH}" ] && _fatal "mulle-string.sh must be included before mulle-init.sh"
 
@@ -2248,7 +2255,7 @@ function r_get_libexec_dir()
 
    local is_present
 
-   RVAL="${prefix}/libexec/${subdir}"
+   RVAL="${prefix}/${MULLE_BASHFUNCTIONS_LIBEXEC_DIRNAME:-libexec}/${subdir}"
    if [ ! -f "${RVAL}/${matchfile}" ]
    then
       RVAL="${exedirpath}/src"
@@ -2318,7 +2325,7 @@ fi
 :
 if ! [ ${MULLE_OPTIONS_SH+x} ]
 then
-MULLE_OPTIONS_SH="included"
+MULLE_OPTIONS_SH='included'
 
 [ -z "${MULLE_LOGGING_SH}" ] && _fatal "mulle-logging.sh must be included before mulle-options.sh"
 
@@ -2699,7 +2706,7 @@ fi
 :
 if ! [ ${MULLE_PATH_SH+x} ]
 then
-MULLE_PATH_SH="included"
+MULLE_PATH_SH='included'
 
 [ -z "${MULLE_STRING_SH}" ] && _fatal "mulle-string.sh must be included before mulle-path.sh"
 
@@ -3311,7 +3318,7 @@ fi
 :
 if ! [ ${MULLE_FILE_SH+x} ]
 then
-MULLE_FILE_SH="included"
+MULLE_FILE_SH='included'
 
 [ -z "${MULLE_BASHGLOBAL_SH}" ] && _fatal "mulle-bashglobal.sh must be included before mulle-file.sh"
 [ -z "${MULLE_PATH_SH}" ]       && _fatal "mulle-path.sh must be included before mulle-file.sh"

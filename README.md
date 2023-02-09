@@ -1,102 +1,24 @@
 # 🥊 mulle-bashfunctions, a collection of shell functions
 
-![Last version](https://img.shields.io/github/tag/mulle-nat/mulle-bashfunctions.svg)
-
 This is a shell function library used by a lot of mulle tools. It is
 compatible with bash v3.2+ and zsh 5+. Use mulle-bashfunctions to develop more
 featureful scripts that work on multiple platforms. This library has been
 tested on **Debian**, **FreeBSD**, **macOS**, **Manjaro**, **MinGW**,
 **NetBSD**, **OpenBSD**, **Solaris**, **Ubuntu**.
 
-### Features
+| Release Version                                       | Release Notes
+|-------------------------------------------------------|--------------
+| ![Mulle kybernetiK tag](https://img.shields.io/github/tag/mulle-nat/mulle-bashfunctions.svg?branch=release) [![Build Status](https://github.com/mulle-nat/mulle-bashfunctions/workflows/CI/badge.svg?branch=release)](//github.com/mulle-nat/mulle-bashfunctions/actions)| [RELEASENOTES](RELEASENOTES.md) |
 
-* Execution control, trace external commands without executing them
-* Various string functions, like escaping, case conversion, searching
-* Various file functions with an emphasis on safety
-* Extensive major.minor.patch version support
-* A URL parser, base64 support and UUID generation
-* Support for parallel execution of multiple tasks
-* Logging with color or without
-* Parsing of common command flags
-* A common framework for initializing a script with subscripts
-
+## Executables
 
 | Executable            | Description
 |-----------------------|--------------------------------
 | `mulle-bash`          | Shell executor as a replacement for `#! /bin/sh`
-| `mulle-bashfunctions` | Find the location of the mulle-bashfunctions library
+| `mulle-bashfunctions` | Include support, documentation and more
 
 
-## Install
-
-The command to install the latest mulle-bashfunctions into `/usr` with sudo
-is:
-
-``` sh
-curl -L 'https://github.com/mulle-nat/mulle-bashfunctions/archive/latest.tar.gz' \
- | tar xfz - && cd 'mulle-bashfunctions-latest' && sudo ./bin/installer /usr
-```
-
-### Packages
-
-| OS    | Command
-|-------|------------------------------------
-| macos | `brew install mulle-kybernetik/software/mulle-bashfunctions`
-
-
-## Usage
-
-With `mulle-sde` installed add, you can get yourself a nice starter script:
-
-``` bash
-mulle-sde add my-script-name.sh
-mulle-sde add --file-extension sh my-script-name # no .sh extension
-```
-
-Or starting from scratch, put as the first lines of your shell script:
-
-``` bash
-#! /usr/bin/env mulle-bash
-# shellcheck shell=bash
-```
-
-This will start your script with the default `mulle-bashfunctions.sh`
-preloaded. You must have containing directory of "mulle-bash" in
-your `PATH` variable and it must be an absolute path as the kernel needs
-to find it.
-
-To enjoy the various logging and tracing capabilities, you would
-add `options_technical_flags` and `options_setup_trace` to your argument
-parsing, maybe somewhat like this:
-
-```bash
-   while [ $# -ne 0 ]
-   do
-      if options_technical_flags "$1"
-      then
-         shift
-         continue
-      fi
-
-      case "$1" in
-         # handle other flags here
-
-         -*)
-            fail "${MULLE_EXECUTABLE_FAIL_PREFIX}: Unknown option \"$1\""
-         ;;
-
-         *)
-            break
-         ;;
-      esac
-
-      shift
-   done
-
-   options_setup_trace "${MULLE_TRACE}" && set -x
-
-   # handle non flag arguments here
-```
+## API
 
 With `mulle-bashfunction.sh` preloaded you have access to a basic selection
 of libraries, namely:
@@ -126,7 +48,9 @@ Use `include "<name>"` to get access to the functions not included in
 | [version](src/mulle-version.sh)   | semver version management major.minor.version                   |
 
 
-## Runtime environment
+
+
+### Runtime environment
 
 If run under **zsh**, `mulle-bashfunctions.sh` will `setopt sh_word_split`
 and `setopt POSIX_ARGZERO` and will also `set -o GLOB_SUBST`.
@@ -139,8 +63,7 @@ and `setopt POSIX_ARGZERO` and will also `set -o GLOB_SUBST`.
 
 Glob settings are unaffected and expected to be enabled by default.
 
-
-## Conventions
+### Conventions
 
 `RVAL` is a global variable. It is used to pass return values from functions.
 The RVAL value can be clobbered by **any** function. Functions that return RVAL
@@ -149,14 +72,38 @@ values are currently prefixed with `__`. This may change to `g_` in the
 future.
 
 
-## Develop
+### Develop
 
 Do not edit the almagamated `mulle-bashfunctions*.sh` files, they are generated
 by running `cmake .` in the project directory.
+Check out the small pamphlet [Modern Bash (Zsh) Scripting](https://www.mulle-kybernetik.com/modern-bash-scripting)
+by yours truly, for some background information on the techniques being used.
+
+
+
+
+
+
+
+## Install
+
+The command to install the latest mulle-bashfunctions into `/usr/local` (with **sudo**) is:
+
+``` bash
+curl -L 'https://github.com/mulle-nat/mulle-bashfunctions/archive/latest.tar.gz' \
+ | tar xfz - && cd 'mulle-bashfunctions-latest' && sudo ./bin/installer /usr/local
+```
+
+### Packages
+
+| OS    | Command
+|-------|--------------------------------------------------------------
+| macos | `brew install mulle-kybernetik/mulle-bashfunctions`
+| linux | `apt install mulle-bashfunctions`
 
 
 ## Author
 
-[Nat!](//www.mulle-kybernetik.com/weblog) for
-[Mulle kybernetiK](//www.mulle-kybernetik.com) and
-[Codeon GmbH](//www.codeon.de)
+[Nat!](https://mulle-kybernetik.com/weblog) for Mulle kybernetiK
+
+

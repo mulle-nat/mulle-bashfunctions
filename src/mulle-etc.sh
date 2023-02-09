@@ -34,7 +34,7 @@
 #
 if ! [ ${MULLE_ETC_SH+x} ]
 then
-MULLE_ETC_SH="included"
+MULLE_ETC_SH='included'
 
 
 # functions to maintain .mulle/etc and .mulle/share folders
@@ -201,7 +201,7 @@ function etc_make_symlink_if_possible()
 #
 #    Copy or symlink a <srcfile> to directory <dstdir>. You may choose a
 #    a different <filename> for the destination.
-#    You can force the use of symlinks, with "YES" for <symlink>. Use "NO" for
+#    You can force the use of symlinks, with 'YES' for <symlink>. Use 'NO' for
 #    copy, or leave empty for the default actions (which is to use symlinks,
 #    if available on the platform)
 #
@@ -256,11 +256,11 @@ function etc_symlink_or_copy_file()
    then
       case "${MULLE_UNAME}" in
          'mingw'|'msys')
-            symlink="NO"
+            symlink='NO'
          ;;
 
          *)
-            symlink="YES"
+            symlink='YES'
          ;;
       esac
    fi
@@ -286,7 +286,7 @@ function etc_symlink_or_copy_file()
 #
 #    Setup an <etc> directory from <share>. This will by done by coping or
 #    by generating symlinks in <etc>.
-#    You can force the use of symlinks, with "YES" for <symlink>. Use "NO" for
+#    You can force the use of symlinks, with 'YES' for <symlink>. Use 'NO' for
 #    copy, or leave empty for the default actions (which is to use symlinks,
 #    if available on the platform)
 #
@@ -375,8 +375,8 @@ function etc_remove_if_possible()
 #    On platforms with no symlinks, the files will be copied.
 #
 #    glob    : set to non-empty to perform a glob test
-#    add     : set to "YES" to add new files to <etc>
-#    symlink : set to "NO", "YES or "" (default)
+#    add     : set to 'YES' to add new files to <etc>
+#    symlink : set to 'NO', "YES or "" (default)
 #
 function etc_repair_files()
 {

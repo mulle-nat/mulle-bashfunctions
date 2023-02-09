@@ -30,7 +30,7 @@
 
 if ! [ ${MULLE_BASHGLOBAL_SH+x} ]
 then
-   MULLE_BASHGLOBAL_SH="included"
+   MULLE_BASHGLOBAL_SH='included'
 
    DEFAULT_IFS="${IFS}" # as early as possible
 
@@ -161,7 +161,7 @@ fi
 
 if ! [ ${MULLE_BASHLOADER_SH+x} ]
 then
-   MULLE_BASHLOADER_SH="included"
+   MULLE_BASHLOADER_SH='included'
 
    r_uppercase()
    {
@@ -231,7 +231,7 @@ then
 
        . "${RVAL}" || exit 1
 
-      printf -v "${includeguard}" "YES"
+      printf -v "${includeguard}" 'YES'
    }
 
    __parse_include_specifier()
@@ -343,7 +343,7 @@ then
 fi
 if ! [ ${MULLE_COMPATIBILITY_SH+x} ]
 then
-MULLE_COMPATIBILITY_SH="included"
+MULLE_COMPATIBILITY_SH='included'
 
 
 function shell_enable_pipefail()

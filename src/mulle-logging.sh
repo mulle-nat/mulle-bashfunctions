@@ -34,7 +34,7 @@
 #
 if ! [ ${MULLE_LOGGING_SH+x} ]
 then
-MULLE_LOGGING_SH="included"
+MULLE_LOGGING_SH='included'
 
 
 # RESET
@@ -62,7 +62,7 @@ _log_printf()
    local format="$1" ; shift
 
 # convenient place to check something that shouldn't happen
-#   [ "$__FAIL__" != 'YES' -a ! -w /tmp/vfl/.mulle/etc/sourcetree/config -a -e /tmp/vfl/.mulle/etc/sourcetree/config ] && __FAIL__="YES" && _internal_fail "fail"
+#   [ "$__FAIL__" != 'YES' -a ! -w /tmp/vfl/.mulle/etc/sourcetree/config -a -e /tmp/vfl/.mulle/etc/sourcetree/config ] && __FAIL__='YES' && _internal_fail "fail"
 
    if [ -z "${MULLE_EXEKUTOR_LOG_DEVICE:-}" ]
    then
@@ -539,6 +539,10 @@ logging_initialize_color()
       C_CYAN="\033[0;36m"
 
       C_BR_RED="\033[0;91m"
+      C_BR_GREEN="\033[0;92m"
+      C_BR_BLUE="\033[0;94m"
+      C_BR_CYAN="\033[0;96m"
+      C_BR_MAGENTA="\033[0;95m"
       C_BOLD="\033[1m"
       C_FAINT="\033[2m"
       C_SPECIAL_BLUE="\033[38;5;39;40m"

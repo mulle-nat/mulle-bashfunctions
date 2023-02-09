@@ -34,7 +34,7 @@
 #
 if ! [ ${MULLE_STRING_SH+x} ]
 then
-MULLE_STRING_SH="included"
+MULLE_STRING_SH='included'
 
 [ -z "${MULLE_BASHGLOBAL_SH}" ]    && _fatal "mulle-bashglobal.sh must be included before mulle-file.sh"
 [ -z "${MULLE_COMPATIBILITY_SH}" ] && _fatal "mulle-compatibility.sh must be included before mulle-string.sh"
@@ -244,13 +244,14 @@ function r_append()
 #
 # r_concat <s1> <s2> [separator]
 #
-#    Concatenates two strings with a separator inbetween.
-#    If one or both strings are empty, the separator is ommitted.
+#    Concatenates two strings with a separator in between.
+#    If one or both strings are empty, the separator is omitted.
 #    This function does not remove duplicate separators.
 #
 #   "a" "b"       -> "a b"
 #   "" "a"        -> "a"
 #   "a " " b" "-" -> "a - b"
+#   "a-" "-b" "-" -> "a---b"
 #
 function r_concat()
 {
@@ -956,6 +957,7 @@ function r_escaped_sed_pattern()
    s="${s//\*/\\*}"
    s="${s//\./\\.}"
    s="${s//\^/\\^}"
+   s="${s//$'\n'/\\$'\n'}" # assume
 
    RVAL="$s"
 }
@@ -975,6 +977,7 @@ function r_escaped_sed_replacement()
    s="${s//\\/\\\\}"
    s="${s//\//\\/}"
    s="${s//&/\\&}"
+   s="${s//$'\n'/\\$'\n'}"
 
    RVAL="$s"
 }
@@ -1161,6 +1164,9 @@ function r_fnv1a_32()
 
    RVAL=${hash}
 }
+
+# 64 bit, how can this be portably be written in shell script
+# if the host is 32 bit ? investigate...
 
 
 

@@ -34,7 +34,7 @@
 #
 if ! [ ${MULLE_EXEKUTOR_SH+x} ]
 then
-MULLE_EXEKUTOR_SH="included"
+MULLE_EXEKUTOR_SH='included'
 
 [ -z "${MULLE_LOGGING_SH}" ] && \
    echo "mulle-logging.sh must be included before mulle-exekutor.sh" 2>&1 && exit 1

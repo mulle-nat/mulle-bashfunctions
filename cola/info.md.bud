@@ -1,0 +1,31 @@
+### Runtime environment
+
+If run under **zsh**, `mulle-bashfunctions.sh` will `setopt sh_word_split`
+and `setopt POSIX_ARGZERO` and will also `set -o GLOB_SUBST`.
+
+* `pipefail` is set and expected to be kept.
+* `extglob` is set and required for bash and zsh for a few functions.
+* `expand_aliases` is set and required for use of the `.for .do .done` macros.
+* `-u` or `+u` should work
+* `-e` will not work (!)
+
+Glob settings are unaffected and expected to be enabled by default.
+
+### Conventions
+
+`RVAL` is a global variable. It is used to pass return values from functions.
+The RVAL value can be clobbered by **any** function. Functions that return RVAL
+are prefixed with `r_` or `_r_` or somesuch. Functions that return multiple
+values are currently prefixed with `__`. This may change to `g_` in the
+future.
+
+
+### Develop
+
+Do not edit the almagamated `mulle-bashfunctions*.sh` files, they are generated
+by running `cmake .` in the project directory.
+Check out the small pamphlet [Modern Bash (Zsh) Scripting](https://www.mulle-kybernetik.com/modern-bash-scripting)
+by yours truly, for some background information on the techniques being used.
+
+
+

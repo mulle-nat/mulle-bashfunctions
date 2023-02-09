@@ -158,9 +158,6 @@ install_script()
 #   bin_env="$3"
 #   mode=$4
 
-   #
-   # TODO: why not look for bash, and call it directly ?
-   #
    sed -e "1,1 s|#! /usr/bin/env|#! ${bin_env}|" < "${script}" > "${bin}/${script}" || exit 1
    chmod "${mode}" "${bin}/${script}" || exit 1
    printf "install: ${C_MAGENTA}${C_BOLD}%s${C_RESET}\n" "${bin}/${script}" >&2
@@ -180,7 +177,9 @@ install_mulle_bash()
    INSTALL_SH="${INSTALL_SH:-"`command -v bash`"}"
    INSTALL_SH="${INSTALL_SH:-"/usr/bin/env bash"}"
 
-   sed -e "1,1 s|#!.*|#! ${INSTALL_SH}|" < "${script}" > "${bin}/${script}" || exit 1
+   sed -e "1,1 s|#!.*|#! ${INSTALL_SH}|" \
+       -e 's/MULLE_BASHFUNCTIONS_LIBEXEC_DIRNAME="libexec"/MULLE_BASHFUNCTIONS_LIBEXEC_DIRNAME="'${libexecdirname}'"/' \
+       < "${script}" > "${bin}/${script}" || exit 1
    chmod "${mode}" "${bin}/${script}" || exit 1
    printf "install: ${C_MAGENTA}${C_BOLD}%s${C_RESET}\n" "${bin}/${script}" >&2
 }
@@ -194,10 +193,12 @@ main()
    [ $# -eq 0 ] || shift
    mode=${1:-755}
    [ $# -eq 0 ] || shift
+   libexecdirname="${1:-libexec}"
+   [ $# -eq 0 ] || shift
 
    if [ -z "${prefix}" -o "${prefix}" = "--help" ] || [ -z "${mode}" ]
    then
-      installer_fail "usage: install [prefix] [mode]"
+      installer_fail "usage: installer [prefix] [mode] [libexecdirname]"
    fi
 
    if ! bin_env="`command -v env`"
@@ -224,7 +225,7 @@ main()
    [ -z "${PROJECT_VERSION}" ] && echo "tragisches versagen bei der versionsabfrage" >&2 && exit 1
 
    bin="${prefix}/bin"
-   libexec="${prefix}/libexec/mulle-bashfunctions/${PROJECT_VERSION}"
+   libexec="${prefix}/${libexecdirname}/mulle-bashfunctions/${PROJECT_VERSION}"
    share="${prefix}/share/mulle-bashfunctions/${PROJECT_VERSION}"
 
    mkdir -p "${bin}" || installer_fail "could not create ${bin}"
@@ -232,7 +233,7 @@ main()
    mkdir -p "${libexec}" || installer_fail "could not create ${libexec}"
 
 
-   install_mulle_bash mulle-bash       "${bin}" "${bin_env}" "${mode}"
+   install_mulle_bash mulle-bash       "${bin}" "${mode}" "${libexecdirname}"
    install_script mulle-bashfunctions  "${bin}" "${bin_env}" "${mode}"
 
    for i in src/mulle*.sh

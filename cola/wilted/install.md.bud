@@ -1,0 +1,20 @@
+## Install
+
+The command to install the latest mulle-bashfunctions into `/usr` with sudo
+is:
+
+``` sh
+curl -L 'https://github.com/mulle-nat/mulle-bashfunctions/archive/latest.tar.gz' \
+ | tar xfz - && cd 'mulle-bashfunctions-latest' && sudo ./bin/installer /usr
+```
+
+{% if packages %}
+### Packages
+
+| OS    | Command
+|-------|------------------------------------
+{% for package in packages %}
+| {{ package.os }} | `{{ package.command }}`
+{% endfor %}
+
+{% endif %}

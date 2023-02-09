@@ -145,8 +145,8 @@ fi
 # this is "our" version
 # the actual loaded version may differ (and will change this variable)
 #
-MULLE_BASHFUNCTIONS_VERSION="5.1.0"
-
+MULLE_BASHFUNCTIONS_VERSION="6.0.0"
+MULLE_BASHFUNCTIONS_LIBEXEC_DIRNAME="libexec"
 MULLE_EXECUTABLE="$1"
 
 
@@ -678,7 +678,8 @@ r_get_bashfunctions_libexec_dir()
 
    local libexec_dir
 
-   libexec_dir="${prefix}/libexec/mulle-bashfunctions"
+   # on ARCH MULLE_BASHFUNCTIONS_LIBEXEC_DIRNAME will be lib
+   libexec_dir="${prefix}/${MULLE_BASHFUNCTIONS_LIBEXEC_DIRNAME:-libexec}/mulle-bashfunctions"
 
    if [ ! -z "${qualifier}" ]
    then

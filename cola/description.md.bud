@@ -1,0 +1,5 @@
+This is a shell function library used by a lot of mulle tools. It is
+compatible with bash v3.2+ and zsh 5+. Use mulle-bashfunctions to develop more
+featureful scripts that work on multiple platforms. This library has been
+tested on **Debian**, **FreeBSD**, **macOS**, **Manjaro**, **MinGW**,
+**NetBSD**, **OpenBSD**, **Solaris**, **Ubuntu**.

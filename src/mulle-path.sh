@@ -34,7 +34,7 @@
 #
 if ! [ ${MULLE_PATH_SH+x} ]
 then
-MULLE_PATH_SH="included"
+MULLE_PATH_SH='included'
 
 [ -z "${MULLE_STRING_SH}" ] && _fatal "mulle-string.sh must be included before mulle-path.sh"
 

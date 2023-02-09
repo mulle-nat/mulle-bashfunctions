@@ -34,7 +34,7 @@
 #
 if ! [ ${MULLE_INIT_SH+x} ]
 then
-MULLE_INIT_SH="included"
+MULLE_INIT_SH='included'
 
 [ -z "${MULLE_STRING_SH}" ] && _fatal "mulle-string.sh must be included before mulle-init.sh"
 
@@ -178,7 +178,7 @@ function r_get_libexec_dir()
    # now setup the global variable
    local is_present
 
-   RVAL="${prefix}/libexec/${subdir}"
+   RVAL="${prefix}/${MULLE_BASHFUNCTIONS_LIBEXEC_DIRNAME:-libexec}/${subdir}"
    if [ ! -f "${RVAL}/${matchfile}" ]
    then
       RVAL="${exedirpath}/src"

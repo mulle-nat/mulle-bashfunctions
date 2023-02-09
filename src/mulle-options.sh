@@ -34,7 +34,7 @@
 #
 if ! [ ${MULLE_OPTIONS_SH+x} ]
 then
-MULLE_OPTIONS_SH="included"
+MULLE_OPTIONS_SH='included'
 
 [ -z "${MULLE_LOGGING_SH}" ] && _fatal "mulle-logging.sh must be included before mulle-options.sh"
 
@@ -344,7 +344,7 @@ function options_technical_flags()
 #         then
 #            zmodload "zsh/zprof"
 #            # can't trap global exit from within function :(
-#            MULLE_RUN_ZPROF_ON_EXIT="YES"
+#            MULLE_RUN_ZPROF_ON_EXIT='YES'
 #         else
 #            before_trace_fail "${flag}"
    

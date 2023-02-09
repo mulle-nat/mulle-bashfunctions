@@ -34,7 +34,7 @@
 #
 if ! [ ${MULLE_ARRAY_SH+x} ]
 then
-MULLE_ARRAY_SH="included"
+MULLE_ARRAY_SH='included'
 
 [ -z "${MULLE_LOGGING_SH}" ] && _fatal "mulle-logging.sh must be included before mulle-array.sh"
 

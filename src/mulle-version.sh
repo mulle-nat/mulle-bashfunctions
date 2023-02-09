@@ -36,7 +36,7 @@
 
 if ! [ ${MULLE_VERSION_SH+x} ]
 then
-MULLE_VERSION_SH="included"
+MULLE_VERSION_SH='included'
 
 
 # RESET

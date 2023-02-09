@@ -33,7 +33,7 @@
 #
 if ! [ ${MULLE_URL_SH+x} ]
 then
-MULLE_URL_SH="included"
+MULLE_URL_SH='included'
 
 
 # RESET

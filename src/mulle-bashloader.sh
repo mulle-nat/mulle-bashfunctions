@@ -36,7 +36,7 @@
 # double inclusion of this file is OK!
 if ! [ ${MULLE_BASHLOADER_SH+x} ]
 then
-   MULLE_BASHLOADER_SH="included"
+   MULLE_BASHLOADER_SH='included'
 
    r_uppercase()
    {
@@ -109,7 +109,7 @@ then
 
        . "${RVAL}" || exit 1
 
-      printf -v "${includeguard}" "YES"
+      printf -v "${includeguard}" 'YES'
    }
 
    # local _executable

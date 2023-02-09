@@ -25,3 +25,5 @@ fcking-zsh*
 Makefile
 .mulle-make-build-dir
 release-entry-0.21.md
+mulle-markdown-preview-*.html
+test/34-mod-time/file

@@ -34,7 +34,7 @@
 #
 if ! [ ${MULLE_COMPATIBILITY_SH+x} ]
 then
-MULLE_COMPATIBILITY_SH="included"
+MULLE_COMPATIBILITY_SH='included'
 
 
 #

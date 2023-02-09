@@ -30,7 +30,7 @@
 
 if ! [ ${MULLE_BASHGLOBAL_SH+x} ]
 then
-   MULLE_BASHGLOBAL_SH="included"
+   MULLE_BASHGLOBAL_SH='included'
 
    DEFAULT_IFS="${IFS}" # as early as possible
 
@@ -161,7 +161,7 @@ fi
 
 if ! [ ${MULLE_BASHLOADER_SH+x} ]
 then
-   MULLE_BASHLOADER_SH="included"
+   MULLE_BASHLOADER_SH='included'
 
    r_uppercase()
    {
@@ -231,7 +231,7 @@ then
 
        . "${RVAL}" || exit 1
 
-      printf -v "${includeguard}" "YES"
+      printf -v "${includeguard}" 'YES'
    }
 
    __parse_include_specifier()
@@ -343,7 +343,7 @@ then
 fi
 if ! [ ${MULLE_COMPATIBILITY_SH+x} ]
 then
-MULLE_COMPATIBILITY_SH="included"
+MULLE_COMPATIBILITY_SH='included'
 
 
 function shell_enable_pipefail()
@@ -555,7 +555,7 @@ fi
 :
 if ! [ ${MULLE_LOGGING_SH+x} ]
 then
-MULLE_LOGGING_SH="included"
+MULLE_LOGGING_SH='included'
 
 
 
@@ -885,6 +885,10 @@ logging_initialize_color()
       C_CYAN="\033[0;36m"
 
       C_BR_RED="\033[0;91m"
+      C_BR_GREEN="\033[0;92m"
+      C_BR_BLUE="\033[0;94m"
+      C_BR_CYAN="\033[0;96m"
+      C_BR_MAGENTA="\033[0;95m"
       C_BOLD="\033[1m"
       C_FAINT="\033[2m"
       C_SPECIAL_BLUE="\033[38;5;39;40m"
@@ -923,7 +927,7 @@ fi
 :
 if ! [ ${MULLE_EXEKUTOR_SH+x} ]
 then
-MULLE_EXEKUTOR_SH="included"
+MULLE_EXEKUTOR_SH='included'
 
 [ -z "${MULLE_LOGGING_SH}" ] && \
    echo "mulle-logging.sh must be included before mulle-exekutor.sh" 2>&1 && exit 1
@@ -1317,7 +1321,7 @@ fi
 :
 if ! [ ${MULLE_STRING_SH+x} ]
 then
-MULLE_STRING_SH="included"
+MULLE_STRING_SH='included'
 
 [ -z "${MULLE_BASHGLOBAL_SH}" ]    && _fatal "mulle-bashglobal.sh must be included before mulle-file.sh"
 [ -z "${MULLE_COMPATIBILITY_SH}" ] && _fatal "mulle-compatibility.sh must be included before mulle-string.sh"
@@ -1884,6 +1888,7 @@ function r_escaped_sed_pattern()
    s="${s//\*/\\*}"
    s="${s//\./\\.}"
    s="${s//\^/\\^}"
+   s="${s//$'\n'/\\$'\n'}" # assume
 
    RVAL="$s"
 }
@@ -1896,6 +1901,7 @@ function r_escaped_sed_replacement()
    s="${s//\\/\\\\}"
    s="${s//\//\\/}"
    s="${s//&/\\&}"
+   s="${s//$'\n'/\\$'\n'}"
 
    RVAL="$s"
 }
@@ -1978,6 +1984,7 @@ function r_fnv1a_32()
 
    RVAL=${hash}
 }
+
 
 
 
@@ -2141,7 +2148,7 @@ fi
 :
 if ! [ ${MULLE_INIT_SH+x} ]
 then
-MULLE_INIT_SH="included"
+MULLE_INIT_SH='included'
 
 [ -z "${MULLE_STRING_SH}" ] && _fatal "mulle-string.sh must be included before mulle-init.sh"
 
@@ -2248,7 +2255,7 @@ function r_get_libexec_dir()
 
    local is_present
 
-   RVAL="${prefix}/libexec/${subdir}"
+   RVAL="${prefix}/${MULLE_BASHFUNCTIONS_LIBEXEC_DIRNAME:-libexec}/${subdir}"
    if [ ! -f "${RVAL}/${matchfile}" ]
    then
       RVAL="${exedirpath}/src"
@@ -2318,7 +2325,7 @@ fi
 :
 if ! [ ${MULLE_OPTIONS_SH+x} ]
 then
-MULLE_OPTIONS_SH="included"
+MULLE_OPTIONS_SH='included'
 
 [ -z "${MULLE_LOGGING_SH}" ] && _fatal "mulle-logging.sh must be included before mulle-options.sh"
 
@@ -2699,7 +2706,7 @@ fi
 :
 if ! [ ${MULLE_PATH_SH+x} ]
 then
-MULLE_PATH_SH="included"
+MULLE_PATH_SH='included'
 
 [ -z "${MULLE_STRING_SH}" ] && _fatal "mulle-string.sh must be included before mulle-path.sh"
 
@@ -3311,7 +3318,7 @@ fi
 :
 if ! [ ${MULLE_FILE_SH+x} ]
 then
-MULLE_FILE_SH="included"
+MULLE_FILE_SH='included'
 
 [ -z "${MULLE_BASHGLOBAL_SH}" ] && _fatal "mulle-bashglobal.sh must be included before mulle-file.sh"
 [ -z "${MULLE_PATH_SH}" ]       && _fatal "mulle-path.sh must be included before mulle-file.sh"
@@ -4209,7 +4216,7 @@ fi
 :
 if ! [ ${MULLE_ARRAY_SH+x} ]
 then
-MULLE_ARRAY_SH="included"
+MULLE_ARRAY_SH='included'
 
 [ -z "${MULLE_LOGGING_SH}" ] && _fatal "mulle-logging.sh must be included before mulle-array.sh"
 
@@ -4813,7 +4820,7 @@ mulle_base64()
    do
       case "$1" in
          -d|--decode)
-            decode="YES"
+            decode='YES'
          ;;
 
          -i)
@@ -4876,7 +4883,7 @@ mulle_base64()
 }
 if ! [ ${MULLE_CASE_SH+x} ]
 then
-MULLE_CASE_SH="included"
+MULLE_CASE_SH='included'
 
 
 _r_tweaked_de_camel_case()
@@ -5028,7 +5035,7 @@ fi
 :
 if ! [ ${MULLE_ETC_SH+x} ]
 then
-MULLE_ETC_SH="included"
+MULLE_ETC_SH='included'
 
 
 
@@ -5211,11 +5218,11 @@ function etc_symlink_or_copy_file()
    then
       case "${MULLE_UNAME}" in
          'mingw'|'msys')
-            symlink="NO"
+            symlink='NO'
          ;;
 
          *)
-            symlink="YES"
+            symlink='YES'
          ;;
       esac
    fi
@@ -5417,7 +5424,7 @@ fi
 :
 if ! [ ${MULLE_PARALLEL_SH+x} ]
 then
-MULLE_PARALLEL_SH="included"
+MULLE_PARALLEL_SH='included'
 
 [ -z "${MULLE_FILE_SH}" ] && _fatal "mulle-file.sh must be included before mulle-parallel.sh"
 
@@ -5430,7 +5437,10 @@ very_short_sleep()
    local us="$1"
 
    us="${us:0:6}"
-   us="0.${us:-0001}"
+
+   local zeroes="000000"
+
+   us="0.${zeroes:${#us}}${us}"
    us="${us%%0}"
    case "${MULLE_UNAME}" in 
       darwin|*bsd|dragonfly)
@@ -5458,6 +5468,7 @@ r_get_core_count()
       then
          MULLE_CORES=4
          log_verbose "Unknown core count, setting it to 4 as default"
+         RVAL=${MULLE_CORES}
          return 2
       fi
    fi
@@ -5497,6 +5508,9 @@ wait_for_available_job()
 
    local running
    local count
+   local us
+
+   us=1000 # start with 1 ms
 
    while :
    do
@@ -5508,8 +5522,15 @@ wait_for_available_job()
          log_debug "Currently only ${count} jobs run, spawn another"
          break
       fi
-      log_debug "Waiting on jobs to finish (${#running[@]})"
-      very_short_sleep
+
+      log_debug "Waiting $us us on jobs to finish (${#running[@]})"
+
+      very_short_sleep $us
+      us=$((us + us))
+      if [ ${us} -gt 500000 ]
+      then
+         us=500000
+      fi
    done
 }
 
@@ -5701,7 +5722,7 @@ fi
 :
 if ! [ ${MULLE_URL_SH+x} ]
 then
-MULLE_URL_SH="included"
+MULLE_URL_SH='included'
 
 
 
@@ -5885,7 +5906,7 @@ fi
 
 if ! [ ${MULLE_VERSION_SH+x} ]
 then
-MULLE_VERSION_SH="included"
+MULLE_VERSION_SH='included'
 
 
 

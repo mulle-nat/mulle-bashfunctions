@@ -1,0 +1,15 @@
+{
+   packages =
+   (
+      {
+         os = "macos";
+         manager = "brew";
+         command = "brew install mulle-kybernetik/mulle-bashfunctions";
+      },
+      {
+         os = "linux";
+         manager = "apt";
+         command = "apt install mulle-bashfunctions";
+      }
+   )
+}

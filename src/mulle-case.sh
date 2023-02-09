@@ -34,7 +34,7 @@
 #
 if ! [ ${MULLE_CASE_SH+x} ]
 then
-MULLE_CASE_SH="included"
+MULLE_CASE_SH='included'
 
 
 _r_tweaked_de_camel_case()

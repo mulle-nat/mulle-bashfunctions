@@ -34,7 +34,7 @@
 #
 if ! [ ${MULLE_PARALLEL_SH+x} ]
 then
-MULLE_PARALLEL_SH="included"
+MULLE_PARALLEL_SH='included'
 
 [ -z "${MULLE_FILE_SH}" ] && _fatal "mulle-file.sh must be included before mulle-parallel.sh"
 
@@ -86,7 +86,10 @@ very_short_sleep()
    local us="$1"
 
    us="${us:0:6}"
-   us="0.${us:-0001}"
+
+   local zeroes="000000"
+
+   us="0.${zeroes:${#us}}${us}"
    us="${us%%0}"
    case "${MULLE_UNAME}" in 
       darwin|*bsd|dragonfly)
@@ -123,6 +126,7 @@ r_get_core_count()
       then
          MULLE_CORES=4
          log_verbose "Unknown core count, setting it to 4 as default"
+         RVAL=${MULLE_CORES}
          return 2
       fi
    fi
@@ -163,6 +167,9 @@ wait_for_available_job()
 
    local running
    local count
+   local us
+
+   us=1000 # start with 1 ms
 
    while :
    do
@@ -174,8 +181,15 @@ wait_for_available_job()
          log_debug "Currently only ${count} jobs run, spawn another"
          break
       fi
-      log_debug "Waiting on jobs to finish (${#running[@]})"
-      very_short_sleep
+
+      log_debug "Waiting $us us on jobs to finish (${#running[@]})"
+
+      very_short_sleep $us
+      us=$((us + us))
+      if [ ${us} -gt 500000 ]
+      then
+         us=500000
+      fi
    done
 }
 

@@ -36,7 +36,7 @@
 # double inclusion of this file is OK!
 if ! [ ${MULLE_BASHGLOBAL_SH+x} ]
 then
-   MULLE_BASHGLOBAL_SH="included"
+   MULLE_BASHGLOBAL_SH='included'
 
    DEFAULT_IFS="${IFS}" # as early as possible
 

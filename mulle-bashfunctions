@@ -47,7 +47,7 @@ Usage:
    ${MULLE_EXECUTABLE_NAME} [command]
 
    mulle-bashfunctions main purpose is to help load the library functions
-   into an interactive shell. The librar functions are almalgamated in a
+   into an interactive shell. The library functions are almalgamated in a
    file called "mulle-bashfunctions.sh". There are variants though (none,
    minimal, all) with different sizes.
 
@@ -70,6 +70,7 @@ Commands:
    hostname       : show system hostname used by mulle-bashfunctions
    libraries      : list available libraries
    load [variant] : use  eval \`mulle-bashfunctions load\`  to load
+   man <function> : show documention for function, if available
    path [variant] : path to "mulle-bashfunctions.sh"
    username       : show username used by mulle-bashfunctions
    uname          : show system short name used by mulle-bashfunctions
@@ -118,12 +119,13 @@ r_all_library_paths()
    local paths
 
    local library
+   local name
 
    shell_enable_nullglob
    for library in "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}"/mulle-*.sh
    do
-      r_basename "${library}"
-      case "${RVAL}" in
+      name="`basename -- "${library}"`"
+      case "${name}" in
          mulle-bash*.sh|mulle-boot.sh)
          ;;
 
@@ -264,6 +266,8 @@ parse_library()
 
 list_library_functions()
 {
+   log_entry "list_library_functions" "$@"
+
    local library="$1"
    local namesonly="$2"
 
@@ -278,10 +282,12 @@ list_library_functions()
 
 list_functions()
 {
+   log_entry "list_functions" "$@"
+
    local library="$1"
    local namesonly="$2"
 
-   if [ -z "$1" ]
+   if [ -z "${library}" ]
    then
       local paths
 
@@ -307,6 +313,166 @@ list_functions()
          fail "Library \"$1\" not found"
       fi
    fi
+}
+
+
+man_library_function()
+{
+   log_entry "man_library_function" "$@"
+
+   local library="$1"
+   local identifier="$2"
+
+   local text
+   local line
+
+   while IFS=$'\n' read -r line
+   do
+      case "${line}" in
+         '#'*)
+            line="${line#\#}"
+            line="${line#\ }"
+            text="${text}${sep}${line}"
+            sep=$'\n'
+            continue
+         ;;
+
+         ${identifier}\(\)|function\ ${identifier}\(\))
+            sed -e 's/^# //' <<< "${text}"
+            return 0
+         ;;
+
+         *)
+            text=
+            sep=
+         ;;
+      esac
+   done < <( cat "${library}" )
+
+   return 1
+}
+
+
+man_function()
+{
+   log_entry "man_function" "$@"
+
+   local name="$1"
+
+   local paths
+
+   r_all_library_paths
+   paths="${RVAL}"
+
+   local identifier
+
+   r_lowercase "${name}"
+   r_identifier "${RVAL}"
+   identifier="${RVAL}"
+
+   local library
+
+   IFS=$'\n'
+   for library in ${paths}
+   do
+      if man_library_function "${library}" "${identifier}"
+      then
+         return 0
+      fi
+   done
+
+   # search for transposed bits
+   local prefix
+
+   prefix="${identifier:0:2}"
+   case "${prefix}" in
+      'r_'|'g_')
+         identifier="${identifier:2}"
+      ;;
+
+      *)
+         prefix=""
+      ;;
+   esac
+
+   #
+   # cut identifier into pieces and multiply it out
+   #
+   # A B C 012
+   # A C B 021
+   # B A C 102
+   # B C A 120
+   # C A B 201
+   # C B A 210
+   #
+   local n
+   local piece
+   local loops
+
+   declare -a pieces
+
+   IFS="_"
+   n=0
+   loops=1
+   for piece in ${identifier}
+   do
+      pieces[$n]="${piece}"
+      n=$(( n + 1 ))
+      loops=$(( loops * n ))
+   done
+
+   if [ $n -lt 5 ]
+   then
+      local tmp
+      local i
+      local next
+      local flip
+
+      for prefix in "" "r_" "g_"
+      do
+         i=0
+         flip=0
+         while [ $i -lt $loops ]
+         do
+            j=0
+            identifier=""
+            while [ $j -lt $n ]
+            do
+               r_concat "${identifier}" "${pieces[$j]}" "_"
+               identifier="${RVAL}"
+               j=$(( j + 1 ))
+            done
+
+            IFS=$'\n'
+            for library in ${paths}
+            do
+               if man_library_function "${library}" "${prefix}${identifier}"
+               then
+                  return 0
+               fi
+            done
+
+            if [ $n -gt 1 ]
+            then
+               next=$(( (flip + 1) % n ))
+               if [ $next -eq 0 ]
+               then
+                  flip=0
+                  next=1
+               fi
+
+               tmp="${pieces[$flip]}"
+               pieces[$flip]="${pieces[$next]}"
+               pieces[$next]="${tmp}"
+               flip=$next
+            fi
+            i=$(( i + 1 ))
+         done
+      done
+   fi
+
+   IFS="${DEFAULT_IFS}"
+   log_error "Function ${C_RESET_BOLD}${name}${C_ERROR} is unknown."
 }
 
 
@@ -532,6 +698,10 @@ MULLE_UNAME=\"${MULLE_UNAME}\" ;
 export MULLE_UNAME ;
 . \"${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions${format}.sh\"
 "
+      ;;
+
+      man)
+         man_function "$@" || exit 1
       ;;
 
       ncores)

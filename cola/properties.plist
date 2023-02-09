@@ -1,0 +1,28 @@
+{
+   config =
+   {
+      showButtons = YES;
+      showCodacy = NO;
+   };
+   authors =
+   (
+      {
+         name="Nat!";
+         url="https://mulle-kybernetik.com/weblog";
+         organization="Mulle kybernetiK"
+      }
+   );
+   project =
+   {
+      description="🥊 mulle-bashfunctions, a collection of shell functions";
+      domain="github";
+      name="mulle-bashfunctions";
+      username="mulle-nat";
+      reponame="mulle-bashfunctions";
+      homepage="https://github.com/mulle-nat/mulle-bashfunctions.git";
+      license="BSD-3-Clause"
+   };
+   dependencies=
+   (
+   )
+}
