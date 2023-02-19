@@ -357,6 +357,9 @@ man_function()
 {
    log_entry "man_function" "$@"
 
+   [ $# -eq 0 ] && usage "${MULLE_EXECUTABLE_FAIL_PREFIX}: Missing name"
+   [ $# -gt 1 ] && shift && usage "${MULLE_EXECUTABLE_FAIL_PREFIX}: Superflous parameter \"$*\""
+
    local name="$1"
 
    local paths
@@ -377,6 +380,7 @@ man_function()
    do
       if man_library_function "${library}" "${identifier}"
       then
+         IFS="${DEFAULT_IFS}"
          return 0
       fi
    done
@@ -474,6 +478,168 @@ man_function()
    IFS="${DEFAULT_IFS}"
    log_error "Function ${C_RESET_BOLD}${name}${C_ERROR} is unknown."
 }
+
+
+r_parse_functionname()
+{
+   local line="$1"
+
+   RVAL="${line%#*}"
+   RVAL="${RVAL#"${RVAL%%[![:space:]]*}"}"
+   RVAL="${RVAL#function}"
+   RVAL="${RVAL#"${RVAL%%[![:space:]]*}"}"
+   RVAL="${RVAL%()}"
+   RVAL="${RVAL%"${RVAL##*[![:space:]]}"}" # remove tail space
+   RVAL="${RVAL#"${RVAL%%[![:space:]]*}"}" # remove head space
+}
+
+
+print_apropos_text()
+{
+   local text="$1"
+   local line="$2"
+   local isep="$3"
+
+   r_parse_functionname "${line}"
+   if [ "${text#${RVAL}}" = "${text}" ]
+   then
+      text="`sed -e 's/^/   /' <<< "${text}" `"
+      printf "%s%s\n\n%s\n" "${isep}" "${RVAL}" "${text}"
+   else
+      printf "%s%s\n" "${isep}" "${text}"
+   fi
+}
+
+
+r_apropos_library_function()
+{
+   log_entry "r_apropos_library_function" "$@"
+
+   local library="$1"
+   local search="$2"
+   local options="$3"
+   local isep="$4"
+
+   local text
+   local line
+   local sep
+   local space
+
+   space=""
+   sep="${space}"
+
+   # TODO: might optionally also search preceeding text
+   #       (see man: how to capture it)
+   while IFS=$'\n' read -r line
+   do
+      case "${line}" in
+         '#'*)
+            line="${line#\#}"
+            line="${line#\ }"
+            if [ ! -z "${text}" -o ! -z "${line}" ]
+            then
+               text="${text}${sep}${line}"
+               sep=$'\n'"${space}"
+            fi
+            continue
+         ;;
+
+         *${search}*\(\))
+            print_apropos_text "${text}" "${line}"
+            isep=$'\n'
+            text=
+            sep="${space}"
+         ;;
+
+         *\(\)*)
+            case ",${options}," in
+               *',no-text,'*)
+               ;;
+
+               *)
+                  if grep -E "${search}" <<< "${text}" > /dev/null
+                  then
+                     print_apropos_text "${text}" "${line}"
+                     isep=$'\n'
+                  fi
+               ;;
+            esac
+            text=
+            sep="${space}"
+         ;;
+
+         *)
+            text=
+            sep="${space}"
+         ;;
+      esac
+   done < <( cat "${library}" )
+
+   RVAL="${isep}"
+}
+
+
+apropos_function()
+{
+   log_entry "apropos_function" "$@"
+
+   local options
+
+   while [ $# -ne 0 ]
+   do
+      case "$1" in
+         -i)
+            r_comma_concat "${options}" "identifier"
+            options="${RVAL}"
+            shift
+            continue
+         ;;
+
+         --no-text)
+            r_comma_concat "${options}" "no-text"
+            options="${RVAL}"
+            shift
+            continue
+         ;;
+      esac
+      break
+   done
+
+   [ $# -eq 0 ] && usage "${MULLE_EXECUTABLE_FAIL_PREFIX}: Missing name"
+   [ $# -gt 1 ] && shift && usage "${MULLE_EXECUTABLE_FAIL_PREFIX}: Superflous parameter \"$*\""
+
+   local name="$1"
+
+   local paths
+
+   r_all_library_paths
+   paths="${RVAL}"
+
+   local search
+
+   search="${name}"
+   case ",${options}," in
+      *',identifier,'*)
+         r_lowercase "${name}"
+         r_identifier "${RVAL}"
+         search="${RVAL}"
+      ;;
+   esac
+
+   local library
+   local isep
+
+   IFS=$'\n'
+   for library in ${paths}
+   do
+      if r_apropos_library_function "${library}" "${search}" "${options}" "${isep}"
+      then
+         isep="${RVAL}"
+      fi
+   done
+   IFS="${DEFAULT_IFS}"
+}
+
 
 
 
@@ -648,6 +814,10 @@ main()
    case "${cmd}" in
       help)
          usage
+      ;;
+
+      apropos)
+         apropos_function "$@" || exit 1
       ;;
 
       env)
