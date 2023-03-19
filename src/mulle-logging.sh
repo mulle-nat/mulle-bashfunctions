@@ -83,6 +83,10 @@ MULLE_LOG_FAIL_ERROR_PREFIX=" fatal error: "
 #
 _log_error()
 {
+   if [ "${MULLE_FLAG_LOG_ERROR:-YES}" = 'NO' ]
+   then
+      return
+   fi
    _log_printf "${C_ERROR}${MULLE_EXECUTABLE_FAIL_PREFIX}${MULLE_LOG_ERROR_PREFIX}${C_ERROR_TEXT}%b${C_RESET}\n" "$*"
 }
 
@@ -90,6 +94,10 @@ _log_error()
 
 _log_fail()
 {
+   if [ "${MULLE_FLAG_LOG_ERROR:-YES}" = 'NO' ]
+   then
+      return
+   fi
    _log_printf "${C_ERROR}${MULLE_EXECUTABLE_FAIL_PREFIX}${MULLE_LOG_FAIL_ERROR_PREFIX}${C_ERROR_TEXT}%b${C_RESET}\n" "$*"
 }
 
@@ -545,6 +553,7 @@ logging_initialize_color()
       C_BR_MAGENTA="\033[0;95m"
       C_BOLD="\033[1m"
       C_FAINT="\033[2m"
+      C_UNDERLINE="\033[4m"
       C_SPECIAL_BLUE="\033[38;5;39;40m"
 
       if [ "${MULLE_LOGGING_TRAP:-}" != 'NO' ]

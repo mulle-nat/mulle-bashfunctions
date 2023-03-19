@@ -204,6 +204,7 @@ after_trace_warning()
 #    The following global variables will be set:
 #       MULLE_FLAG_EXEKUTOR_DRY_RUN
 #       MULLE_FLAG_LOG_DEBUG
+#       MULLE_FLAG_LOG_ERROR
 #       MULLE_FLAG_LOG_EXEKUTOR
 #       MULLE_FLAG_LOG_TERSE
 #       MULLE_FLAG_LOG_ENVIRONMENT
@@ -443,6 +444,7 @@ function options_technical_flags()
          echo "\
 --clear-flags
 --dry-run
+--no-errors
 --log-debug
 --log-environment
 --log-settings
@@ -458,6 +460,10 @@ function options_technical_flags()
 --very-verbose
 --very-very-verbose"
          return 0
+      ;;
+
+      --no-errors)
+         MULLE_FLAG_LOG_ERROR='NO'
       ;;
 
       *)

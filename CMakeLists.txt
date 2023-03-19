@@ -7,7 +7,7 @@ project( mulle-bashfunctions NONE)
 # in order to boost initial _init speed concatenate all files that
 # are typically loaded together into processed headers. It would be nice to
 # minify those but there is nothing good out there, which doesn't corrupt
-# shell code like. The only minification we can get in a bash script is
+# shell code. The only minification we can get in a bash script is
 # stripping off comments and whitespace though.
 #
 # cat <<EOF
@@ -46,6 +46,7 @@ ${DEFAULT_SCRIPTS}
 "src/mulle-case.sh"
 "src/mulle-etc.sh"
 "src/mulle-parallel.sh"
+"src/mulle-sort.sh"
 "src/mulle-url.sh"
 "src/mulle-version.sh"
 )

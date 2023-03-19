@@ -509,6 +509,7 @@ function r_shell_indirect_expand()
    fi
 }
 
+
 unalias -a
 
 if [ ${ZSH_VERSION+x} ]
@@ -578,6 +579,10 @@ MULLE_LOG_FAIL_ERROR_PREFIX=" fatal error: "
 
 _log_error()
 {
+   if [ "${MULLE_FLAG_LOG_ERROR:-YES}" = 'NO' ]
+   then
+      return
+   fi
    _log_printf "${C_ERROR}${MULLE_EXECUTABLE_FAIL_PREFIX}${MULLE_LOG_ERROR_PREFIX}${C_ERROR_TEXT}%b${C_RESET}\n" "$*"
 }
 
@@ -585,6 +590,10 @@ _log_error()
 
 _log_fail()
 {
+   if [ "${MULLE_FLAG_LOG_ERROR:-YES}" = 'NO' ]
+   then
+      return
+   fi
    _log_printf "${C_ERROR}${MULLE_EXECUTABLE_FAIL_PREFIX}${MULLE_LOG_FAIL_ERROR_PREFIX}${C_ERROR_TEXT}%b${C_RESET}\n" "$*"
 }
 
@@ -891,6 +900,7 @@ logging_initialize_color()
       C_BR_MAGENTA="\033[0;95m"
       C_BOLD="\033[1m"
       C_FAINT="\033[2m"
+      C_UNDERLINE="\033[4m"
       C_SPECIAL_BLUE="\033[38;5;39;40m"
 
       if [ "${MULLE_LOGGING_TRAP:-}" != 'NO' ]
@@ -1449,7 +1459,7 @@ function r_concat()
 }
 
 
-r_remove_duplicate()
+r_remove_duplicate_separators()
 {
    local s="$1"
    local separator="${2:- }"
@@ -1533,7 +1543,7 @@ function r_semicolon_concat()
 function r_slash_concat()
 {
    r_concat "$1" "$2" "/"
-   r_remove_duplicate "${RVAL}" "/"
+   r_remove_duplicate_separators "${RVAL}" "/"
 }
 
 
@@ -1632,6 +1642,12 @@ function  r_remove_line_once()
 function  r_get_last_line()
 {
   RVAL="$(sed -n '$p' <<< "$1")" # get last line
+}
+
+
+function r_line_at_index()
+{
+   RVAL="$(sed -n -e "$(( $2 + 1 ))p" <<< "$1")"
 }
 
 
@@ -1797,7 +1813,7 @@ ${line}"
 }
 
 
-function r_remove_duplicate_lines()
+function r_remove_duplicate_separators_lines()
 {
    RVAL="`awk '!x[$0]++' <<< "$@"`"
 }
@@ -1832,6 +1848,34 @@ function r_reverse_lines()
       delim=$'\n'
    done <<< "${lines}"
    IFS="${DEFAULT_IFS}"
+}
+
+
+function r_split()
+{
+   local s="$1"
+   local sep="${2:-${IFS}}"
+
+   if [ ${ZSH_VERSION+x} ]
+   then
+      unset RVAL
+      RVAL=("${(@ps:$sep:)s}")
+   else
+      shell_disable_glob
+      IFS="${sep}" read -r -a RVAL <<< "${s}"
+      shell_enable_glob
+   fi
+}
+
+
+function r_betwixt()
+{
+   local sep="$1" ; shift
+
+   local tmp
+
+   printf -v tmp "%s${sep}" "$@"
+   RVAL="${tmp%"${sep}"}"
 }
 
 
@@ -2216,12 +2260,19 @@ function r_resolve_symlinks()
    local filepath
 
    RVAL="$1"
+   local max=${2:-40}
+
+   if [ $max -eq 0 ]
+   then
+      RVAL=
+      return 1
+   fi
 
    if filepath="`readlink "${RVAL}"`"
    then
       r_dirname "${RVAL}"
       r_prepend_path_if_relative "${RVAL}" "${filepath}"
-      r_resolve_symlinks "${RVAL}"
+      r_resolve_symlinks "${RVAL}" $(( max - 1 ))
    fi
 }
 
@@ -2653,6 +2704,7 @@ function options_technical_flags()
          echo "\
 --clear-flags
 --dry-run
+--no-errors
 --log-debug
 --log-environment
 --log-settings
@@ -2668,6 +2720,10 @@ function options_technical_flags()
 --very-verbose
 --very-very-verbose"
          return 0
+      ;;
+
+      --no-errors)
+         MULLE_FLAG_LOG_ERROR='NO'
       ;;
 
       *)

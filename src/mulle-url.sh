@@ -169,7 +169,7 @@ MULLE_URI_REGEX='^(([^:/?#]+):)?(//((([^:/?#]+)@)?([^:/?#]+)(:([0-9]+))?))?(/([^
 #                 ↑↑            ↑  ↑↑↑            ↑         ↑ ↑            ↑ ↑        ↑  ↑        ↑ ↑
 #                 |2 scheme     |  ||6 userinfo   7 host    | 9 port       | 11 rpath |  13 query | 15 fragment
 #                 1 scheme:     |  |5 userinfo@             8 :…           10 path    12 ?…       14 #…
-#                                     |  4 authority
+#                                  |  4 authority
 #                               3 //…
 
 
@@ -202,6 +202,21 @@ function __url_parse()
    fi
 
    case "${url}" in
+      file://*)
+         _scheme="file"
+         _userinfo=""
+         _host=""
+         _port=""
+         _path="${url#file://}"
+         _query=""
+         case "${_path}" in
+            *\#*)
+               _fragment="${_path#*\#}"
+               _path="${_path%%*\#}"
+            ;;
+         esac
+      ;;
+
       *://*)
          if ! [[ "${url}" =~ ${MULLE_URI_REGEX} ]]
          then
@@ -225,6 +240,20 @@ function __url_parse()
             _path="${BASH_REMATCH[10]}"
             _query="${BASH_REMATCH[13]}"
             _fragment="${BASH_REMATCH[15]}"
+
+            # fix for https://unknown.com which gets parsed as _path
+            if [ -z "${_host}" ]
+            then
+               case "${_path}" in
+                  //[^/]*/)
+                  ;;
+
+                  //*)
+                     _host="${_path}"
+                     _path=""
+                  ;;
+               esac
+            fi
 #         fi
 
          if [ -z "${_userinfo}${_host}${_port}" -a "${_path:0:3}" = "///" ]
@@ -301,6 +330,67 @@ function r_url_get_path()
 
    return 1
 }
+
+
+#
+# r_url_escaped_path <path>
+#
+#    Hex escape some path characters so that they can be put into the path
+#    part of the URL. Only the following characters are considered:
+#    ' ' !"#%'*<>?[\]`|
+#
+function r_url_escaped_path()
+{
+   local s="$1"
+
+   s="${s// /%20}"
+   s="${s//!/%21}"
+   s="${s//\"/%22}"
+   s="${s//#/%23}"
+   s="${s//%/%25}"
+   s="${s//\'/%27}"
+   s="${s//\*/%2A}"
+   s="${s//</%3C}"
+   s="${s//>/%3E}"
+   s="${s//\?/%3F}"
+   s="${s//\[/%5B}"
+   s="${s//\\/%5C}"
+   s="${s//\]/%5D}"
+   s="${s//\`/%60}"
+   s="${s//|/%7C}"
+
+   RVAL="$s"
+}
+
+#
+# r_url_escaped_path <path>
+#
+#    Unescape a path previously escaped by r_url_escaped_path
+#
+function r_url_unescaped_path()
+{
+   local s="$1"
+
+   s="${s//%20/ }"
+   s="${s//%21/!}"
+   s="${s//%22/\"}"
+   s="${s//%23/#}"
+   s="${s//%25/%}"
+   s="${s//%27/\'}"
+   s="${s//%2A/*}"
+   s="${s//%3C/<}"
+   s="${s//%3E/>}"
+   s="${s//%3F/?}"
+   s="${s//%5B/[}"
+   s="${s//%5C/\\}"
+   s="${s//%5D/]}"
+   s="${s//%60/\`}"
+   s="${s//%7C/|}"
+
+   RVAL="$s"
+}
+
+
 
 
 fi

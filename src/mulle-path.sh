@@ -413,10 +413,11 @@ _r_relative_path_between()
 # r_relative_path_between <to> <from>
 #
 #    <to> is the directory/file, that we want to access relative from root
-#    <from> is the place we want to acces <to> from
+#    <from> is the directory we want to access <to> from. To belabor this
+#    <from> can not be a file.
 #
-#    the routine can not deal with ../ and ./, but is a bit faster than
-#    symlink_relpath
+#    The routine can not deal with ../ and ./, but is a bit faster than
+#    symlink_relpath.
 #
 #    ex.   /usr/include /usr,  -> include
 #    ex.   /usr/include /  -> /usr/include

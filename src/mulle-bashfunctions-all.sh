@@ -509,6 +509,7 @@ function r_shell_indirect_expand()
    fi
 }
 
+
 unalias -a
 
 if [ ${ZSH_VERSION+x} ]
@@ -578,6 +579,10 @@ MULLE_LOG_FAIL_ERROR_PREFIX=" fatal error: "
 
 _log_error()
 {
+   if [ "${MULLE_FLAG_LOG_ERROR:-YES}" = 'NO' ]
+   then
+      return
+   fi
    _log_printf "${C_ERROR}${MULLE_EXECUTABLE_FAIL_PREFIX}${MULLE_LOG_ERROR_PREFIX}${C_ERROR_TEXT}%b${C_RESET}\n" "$*"
 }
 
@@ -585,6 +590,10 @@ _log_error()
 
 _log_fail()
 {
+   if [ "${MULLE_FLAG_LOG_ERROR:-YES}" = 'NO' ]
+   then
+      return
+   fi
    _log_printf "${C_ERROR}${MULLE_EXECUTABLE_FAIL_PREFIX}${MULLE_LOG_FAIL_ERROR_PREFIX}${C_ERROR_TEXT}%b${C_RESET}\n" "$*"
 }
 
@@ -891,6 +900,7 @@ logging_initialize_color()
       C_BR_MAGENTA="\033[0;95m"
       C_BOLD="\033[1m"
       C_FAINT="\033[2m"
+      C_UNDERLINE="\033[4m"
       C_SPECIAL_BLUE="\033[38;5;39;40m"
 
       if [ "${MULLE_LOGGING_TRAP:-}" != 'NO' ]
@@ -1449,7 +1459,7 @@ function r_concat()
 }
 
 
-r_remove_duplicate()
+r_remove_duplicate_separators()
 {
    local s="$1"
    local separator="${2:- }"
@@ -1533,7 +1543,7 @@ function r_semicolon_concat()
 function r_slash_concat()
 {
    r_concat "$1" "$2" "/"
-   r_remove_duplicate "${RVAL}" "/"
+   r_remove_duplicate_separators "${RVAL}" "/"
 }
 
 
@@ -1632,6 +1642,12 @@ function  r_remove_line_once()
 function  r_get_last_line()
 {
   RVAL="$(sed -n '$p' <<< "$1")" # get last line
+}
+
+
+function r_line_at_index()
+{
+   RVAL="$(sed -n -e "$(( $2 + 1 ))p" <<< "$1")"
 }
 
 
@@ -1797,7 +1813,7 @@ ${line}"
 }
 
 
-function r_remove_duplicate_lines()
+function r_remove_duplicate_separators_lines()
 {
    RVAL="`awk '!x[$0]++' <<< "$@"`"
 }
@@ -1832,6 +1848,34 @@ function r_reverse_lines()
       delim=$'\n'
    done <<< "${lines}"
    IFS="${DEFAULT_IFS}"
+}
+
+
+function r_split()
+{
+   local s="$1"
+   local sep="${2:-${IFS}}"
+
+   if [ ${ZSH_VERSION+x} ]
+   then
+      unset RVAL
+      RVAL=("${(@ps:$sep:)s}")
+   else
+      shell_disable_glob
+      IFS="${sep}" read -r -a RVAL <<< "${s}"
+      shell_enable_glob
+   fi
+}
+
+
+function r_betwixt()
+{
+   local sep="$1" ; shift
+
+   local tmp
+
+   printf -v tmp "%s${sep}" "$@"
+   RVAL="${tmp%"${sep}"}"
 }
 
 
@@ -2216,12 +2260,19 @@ function r_resolve_symlinks()
    local filepath
 
    RVAL="$1"
+   local max=${2:-40}
+
+   if [ $max -eq 0 ]
+   then
+      RVAL=
+      return 1
+   fi
 
    if filepath="`readlink "${RVAL}"`"
    then
       r_dirname "${RVAL}"
       r_prepend_path_if_relative "${RVAL}" "${filepath}"
-      r_resolve_symlinks "${RVAL}"
+      r_resolve_symlinks "${RVAL}" $(( max - 1 ))
    fi
 }
 
@@ -2653,6 +2704,7 @@ function options_technical_flags()
          echo "\
 --clear-flags
 --dry-run
+--no-errors
 --log-debug
 --log-environment
 --log-settings
@@ -2668,6 +2720,10 @@ function options_technical_flags()
 --very-verbose
 --very-very-verbose"
          return 0
+      ;;
+
+      --no-errors)
+         MULLE_FLAG_LOG_ERROR='NO'
       ;;
 
       *)
@@ -3577,6 +3633,45 @@ _make_tmp_in_dir_mktemp()
 }
 
 
+r_make_tmpname_in_dir_uuidgen()
+{
+   local UUIDGEN="$1"; shift
+
+   local tmpdir="$1"
+   local name="$2"
+   local extension="${3:-}"
+
+   local uuid
+   local fluke
+
+   fluke=0
+   RVAL=''
+
+   while :
+   do
+      if [ -z "${UUIDGEN}" ]
+      then
+         r_uuidgen
+         uuid="${RVAL}"
+      else
+         uuid="`${UUIDGEN}`" || fail "uuidgen failed"
+      fi
+
+      RVAL="${tmpdir}/${name}-${uuid}${extension}"
+      if [ ! -e "${RVAL}" ]
+      then
+         return
+      fi
+
+      fluke=$((fluke + 1 ))
+      if [ "${fluke}" -gt 20 ]
+      then
+         fail "Could not (even repeatedly) create unique \"${RVAL}\""
+      fi
+   done
+}
+
+
 _r_make_tmp_in_dir_uuidgen()
 {
    local UUIDGEN="$1"; shift
@@ -3584,7 +3679,7 @@ _r_make_tmp_in_dir_uuidgen()
    local tmpdir="$1"
    local name="$2"
    local filetype="${3:-f}"
-   local extension="$4"
+   local extension="${4:-}"
 
    local MKDIR
    local TOUCH
@@ -3811,6 +3906,7 @@ function create_symlink()
    local source="$1"       # URL of the clone
    local symlink="$2"      # symlink of this clone (absolute or relative to $PWD)
    local absolute="${3:-NO}"
+   local hardlink="${4:-NO}"
 
    [ -e "${source}" ]     || fail "${C_RESET}${C_BOLD}${source}${C_ERROR} does not exist (${PWD#"${MULLE_USER_PWD}/"})"
    [ ! -z "${absolute}" ] || fail "absolute must be YES or NO"
@@ -3847,9 +3943,17 @@ function create_symlink()
       oldlink="`readlink "${symlink}"`"
    fi
 
+   local flags
+
+   flags="-s -f"
+   if [ "${hardlink}" = 'YES' ]
+   then
+      flags="-f"
+   fi
+
    if [ -z "${oldlink}" -o "${oldlink}" != "${source}" ]
    then
-      exekutor ln -s -f "${source}" "${symlink}" >&2 || \
+      exekutor ln ${flags} "${source}" "${symlink}" >&2 || \
          fail "failed to setup symlink \"${symlink}\" (to \"${source}\")"
    fi
 }
@@ -3868,6 +3972,50 @@ function modification_timestamp()
       ;;
    esac
 }
+
+function file_devicenumber()
+{
+   stat -c "%d" "$1" # returns the decimal device number
+}
+
+
+function r_file_type()
+{
+
+   if [ -L "$1" ]
+   then
+      if [ -d "$1" ]
+      then
+         RVAL="D"
+         return
+      fi
+      RVAL="F"
+      return
+   fi
+
+   if [ -f "$1" ]
+   then
+      RVAL="f"
+      return
+   fi
+
+   if [ -d "$1" ]
+   then
+      RVAL="d"
+      return
+   fi
+
+   if [ ! -e "$1" ]
+   then
+      RVAL=
+      return 1
+   fi
+
+   RVAL="s"
+   return
+}
+
+
 
 
 function lso()
@@ -5720,6 +5868,152 @@ function parallel_execute()
 
 fi
 :
+
+
+declare -g ascending=1
+declare -g descending=255
+
+
+default_sort_compare()
+{
+   if [[ "$1" > "$2" ]]
+   then
+      return $descending
+   fi
+
+   [[ "$1" = "$2" ]]
+   return $?
+}
+
+
+function r_qsort()
+{
+
+   RVAL=()
+   (($#==0)) && return 0
+
+   if [ ${ZSH_VERSION+x} ]
+   then
+      setopt local_options KSH_ARRAYS
+   fi
+
+   local pivot="$1"
+   shift
+
+   local i
+   local smaller=()
+   local larger=()
+
+   local rval
+
+   for i in "$@"
+   do
+      ${SORT_COMPARE_FUNCTION:-default_sort_compare} "$i" "$pivot"
+      rval=$?
+
+      if [ $rval -eq $ascending ]
+      then
+         smaller+=( "$i" )
+      else
+         larger+=( "$i" )
+      fi
+   done
+
+   r_qsort "${smaller[@]}"
+   smaller=( "${RVAL[@]}" )
+
+   r_qsort "${larger[@]}"
+   larger=( "${RVAL[@]}" )
+
+   RVAL=( "${smaller[@]}" "$pivot" "${larger[@]}" )
+
+}
+
+
+
+
+function r_mergesort()
+{
+   local n
+
+
+   n=$#
+
+   if [ $n -le 1 ]
+   then
+      RVAL=( "$@" )
+      return
+   fi
+
+   if [ ${ZSH_VERSION+x} ]
+   then
+      setopt local_options KSH_ARRAYS
+   fi
+
+   local m
+   local o
+
+   m=$(( n / 2 ))
+   o=$(( n - m))
+
+   local in=( "$@" )
+   local smaller
+
+   r_mergesort "${in[@]:0:$m}"
+   smaller=( "${RVAL[@]}" )
+
+   local larger
+
+   r_mergesort "${in[@]:$m:$o}"
+   larger=( "${RVAL[@]}" )
+
+
+
+   local i
+   local j
+
+   i=0
+   j=0
+   RVAL=()
+
+   while :
+   do
+      if [ $i -lt $m ]
+      then
+         if [ $j -ge $o ]
+         then
+            RVAL+=( "${smaller[$i]}" )
+            i=$((i + 1))
+            continue
+         fi
+
+         ${SORT_COMPARE_FUNCTION:-default_sort_compare} "${smaller[$i]}" "${larger[$j]}"
+         rval=$?
+
+         if [ $rval -eq $ascending ]
+         then
+            RVAL+=( "${smaller[$i]}" )
+            i=$((i + 1))
+            continue
+         fi
+
+         RVAL+=( "${larger[$j]}" )
+         j=$((j + 1))
+         continue
+      fi
+
+      if [ $j -ge $o ]
+      then
+         break
+      fi
+
+      RVAL+=( "${larger[$j]}" )
+      j=$((j + 1))
+   done
+
+}
+
+
 if ! [ ${MULLE_URL_SH+x} ]
 then
 MULLE_URL_SH='included'
@@ -5817,6 +6111,21 @@ function __url_parse()
    fi
 
    case "${url}" in
+      file://*)
+         _scheme="file"
+         _userinfo=""
+         _host=""
+         _port=""
+         _path="${url#file://}"
+         _query=""
+         case "${_path}" in
+            *\#*)
+               _fragment="${_path#*\#}"
+               _path="${_path%%*\#}"
+            ;;
+         esac
+      ;;
+
       *://*)
          if ! [[ "${url}" =~ ${MULLE_URI_REGEX} ]]
          then
@@ -5830,6 +6139,19 @@ function __url_parse()
             _path="${BASH_REMATCH[10]}"
             _query="${BASH_REMATCH[13]}"
             _fragment="${BASH_REMATCH[15]}"
+
+            if [ -z "${_host}" ]
+            then
+               case "${_path}" in
+                  //[^/]*/)
+                  ;;
+
+                  //*)
+                     _host="${_path}"
+                     _path=""
+                  ;;
+               esac
+            fi
 
          if [ -z "${_userinfo}${_host}${_port}" -a "${_path:0:3}" = "///" ]
          then
@@ -5898,6 +6220,55 @@ function r_url_get_path()
 
    return 1
 }
+
+
+function r_url_escaped_path()
+{
+   local s="$1"
+
+   s="${s// /%20}"
+   s="${s//!/%21}"
+   s="${s//\"/%22}"
+   s="${s//#/%23}"
+   s="${s//%/%25}"
+   s="${s//\'/%27}"
+   s="${s//\*/%2A}"
+   s="${s//</%3C}"
+   s="${s//>/%3E}"
+   s="${s//\?/%3F}"
+   s="${s//\[/%5B}"
+   s="${s//\\/%5C}"
+   s="${s//\]/%5D}"
+   s="${s//\`/%60}"
+   s="${s//|/%7C}"
+
+   RVAL="$s"
+}
+
+function r_url_unescaped_path()
+{
+   local s="$1"
+
+   s="${s//%20/ }"
+   s="${s//%21/!}"
+   s="${s//%22/\"}"
+   s="${s//%23/#}"
+   s="${s//%25/%}"
+   s="${s//%27/\'}"
+   s="${s//%2A/*}"
+   s="${s//%3C/<}"
+   s="${s//%3E/>}"
+   s="${s//%3F/?}"
+   s="${s//%5B/[}"
+   s="${s//%5C/\\}"
+   s="${s//%5D/]}"
+   s="${s//%60/\`}"
+   s="${s//%7C/|}"
+
+   RVAL="$s"
+}
+
+
 
 
 fi

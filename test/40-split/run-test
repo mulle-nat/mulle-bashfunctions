@@ -1,0 +1,52 @@
+#! /bin/sh
+
+[ "${TRACE}" = 'YES' ] && set -x && : "$0" "$@"
+
+###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
+MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${MULLE_BASHFUNCTIONS_LIBEXEC_DIR:-`mulle-bashfunctions libexec-dir`}" || exit 1
+
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-boot.sh"          || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashglobal.sh"    || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-compatibility.sh" || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-logging.sh"       || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-options.sh"       || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-string.sh"        || exit 1
+###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
+
+main()
+{
+   _options_mini_main "$@" && set -x
+
+   local array
+   local string
+
+   local seps
+
+   seps=", \" ' : . /"
+
+   local sep
+
+   for sep in ${seps}
+   do
+      r_split "1${sep}2${sep}3" "${sep}"
+      array=( "${RVAL[@]}" )
+
+      if [ "${array[*]}" != "1 2 3" ]
+      then
+         fail "\"${array[*]}\" != \"1 2 3\""
+      fi
+
+      r_betwixt "${sep}" "${array[@]}"
+      string="${RVAL}"
+
+      if [ "${string}" != "1${sep}2${sep}3" ]
+      then
+         fail "\"${string}\" != \"1${sep}2${sep}3\""
+      fi
+   done
+
+   log_info "----- ALL PASSED -----"
+}
+
+main "$@"
+

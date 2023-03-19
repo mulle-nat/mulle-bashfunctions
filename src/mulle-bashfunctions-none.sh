@@ -509,6 +509,7 @@ function r_shell_indirect_expand()
    fi
 }
 
+
 unalias -a
 
 if [ ${ZSH_VERSION+x} ]

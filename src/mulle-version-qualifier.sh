@@ -168,14 +168,14 @@ _r_versions_qualify_s()
          _r_versions_qualify "${versions}"
 
          _s="${_s#"${_s%%[![:space:]]*}"}" # remove leading whitespace characters
-         if [ "${_closer}" != 'YES' ]
-         then
+#         if [ "${_closer}" != 'YES' ]
+#         then
             if [ "${_s:0:1}" != ")" ]
             then
                fail "Closing ) missing at \"${_s}\" of versions qualifier \"${_qualifier}\""
             fi
             _s="${_s:1}"
-         fi
+#         fi
          return
       ;;
 
@@ -331,7 +331,7 @@ versions_filter()
    fi
 
    local _s
-   local _closer
+   #local _closer
 
    # used to traverse the string
    _s="${filter}"

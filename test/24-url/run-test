@@ -26,12 +26,13 @@ fi
 
 expect()
 {
-   local output="$1"
-   local expected="$2"
+   local var="$1"
+   local output="$2"
+   local expected="$3"
 
    if [ "${output}" != "${expected}" ]
    then
-      echo "Got \"${output}\". Expected: \"${expected}\"" >&2
+      echo "Got \"${output}\" for ${var}. Expected: \"${expected}\"" >&2
       stacktrace >&2
       exit 1
    fi
@@ -56,13 +57,13 @@ test_url1()
       fail "could not parse URL \"${url}\""
    fi
 
-   expect "${_scheme}" "https"
-   expect "${_userinfo}" "git"
-   expect "${_host}" "www.mulle-kybernetik.com"
-   expect "${_port}" "666"
-   expect "${_path}" "/weblog/article.html"
-   expect "${_query}" "foo=2"
-   expect "${_fragment}" "17"
+   expect "_scheme"   "${_scheme}"   "https"
+   expect "_userinfo" "${_userinfo}" "git"
+   expect "_host"     "${_host}"     "www.mulle-kybernetik.com"
+   expect "_port"     "${_port}"     "666"
+   expect "_path"     "${_path}"     "/weblog/article.html"
+   expect "_query"    "${_query}"    "foo=2"
+   expect "_fragment" "${_fragment}" "17"
 }
 
 
@@ -84,13 +85,13 @@ test_url2()
       fail "could not parse URL \"${url}\""
    fi
 
-   expect "${_scheme}" ""
-   expect "${_userinfo}" "git"
-   expect "${_host}" "foo.gitolite.com"
-   expect "${_port}" ""
-   expect "${_path}" "repo.git"
-   expect "${_query}" ""
-   expect "${_fragment}" ""
+   expect "_scheme"   "${_scheme}" ""
+   expect "_userinfo" "${_userinfo}" "git"
+   expect "_host"     "${_host}" "foo.gitolite.com"
+   expect "_port"     "${_port}" ""
+   expect "_path"     "${_path}" "repo.git"
+   expect "_query"    "${_query}" ""
+   expect "_fragment" "${_fragment}" ""
 }
 
 
@@ -112,13 +113,13 @@ test_url3()
       fail "could not parse URL \"${url}\""
    fi
 
-   expect "${_scheme}" "file"
-   expect "${_userinfo}" ""
-   expect "${_host}" ""
-   expect "${_port}" ""
-   expect "${_path}" "/tmp/repositories/b"
-   expect "${_query}" ""
-   expect "${_fragment}" ""
+   expect "_scheme"   "${_scheme}" "file"
+   expect "_userinfo" "${_userinfo}" ""
+   expect "_host"     "${_host}" ""
+   expect "_port"     "${_port}" ""
+   expect "_path"     "${_path}" "/tmp/repositories/b"
+   expect "_query"    "${_query}" ""
+   expect "_fragment" "${_fragment}" ""
 }
 
 
@@ -134,13 +135,13 @@ test_url4()
 
    local url
 
-   url="file:///tmp/repositories/b"
+   url="file:///tmp/repositories/c"
    if ! r_url_get_path "${url}"
    then
       fail "could not parse URL \"${url}\""
    fi
 
-   expect "${RVAL}" "/tmp/repositories/b"
+   expect "path" "${RVAL}" "/tmp/repositories/c"
 }
 
 
@@ -163,9 +164,36 @@ test_url5()
       fail "could not parse URL \"${url}\""
    fi
 
-   expect "${RVAL}" "/name"
+   expect "path" "${RVAL}" "/name"
 }
 
+
+test_url6()
+{
+   local _scheme
+   local _userinfo
+   local _host
+   local _port
+   local _path
+   local _query
+   local _fragment
+
+   local url
+
+   url="https://a.com/b.git"
+   if ! __url_parse "${url}"
+   then
+      fail "could not parse URL \"${url}\""
+   fi
+
+   expect "_scheme"   "${_scheme}"   "https"
+   expect "_userinfo" "${_userinfo}" ""
+   expect "_host"     "${_host}"     "a.com"
+   expect "_port"     "${_port}"     ""
+   expect "_path"     "${_path}"     "/b.git"
+   expect "_query"    "${_query}"    ""
+   expect "_fragment" "${_fragment}" ""
+}
 
 
 main()
@@ -177,6 +205,7 @@ main()
    test_url3
    test_url4
    test_url5
+   test_url6
 
    log_info "----- ALL PASSED -----"
 }

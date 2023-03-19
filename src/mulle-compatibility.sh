@@ -279,6 +279,7 @@ function r_shell_indirect_expand()
    fi
 }
 
+
 ##
 ## Special for macros. The default for in a shell script is "supposed to"
 ## iterate though file names (e.g. for i in *). That's why globbing is on

@@ -272,12 +272,12 @@ function r_concat()
 
 
 #
-# r_remove_duplicate <s1> [separator]
+# r_remove_duplicate_separators <s1> [separator]
 #
 #    Removes all duplicate separators. The default separator is " ".
 #    "//x///y//" -> "/x/y/"
 #
-r_remove_duplicate()
+r_remove_duplicate_separators()
 {
    local s="$1"
    local separator="${2:- }"
@@ -400,7 +400,7 @@ function r_semicolon_concat()
 function r_slash_concat()
 {
    r_concat "$1" "$2" "/"
-   r_remove_duplicate "${RVAL}" "/"
+   r_remove_duplicate_separators "${RVAL}" "/"
 }
 
 
@@ -560,6 +560,18 @@ function  r_remove_line_once()
 function  r_get_last_line()
 {
   RVAL="$(sed -n '$p' <<< "$1")" # get last line
+}
+
+
+#
+# r_line_at_index <lines> <index>
+#
+#    Retrieve a line by its index (which starts at 0) from a string that
+#    contains zero, one or multiple substrings separated by linefeeds..
+#
+function r_line_at_index()
+{
+   RVAL="$(sed -n -e "$(( $2 + 1 ))p" <<< "$1")"
 }
 
 
@@ -784,11 +796,11 @@ ${line}"
 
 
 #
-# r_remove_duplicate_lines <lines>
+# r_remove_duplicate_separators_lines <lines>
 #
 #    Remove any duplicate strings in <lines>
 #
-function r_remove_duplicate_lines()
+function r_remove_duplicate_separators_lines()
 {
    RVAL="`awk '!x[$0]++' <<< "$@"`"
 }
@@ -840,6 +852,50 @@ function r_reverse_lines()
       delim=$'\n'
    done <<< "${lines}"
    IFS="${DEFAULT_IFS}"
+}
+
+
+#
+# r_split <string> [sep]
+#
+#    Parse substrings of <string> separated by <sep> into an array returned
+#    as RVAL. The default separator is the contents of the IFS variable.
+#
+#    e.g. r_split "a,b,c" ","
+#         printf "%s" "${RVAL[*]}"
+#
+function r_split()
+{
+   local s="$1"
+   local sep="${2:-${IFS}}"
+
+   if [ ${ZSH_VERSION+x} ]
+   then
+      unset RVAL
+      RVAL=("${(@ps:$sep:)s}")
+   else
+      shell_disable_glob
+      IFS="${sep}" read -r -a RVAL <<< "${s}"
+      shell_enable_glob
+   fi
+}
+
+
+#
+# r_betwixt <sep> ...
+#
+#    Interpose a string between array elements to create a large string.
+#
+#    e.g. r_betwixt ',' a b c  -> "a,b,c"
+#
+function r_betwixt()
+{
+   local sep="$1" ; shift
+
+   local tmp
+
+   printf -v tmp "%s${sep}" "$@"
+   RVAL="${tmp%"${sep}"}"
 }
 
 # ####################################################################

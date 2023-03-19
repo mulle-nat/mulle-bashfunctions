@@ -369,6 +369,47 @@ _make_tmp_in_dir_mktemp()
 }
 
 
+r_make_tmpname_in_dir_uuidgen()
+{
+   local UUIDGEN="$1"; shift
+
+   local tmpdir="$1"
+   local name="$2"
+   local extension="${3:-}"
+
+   # algorithm hinges on the fact that uuid is well globally
+   # unique, so don't shorten it.
+   local uuid
+   local fluke
+
+   fluke=0
+   RVAL=''
+
+   while :
+   do
+      if [ -z "${UUIDGEN}" ]
+      then
+         r_uuidgen
+         uuid="${RVAL}"
+      else
+         uuid="`${UUIDGEN}`" || fail "uuidgen failed"
+      fi
+
+      RVAL="${tmpdir}/${name}-${uuid}${extension}"
+      if [ ! -e "${RVAL}" ]
+      then
+         return
+      fi
+
+      fluke=$((fluke + 1 ))
+      if [ "${fluke}" -gt 20 ]
+      then
+         fail "Could not (even repeatedly) create unique \"${RVAL}\""
+      fi
+   done
+}
+
+
 _r_make_tmp_in_dir_uuidgen()
 {
    local UUIDGEN="$1"; shift
@@ -376,7 +417,7 @@ _r_make_tmp_in_dir_uuidgen()
    local tmpdir="$1"
    local name="$2"
    local filetype="${3:-f}"
-   local extension="$4"
+   local extension="${4:-}"
 
    local MKDIR
    local TOUCH
@@ -489,7 +530,7 @@ function r_make_tmp()
 
 
 #
-# r_make_tmp_file <name>
+# r_make_tmp_file [name] [extension]
 #
 #    Create a temporary file.
 #    You can leave name empty, in which case the name of the script will
@@ -504,7 +545,7 @@ function r_make_tmp_file()
 
 
 #
-# r_make_tmp_directory <name>
+# r_make_tmp_directory [name] [extension]
 #
 #    Create a temporary directory.
 #    You can leave name empty, in which case the name of the script will
@@ -660,17 +701,19 @@ function r_realpath()
 }
 
 #
-# create_symlink <source> <symlink> [absolute]
+# create_symlink <source> <symlink> [absolute] [hard]
 #
 #    Create a <symlink> link to <source>. Set [absolute] to YES, to get
 #    an absolute symlink (e.g. /usr/local/foo) instead of a relative
-#    symlink (e.g. ../../usr/local/foo)
+#    symlink (e.g. ../../usr/local/foo). You can choose a "hard" link
+#    optionally.
 #
 function create_symlink()
 {
    local source="$1"       # URL of the clone
    local symlink="$2"      # symlink of this clone (absolute or relative to $PWD)
    local absolute="${3:-NO}"
+   local hardlink="${4:-NO}"
 
    [ -e "${source}" ]     || fail "${C_RESET}${C_BOLD}${source}${C_ERROR} does not exist (${PWD#"${MULLE_USER_PWD}/"})"
    [ ! -z "${absolute}" ] || fail "absolute must be YES or NO"
@@ -717,9 +760,17 @@ function create_symlink()
       oldlink="`readlink "${symlink}"`"
    fi
 
+   local flags
+
+   flags="-s -f"
+   if [ "${hardlink}" = 'YES' ]
+   then
+      flags="-f"
+   fi
+
    if [ -z "${oldlink}" -o "${oldlink}" != "${source}" ]
    then
-      exekutor ln -s -f "${source}" "${symlink}" >&2 || \
+      exekutor ln ${flags} "${source}" "${symlink}" >&2 || \
          fail "failed to setup symlink \"${symlink}\" (to \"${source}\")"
    fi
 }
@@ -748,6 +799,73 @@ function modification_timestamp()
       ;;
    esac
 }
+
+#
+# file_devicenumber <file>
+#
+#    Get the device ID, where the file is located. Can be useful to check
+#    before generating hardlinks.
+#
+function file_devicenumber()
+{
+   stat -c "%d" "$1" # returns the decimal device number
+}
+
+
+#
+# r_file_type <file>
+#
+#    Get the type of <file>:
+#
+#    'd' : directory
+#    'D' : symlink to directory
+#    'f' : file
+#    'F' : symlink to file
+#    'd' : directory
+#    's' : other (pipe, socket, device...)
+#
+# This can be slow and clumsy. If you just want to check if <file> is a
+# directory use [ -d <file> ] instead.
+#
+function r_file_type()
+{
+   # ideally this would be one stat call
+   # but stat output sucks (language and OS dependent)
+
+   if [ -L "$1" ]
+   then
+      if [ -d "$1" ]
+      then
+         RVAL="D"
+         return
+      fi
+      RVAL="F"
+      return
+   fi
+
+   if [ -f "$1" ]
+   then
+      RVAL="f"
+      return
+   fi
+
+   if [ -d "$1" ]
+   then
+      RVAL="d"
+      return
+   fi
+
+   if [ ! -e "$1" ]
+   then
+      RVAL=
+      return 1
+   fi
+
+   RVAL="s"
+   return
+}
+
+
 
 
 #

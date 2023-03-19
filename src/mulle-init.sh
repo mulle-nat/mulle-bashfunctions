@@ -126,12 +126,20 @@ function r_resolve_symlinks()
    local filepath
 
    RVAL="$1"
+   local max=${2:-40}
 
+   if [ $max -eq 0 ]
+   then
+      RVAL=
+      return 1
+   fi
+
+   # could should use readlink -e/-m on linux ?
    if filepath="`readlink "${RVAL}"`"
    then
       r_dirname "${RVAL}"
       r_prepend_path_if_relative "${RVAL}" "${filepath}"
-      r_resolve_symlinks "${RVAL}"
+      r_resolve_symlinks "${RVAL}" $(( max - 1 ))
    fi
 }
 
