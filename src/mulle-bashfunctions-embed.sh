@@ -327,6 +327,18 @@ function r_shell_indirect_expand()
    fi
 }
 
+function shell_is_variable_defined()
+{
+   local key="$1"
+
+   if [ ${ZSH_VERSION+x} ]
+   then
+      [[ -n ${(P)key} ]]
+      return $?
+   fi
+   [ "${!key}" ]
+}
+
 
 unalias -a
 
@@ -3781,7 +3793,7 @@ function create_symlink()
 function modification_timestamp()
 {
    case "${MULLE_UNAME}" in
-      macos|*bsd|dragonfly)
+      darwin|*bsd|dragonfly)
          stat -f "%m" "$1"
       ;;
 
@@ -6033,7 +6045,7 @@ mulle_base64()
                   return $?
                ;;
 
-               macos|*bsd|dragonfly)
+               darwin|*bsd|dragonfly)
                   rexekutor "${base64}" -b "${width}" "$@"
                   return $?
                ;;

@@ -264,8 +264,12 @@ function shell_is_function()
 
 
 #
-# x=y ; y=22 ; r_shell_indirect_expand "x" ; echo "${RVAL}" -> y
-# x=y ; y=22 ; r_shell_indirect_expand "${x}" ; echo "${RVAL}" -> 22
+# r_shell_indirect_expand <name>
+#
+#    In bash this is ${!name}. This function works in zsh as well.
+#
+#    x=y ; y=22 ; r_shell_indirect_expand "x" ; echo "${RVAL}" -> y
+#    x=y ; y=22 ; r_shell_indirect_expand "${x}" ; echo "${RVAL}" -> 22
 #
 function r_shell_indirect_expand()
 {
@@ -277,6 +281,23 @@ function r_shell_indirect_expand()
    else
       RVAL="${!key}"
    fi
+}
+
+#
+# shell_is_variable_defined <name>
+#
+#    Check if a variable with <name> is defined.
+#
+function shell_is_variable_defined()
+{
+   local key="$1"
+
+   if [ ${ZSH_VERSION+x} ]
+   then
+      [[ -n ${(P)key} ]]
+      return $?
+   fi
+   [ "${!key}" ]
 }
 
 

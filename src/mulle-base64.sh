@@ -429,7 +429,7 @@ mulle_base64()
                   return $?
                ;;
 
-               macos|*bsd|dragonfly)
+               darwin|*bsd|dragonfly)
                   rexekutor "${base64}" -b "${width}" "$@"
                   return $?
                ;;

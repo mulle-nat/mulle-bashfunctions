@@ -790,7 +790,7 @@ function create_symlink()
 function modification_timestamp()
 {
    case "${MULLE_UNAME}" in
-      macos|*bsd|dragonfly)
+      darwin|*bsd|dragonfly)
          stat -f "%m" "$1"
       ;;
 

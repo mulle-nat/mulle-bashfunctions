@@ -509,6 +509,18 @@ function r_shell_indirect_expand()
    fi
 }
 
+function shell_is_variable_defined()
+{
+   local key="$1"
+
+   if [ ${ZSH_VERSION+x} ]
+   then
+      [[ -n ${(P)key} ]]
+      return $?
+   fi
+   [ "${!key}" ]
+}
+
 
 unalias -a
 
