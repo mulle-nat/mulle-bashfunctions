@@ -161,7 +161,7 @@ then
 
       local namespace
 
-      case "${s}" in
+      case "${tool}" in
          *-*)
             namespace="${tool%%-*}"
             tool="${tool#*-}"
