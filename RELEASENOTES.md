@@ -1,3 +1,27 @@
+# 6.0.0
+
+* added shell_is_variable_defined function
+* added sort functions r_qsort and r_mergesort also adds global variables ascending and descending!
+* error messages can be now suppressed with --no-errors, which can make nicer looking tests for example
+* added r_line_at_index function
+* added r_split and r_betwixt for string splitting and joining
+* fix endless symlinks resolver loops
+* new function r_make_tmpname_in_dir_uuidgen, when you don't want to create the file beforehand
+* new functions file_devicenumber and r_file_type. r_file_type is clumsy, but stat is unfortunately not usable in a cross-plarform manner to figure out the file type
+* new URL escaping function r_url_escape_path and r_url_unescape_path
+* r_remove_duplicate renamed to the more telling r_remove_duplicate_separators
+* mulle-bashfunctions gained an **apropos** function to search for functions by keyword, sort of
+use new README.md CMS
+* added a **man** command to get the documentation for a mulle-bashfunctions function. The command tries to be a little fuzzy to be more helpful
+* have a fallback base64 encoder/decoder in case base64 is not installed
+* use a custom uuidgen instead of an external one, therefore getting rid of that dependency
+* fix script installer
+* various fixes for obscure platforms like dragonfly, android, solaris
+* detect android as separate platform
+* detect msys2 as mingw for now
+
+
+
 ### 5.0.3
 
 * fix installer for (gasp) solaris

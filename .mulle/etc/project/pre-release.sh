@@ -1,8 +1,7 @@
-# -- Post Release --
-# Push stuff into debian repository
+# -- Pre Release --
 #
 
-post_release()
+pre_release()
 {
    # get rid of these of later debian build
    exekutor rm -f CPackConfig.cmake CMakeCache.txt CPackSourceConfig.cmake cmake_install.cmake
