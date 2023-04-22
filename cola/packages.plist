@@ -10,6 +10,7 @@
          os = "linux";
          manager = "apt";
          command = "apt install mulle-bashfunctions";
+         comment = "See [here](https://github.com/mulle-sde/mulle-sde-developer#debian-mulle-kybernetik-repository) for apt repository";
       }
    )
 }

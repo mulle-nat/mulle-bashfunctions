@@ -96,10 +96,10 @@ curl -L 'https://github.com/mulle-nat/mulle-bashfunctions/archive/latest.tar.gz'
 
 ### Packages
 
-| OS    | Command
-|-------|--------------------------------------------------------------
-| macos | `brew install mulle-kybernetik/mulle-bashfunctions`
-| linux | `apt install mulle-bashfunctions`
+| OS    | Command                            | Comment
+|-------|------------------------------------|-------------------------
+| macos | `brew install mulle-kybernetik/mulle-bashfunctions` | 
+| linux | `apt install mulle-bashfunctions` | See [here](https://github.com/mulle-sde/mulle-sde-developer#debian-mulle-kybernetik-repository) for apt repository
 
 
 ## Author
