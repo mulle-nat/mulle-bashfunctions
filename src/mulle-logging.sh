@@ -127,7 +127,7 @@ _log_warning()
 #
 _log_info()
 {
-   if [ "${MULLE_FLAG_LOG_TERSE:-}" != 'YES' ]
+   if ! [ "${MULLE_FLAG_LOG_TERSE:-}" = 'YES' -o "${MULLE_FLAG_LOG_TERSE:-}" = 'WARN' ]
    then
       _log_printf "${C_INFO}%b${C_RESET}\n" "$*"
    fi
@@ -397,9 +397,13 @@ log_set_trace_level()
       alias log_verbose=': #'
    fi
 
-   if [ "${MULLE_FLAG_LOG_TERSE:-}" = 'YES' ]
+   if [ "${MULLE_FLAG_LOG_TERSE:-}" = 'YES' -o "${MULLE_FLAG_LOG_TERSE:-}" = 'WARN' ]
    then
       alias log_info=': #'
+   fi
+
+   if [ "${MULLE_FLAG_LOG_TERSE:-}" = 'YES' ]
+   then
       alias log_warning=': #'
    fi
    :

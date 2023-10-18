@@ -497,6 +497,23 @@ function shell_is_function()
 }
 
 
+function shell_is_builtin_command()
+{
+   if [ ${ZSH_VERSION+x} ]
+   then
+      case "`LC_C=C whence -w "$1" `" in
+         *:*builtin)
+            return 0
+         ;;
+      esac
+      return 1
+   fi
+
+   [ "`type -t "$1"`" = "builtin" ]
+   return $?
+}
+
+
 function r_shell_indirect_expand()
 {
    local key="$1"

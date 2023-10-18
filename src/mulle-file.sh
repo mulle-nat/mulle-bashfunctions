@@ -447,6 +447,15 @@ _r_make_tmp_in_dir_uuidgen()
       fi
 
       RVAL="${tmpdir}/${name}-${uuid}${extension}"
+      if [ -e "${RVAL}" ]
+      then
+         fluke=$((fluke + 1 ))
+         if [ "${fluke}" -gt 20 ]
+         then
+            fail "Could not create \"${RVAL}\" (${filetype:-f})"
+         fi
+         continue
+      fi
 
       case "${filetype}" in
          *d*)
@@ -457,15 +466,6 @@ _r_make_tmp_in_dir_uuidgen()
             exekutor "${TOUCH}" "${RVAL}" 2> /dev/null && return 0
          ;;
       esac
-
-      if [ ! -e "${RVAL}" ]
-      then
-         fluke=$((fluke + 1 ))
-         if [ "${fluke}" -gt 20 ]
-         then
-            fail "Could not (even repeatedly) create \"${RVAL}\" (${filetype:-f})"
-         fi
-      fi
    done
 }
 

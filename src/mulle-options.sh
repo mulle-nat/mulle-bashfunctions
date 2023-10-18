@@ -225,6 +225,10 @@ function options_technical_flags()
          MULLE_FLAG_LOG_TERSE='YES'
       ;;
 
+      --silent-but-warn)
+         MULLE_FLAG_LOG_TERSE='WARN'
+      ;;
+
       -v|--verbose)
          after_trace_warning "${flag}"
 

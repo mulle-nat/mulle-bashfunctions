@@ -264,6 +264,29 @@ function shell_is_function()
 
 
 #
+# shell_is_builtin_command <name>
+#
+#    Check if a builtin function exists under this <name>
+#    Returns 0 if yes.
+#
+function shell_is_builtin_command()
+{
+   if [ ${ZSH_VERSION+x} ]
+   then
+      case "`LC_C=C whence -w "$1" `" in
+         *:*builtin)
+            return 0
+         ;;
+      esac
+      return 1
+   fi
+
+   [ "`type -t "$1"`" = "builtin" ]
+   return $?
+}
+
+
+#
 # r_shell_indirect_expand <name>
 #
 #    In bash this is ${!name}. This function works in zsh as well.

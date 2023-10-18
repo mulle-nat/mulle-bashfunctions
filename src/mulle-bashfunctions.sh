@@ -497,6 +497,23 @@ function shell_is_function()
 }
 
 
+function shell_is_builtin_command()
+{
+   if [ ${ZSH_VERSION+x} ]
+   then
+      case "`LC_C=C whence -w "$1" `" in
+         *:*builtin)
+            return 0
+         ;;
+      esac
+      return 1
+   fi
+
+   [ "`type -t "$1"`" = "builtin" ]
+   return $?
+}
+
+
 function r_shell_indirect_expand()
 {
    local key="$1"
@@ -621,7 +638,7 @@ _log_warning()
 
 _log_info()
 {
-   if [ "${MULLE_FLAG_LOG_TERSE:-}" != 'YES' ]
+   if ! [ "${MULLE_FLAG_LOG_TERSE:-}" = 'YES' -o "${MULLE_FLAG_LOG_TERSE:-}" = 'WARN' ]
    then
       _log_printf "${C_INFO}%b${C_RESET}\n" "$*"
    fi
@@ -786,9 +803,13 @@ log_set_trace_level()
       alias log_verbose=': #'
    fi
 
-   if [ "${MULLE_FLAG_LOG_TERSE:-}" = 'YES' ]
+   if [ "${MULLE_FLAG_LOG_TERSE:-}" = 'YES' -o "${MULLE_FLAG_LOG_TERSE:-}" = 'WARN' ]
    then
       alias log_info=': #'
+   fi
+
+   if [ "${MULLE_FLAG_LOG_TERSE:-}" = 'YES' ]
+   then
       alias log_warning=': #'
    fi
    :
@@ -2513,6 +2534,10 @@ function options_technical_flags()
          MULLE_FLAG_LOG_TERSE='YES'
       ;;
 
+      --silent-but-warn)
+         MULLE_FLAG_LOG_TERSE='WARN'
+      ;;
+
       -v|--verbose)
          after_trace_warning "${flag}"
 
@@ -2977,7 +3002,7 @@ function r_extensionless_basename()
 
 function r_extensionless_filename()
 {
-   RVAL="${RVAL%.*}"
+   RVAL="${1%.*}"
 }
 
 
@@ -3719,6 +3744,15 @@ _r_make_tmp_in_dir_uuidgen()
       fi
 
       RVAL="${tmpdir}/${name}-${uuid}${extension}"
+      if [ -e "${RVAL}" ]
+      then
+         fluke=$((fluke + 1 ))
+         if [ "${fluke}" -gt 20 ]
+         then
+            fail "Could not create \"${RVAL}\" (${filetype:-f})"
+         fi
+         continue
+      fi
 
       case "${filetype}" in
          *d*)
@@ -3729,15 +3763,6 @@ _r_make_tmp_in_dir_uuidgen()
             exekutor "${TOUCH}" "${RVAL}" 2> /dev/null && return 0
          ;;
       esac
-
-      if [ ! -e "${RVAL}" ]
-      then
-         fluke=$((fluke + 1 ))
-         if [ "${fluke}" -gt 20 ]
-         then
-            fail "Could not (even repeatedly) create \"${RVAL}\" (${filetype:-f})"
-         fi
-      fi
    done
 }
 

@@ -313,7 +313,7 @@ function r_extensionless_basename()
 #
 function r_extensionless_filename()
 {
-   RVAL="${RVAL%.*}"
+   RVAL="${1%.*}"
 }
 
 

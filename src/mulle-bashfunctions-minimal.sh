@@ -497,6 +497,23 @@ function shell_is_function()
 }
 
 
+function shell_is_builtin_command()
+{
+   if [ ${ZSH_VERSION+x} ]
+   then
+      case "`LC_C=C whence -w "$1" `" in
+         *:*builtin)
+            return 0
+         ;;
+      esac
+      return 1
+   fi
+
+   [ "`type -t "$1"`" = "builtin" ]
+   return $?
+}
+
+
 function r_shell_indirect_expand()
 {
    local key="$1"
@@ -621,7 +638,7 @@ _log_warning()
 
 _log_info()
 {
-   if [ "${MULLE_FLAG_LOG_TERSE:-}" != 'YES' ]
+   if ! [ "${MULLE_FLAG_LOG_TERSE:-}" = 'YES' -o "${MULLE_FLAG_LOG_TERSE:-}" = 'WARN' ]
    then
       _log_printf "${C_INFO}%b${C_RESET}\n" "$*"
    fi
@@ -786,9 +803,13 @@ log_set_trace_level()
       alias log_verbose=': #'
    fi
 
-   if [ "${MULLE_FLAG_LOG_TERSE:-}" = 'YES' ]
+   if [ "${MULLE_FLAG_LOG_TERSE:-}" = 'YES' -o "${MULLE_FLAG_LOG_TERSE:-}" = 'WARN' ]
    then
       alias log_info=': #'
+   fi
+
+   if [ "${MULLE_FLAG_LOG_TERSE:-}" = 'YES' ]
+   then
       alias log_warning=': #'
    fi
    :
@@ -2511,6 +2532,10 @@ function options_technical_flags()
 
       -s|--silent)
          MULLE_FLAG_LOG_TERSE='YES'
+      ;;
+
+      --silent-but-warn)
+         MULLE_FLAG_LOG_TERSE='WARN'
       ;;
 
       -v|--verbose)
