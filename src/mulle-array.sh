@@ -61,13 +61,12 @@ function r_add_line_lf()
    local lines="$1"
    local line="$2"
 
-   line="${line}"$'\n'
-
    if [ -z "${lines:0:1}" ]
    then
       RVAL="${line}"
+      return
    fi
-   RVAL="${lines}${line}"
+   RVAL="${lines}"$'\n'"${line}"
 }
 
 #

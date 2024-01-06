@@ -99,24 +99,28 @@ then
 
       case "${MULLE_UNAME}" in 
          linux)
-            read -r MULLE_UNAME < /proc/sys/kernel/osrelease
-            case "${MULLE_UNAME}" in
-               *-[Mm]icrosoft-*)
-                  MULLE_UNAME="windows" # wsl2, this is super slow on NTFS
-               ;;
+            MULLE_UNAME="android"
+            if [ -r /proc/sys/kernel/osrelease ]
+            then
+               read -r MULLE_UNAME < /proc/sys/kernel/osrelease
+               case "${MULLE_UNAME}" in
+                  *-[Mm]icrosoft-*)
+                     MULLE_UNAME="windows" # wsl2, this is super slow on NTFS
+                  ;;
 
-               *-[Mm]icrosoft)
-                  MULLE_UNAME="windows" # wsl1
-               ;;
+                  *-[Mm]icrosoft)
+                     MULLE_UNAME="windows" # wsl1
+                  ;;
 
-               *-android-*|*-android)
-                  MULLE_UNAME="android"
-               ;;
-     
-               *)
-                  MULLE_UNAME="linux"
-               ;;
-            esac
+                  *-android-*|*-android)
+                     MULLE_UNAME="android"
+                  ;;
+
+                  *)
+                     MULLE_UNAME="linux"
+                  ;;
+               esac
+            fi
          ;;
 
          msys|cygwin)
@@ -776,7 +780,6 @@ log_set_trace_level()
    alias log_verbose='_log_verbose'
    alias log_warning='_log_warning'
 
-
    if [ "${MULLE_FLAG_LOG_DEBUG:-}" != 'YES' ]
    then
       alias log_entry=': #'
@@ -1039,6 +1042,19 @@ eval_exekutor_print()
 }
 
 
+_exekutor_trace()
+{
+   local printer="$1"; shift
+
+   if [ -z "${MULLE_EXEKUTOR_LOG_DEVICE:-}" ]
+   then
+      ${printer} "$@" >&2
+   else
+      ${printer} "$@" > "${MULLE_EXEKUTOR_LOG_DEVICE}"
+   fi
+}
+
+
 exekutor_trace()
 {
    local printer="$1"; shift
@@ -1051,6 +1067,21 @@ exekutor_trace()
       else
          ${printer} "$@" > "${MULLE_EXEKUTOR_LOG_DEVICE}"
       fi
+   fi
+}
+
+
+_exekutor_trace_output()
+{
+   local printer="$1"; shift
+   local redirect="$1"; shift
+   local output="$1"; shift
+
+   if [ -z "${MULLE_EXEKUTOR_LOG_DEVICE:-}" ]
+   then
+      ${printer} "$@" "${redirect}" "${output}" >&2
+   else
+      ${printer} "$@" "${redirect}" "${output}" > "${MULLE_EXEKUTOR_LOG_DEVICE}"
    fi
 }
 
@@ -1074,7 +1105,10 @@ exekutor_trace_output()
 
 function exekutor()
 {
-   exekutor_trace "exekutor_print" "$@"
+   if [ "${MULLE_FLAG_LOG_EXEKUTOR:-}" = 'YES' ]
+   then
+      _exekutor_trace "exekutor_print" "$@"
+   fi
 
    if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN:-}" = 'YES' ]
    then
@@ -1092,7 +1126,10 @@ function exekutor()
 
 function rexekutor()
 {
-   exekutor_trace "exekutor_print" "$@"
+   if [ "${MULLE_FLAG_LOG_EXEKUTOR:-}" = 'YES' ]
+   then
+      _exekutor_trace "exekutor_print" "$@"
+   fi
 
    "$@"
    MULLE_EXEKUTOR_RVAL=$?
@@ -1105,7 +1142,10 @@ function rexekutor()
 
 function eval_exekutor()
 {
-   exekutor_trace "eval_exekutor_print" "$@"
+   if [ "${MULLE_FLAG_LOG_EXEKUTOR:-}" = 'YES' ]
+   then
+      _exekutor_trace "eval_exekutor_print" "$@"
+   fi
 
    if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN:-}" = 'YES' ]
    then
@@ -1123,7 +1163,10 @@ function eval_exekutor()
 
 function eval_rexekutor()
 {
-   exekutor_trace "eval_exekutor_print" "$@"
+   if [ "${MULLE_FLAG_LOG_EXEKUTOR:-}" = 'YES' ]
+   then
+      _exekutor_trace "eval_exekutor_print" "$@"
+   fi
 
    eval "$@"
    MULLE_EXEKUTOR_RVAL=$?
@@ -1138,7 +1181,10 @@ function redirect_exekutor()
 {
    local output="$1"; shift
 
-   exekutor_trace_output "exekutor_print" '>' "${output}" "$@"
+   if [ "${MULLE_FLAG_LOG_EXEKUTOR:-}" = 'YES' ]
+   then
+      _exekutor_trace_output "exekutor_print" '>' "${output}" "$@"
+   fi
 
    if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN:-}" = 'YES' ]
    then
@@ -1159,7 +1205,10 @@ function redirect_eval_exekutor()
 {
    local output="$1"; shift
 
-   exekutor_trace_output "eval_exekutor_print" '>' "${output}" "$@"
+   if [ "${MULLE_FLAG_LOG_EXEKUTOR:-}" = 'YES' ]
+   then
+      _exekutor_trace_output "eval_exekutor_print" '>' "${output}" "$@"
+   fi
 
    if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN:-}" = 'YES' ]
    then
@@ -1180,7 +1229,10 @@ redirect_append_exekutor()
 {
    local output="$1"; shift
 
-   exekutor_trace_output "exekutor_print" '>>' "${output}" "$@"
+   if [ "${MULLE_FLAG_LOG_EXEKUTOR:-}" = 'YES' ]
+   then
+      _exekutor_trace_output "exekutor_print" '>>' "${output}" "$@"
+   fi
 
    if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN:-}" = 'YES' ]
    then
@@ -1201,7 +1253,10 @@ _redirect_append_eval_exekutor()
 {
    local output="$1"; shift
 
-   exekutor_trace_output "eval_exekutor_print" '>>' "${output}" "$@"
+   if [ "${MULLE_FLAG_LOG_EXEKUTOR:-}" = 'YES' ]
+   then
+      _exekutor_trace_output "eval_exekutor_print" '>>' "${output}" "$@"
+   fi
 
    if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN:-}" = 'YES' ]
    then
@@ -1223,7 +1278,10 @@ _append_tee_exekutor()
    local output="$1"; shift
    local teeoutput="$1"; shift
 
-   exekutor_trace_output "eval_exekutor_print" '>>' "${output}" "$@"
+   if [ "${MULLE_FLAG_LOG_EXEKUTOR:-}" = 'YES' ]
+   then
+      _exekutor_trace_output "eval_exekutor_print" '>>' "${output}" "$@"
+   fi
 
    if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN:-}" = 'YES' ]
    then
@@ -1250,7 +1308,10 @@ _append_tee_eval_exekutor()
    local output="$1"; shift
    local teeoutput="$1"; shift
 
-   exekutor_trace_output "eval_exekutor_print" '>>' "${output}" "$@"
+   if [ "${MULLE_FLAG_LOG_EXEKUTOR:-}" = 'YES' ]
+   then
+      _exekutor_trace_output "eval_exekutor_print" '>>' "${output}" "$@"
+   fi
 
    if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN:-}" = 'YES' ]
    then
@@ -1604,22 +1665,13 @@ function r_comma_remove()
    r_list_remove "$1" "$2" ","
 }
 
-
 function r_add_line()
 {
-   local lines="$1"
-   local line="$2"
-
-   if [ ! -z "${lines:0:1}" ]
+   if [ ! -z "${1:0:1}" -a ! -z "${2:0:1}" ]
    then
-      if [ ! -z "${line:0:1}" ]
-      then
-         RVAL="${lines}"$'\n'"${line}"
-      else
-         RVAL="${lines}"
-      fi
+      RVAL="$1"$'\n'"$2"
    else
-      RVAL="${line}"
+      RVAL="$1$2"
    fi
 }
 
@@ -2459,7 +2511,7 @@ function options_setup_trace()
 
          if [ "${MULLE_TRACE_POSTPONE:-}" != 'YES' ]
          then
-            PS4="+ ${ps4string} + "
+            PS4="+ ${MULLE_TRACE_PS4} + "
          fi
          rc=0
       ;;
@@ -2618,9 +2670,9 @@ function options_technical_flags()
          MULLE_TRACE='1848'
          if [ ${ZSH_VERSION+x} ]
          then
-            ps4string='%1x:%I' # TODO: fix for zsh
+            MULLE_TRACE_PS4='%1x:%I' # TODO: fix for zsh
          else
-            ps4string='${BASH_SOURCE[0]##*/}:${LINENO}'
+            MULLE_TRACE_PS4='${BASH_SOURCE[0]##*/}:${LINENO}'
          fi
       ;;
 
@@ -2628,9 +2680,9 @@ function options_technical_flags()
          MULLE_TRACE='1848'
          if [ ${ZSH_VERSION+x} ]
          then
-            ps4string='%1x:%I'
+            MULLE_TRACE_PS4='%1x:%I'
          else
-            ps4string='${BASH_SOURCE[0]##*/}:${LINENO}'
+            MULLE_TRACE_PS4='${BASH_SOURCE[0]##*/}:${LINENO}'
          fi
          return # don't propagate
       ;;
@@ -2639,9 +2691,9 @@ function options_technical_flags()
          before_trace_fail "${flag}"
          if [ ${ZSH_VERSION+x} ]
          then
-            ps4string='%1x:%I \"\w\"'
+            MULLE_TRACE_PS4='%1x:%I \"\w\"'
          else
-            ps4string='${BASH_SOURCE[0]##*/}:${LINENO} \"\w\"'
+            MULLE_TRACE_PS4='${BASH_SOURCE[0]##*/}:${LINENO} \"\w\"'
          fi
       ;;
 
@@ -2654,17 +2706,17 @@ function options_technical_flags()
                linux)
                   if [ ${ZSH_VERSION+x} ]
                   then
-                     ps4string='$(date "+%s.%N (%1x:%I)")'
+                     MULLE_TRACE_PS4='$(date "+%s.%N (%1x:%I)")'
                   else
-                     ps4string='$(date "+%s.%N (${BASH_SOURCE[0]##*/}:${LINENO})")'
+                     MULLE_TRACE_PS4='$(date "+%s.%N (${BASH_SOURCE[0]##*/}:${LINENO})")'
                   fi
                ;;
                *)
                   if [ ${ZSH_VERSION+x} ]
                   then
-                     ps4string='$(date "+%s (%1x:%I)")'
+                     MULLE_TRACE_PS4='$(date "+%s (%1x:%I)")'
                   else
-                     ps4string='$(date "+%s (${BASH_SOURCE[0]##*/}:${LINENO})")'
+                     MULLE_TRACE_PS4='$(date "+%s (${BASH_SOURCE[0]##*/}:${LINENO})")'
                   fi
                ;;
             esac
@@ -2675,9 +2727,9 @@ function options_technical_flags()
          before_trace_fail "${flag}"
          if [ ${ZSH_VERSION+x} ]
          then
-            ps4string='%1x:%I \".../\W\"'
+            MULLE_TRACE_PS4='%1x:%I \".../\W\"'
          else
-            ps4string='${BASH_SOURCE[0]##*/}:${LINENO} \".../\W\"'
+            MULLE_TRACE_PS4='${BASH_SOURCE[0]##*/}:${LINENO} \".../\W\"'
          fi
       ;;
 
@@ -2695,9 +2747,9 @@ function options_technical_flags()
          MULLE_TRACE='1848'
          if [ ${ZSH_VERSION+x} ]
          then
-            ps4string='%1x:%I'
+            MULLE_TRACE_PS4='%1x:%I'
          else
-            ps4string='${BASH_SOURCE[0]##*/}:${LINENO}'
+            MULLE_TRACE_PS4='${BASH_SOURCE[0]##*/}:${LINENO}'
          fi
          flag="${flag%T}"
       ;;

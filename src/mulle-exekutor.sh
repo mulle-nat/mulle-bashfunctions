@@ -107,6 +107,19 @@ eval_exekutor_print()
 }
 
 
+_exekutor_trace()
+{
+   local printer="$1"; shift
+
+   if [ -z "${MULLE_EXEKUTOR_LOG_DEVICE:-}" ]
+   then
+      ${printer} "$@" >&2
+   else
+      ${printer} "$@" > "${MULLE_EXEKUTOR_LOG_DEVICE}"
+   fi
+}
+
+
 exekutor_trace()
 {
    local printer="$1"; shift
@@ -119,6 +132,21 @@ exekutor_trace()
       else
          ${printer} "$@" > "${MULLE_EXEKUTOR_LOG_DEVICE}"
       fi
+   fi
+}
+
+
+_exekutor_trace_output()
+{
+   local printer="$1"; shift
+   local redirect="$1"; shift
+   local output="$1"; shift
+
+   if [ -z "${MULLE_EXEKUTOR_LOG_DEVICE:-}" ]
+   then
+      ${printer} "$@" "${redirect}" "${output}" >&2
+   else
+      ${printer} "$@" "${redirect}" "${output}" > "${MULLE_EXEKUTOR_LOG_DEVICE}"
    fi
 }
 
@@ -149,7 +177,10 @@ exekutor_trace_output()
 #
 function exekutor()
 {
-   exekutor_trace "exekutor_print" "$@"
+   if [ "${MULLE_FLAG_LOG_EXEKUTOR:-}" = 'YES' ]
+   then
+      _exekutor_trace "exekutor_print" "$@"
+   fi
 
    if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN:-}" = 'YES' ]
    then
@@ -175,7 +206,10 @@ function exekutor()
 #
 function rexekutor()
 {
-   exekutor_trace "exekutor_print" "$@"
+   if [ "${MULLE_FLAG_LOG_EXEKUTOR:-}" = 'YES' ]
+   then
+      _exekutor_trace "exekutor_print" "$@"
+   fi
 
    "$@"
    MULLE_EXEKUTOR_RVAL=$?
@@ -193,7 +227,10 @@ function rexekutor()
 #
 function eval_exekutor()
 {
-   exekutor_trace "eval_exekutor_print" "$@"
+   if [ "${MULLE_FLAG_LOG_EXEKUTOR:-}" = 'YES' ]
+   then
+      _exekutor_trace "eval_exekutor_print" "$@"
+   fi
 
    if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN:-}" = 'YES' ]
    then
@@ -216,7 +253,10 @@ function eval_exekutor()
 #
 function eval_rexekutor()
 {
-   exekutor_trace "eval_exekutor_print" "$@"
+   if [ "${MULLE_FLAG_LOG_EXEKUTOR:-}" = 'YES' ]
+   then
+      _exekutor_trace "eval_exekutor_print" "$@"
+   fi
 
    eval "$@"
    MULLE_EXEKUTOR_RVAL=$?
@@ -238,7 +278,10 @@ function redirect_exekutor()
    # funny not found problem ? the base directory of output is missing!a
    local output="$1"; shift
 
-   exekutor_trace_output "exekutor_print" '>' "${output}" "$@"
+   if [ "${MULLE_FLAG_LOG_EXEKUTOR:-}" = 'YES' ]
+   then
+      _exekutor_trace_output "exekutor_print" '>' "${output}" "$@"
+   fi
 
    if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN:-}" = 'YES' ]
    then
@@ -265,7 +308,10 @@ function redirect_eval_exekutor()
    # funny not found problem ? the base directory of output is missing!a
    local output="$1"; shift
 
-   exekutor_trace_output "eval_exekutor_print" '>' "${output}" "$@"
+   if [ "${MULLE_FLAG_LOG_EXEKUTOR:-}" = 'YES' ]
+   then
+      _exekutor_trace_output "eval_exekutor_print" '>' "${output}" "$@"
+   fi
 
    if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN:-}" = 'YES' ]
    then
@@ -293,7 +339,10 @@ redirect_append_exekutor()
    # funny not found problem ? the base directory of output is missing!a
    local output="$1"; shift
 
-   exekutor_trace_output "exekutor_print" '>>' "${output}" "$@"
+   if [ "${MULLE_FLAG_LOG_EXEKUTOR:-}" = 'YES' ]
+   then
+      _exekutor_trace_output "exekutor_print" '>>' "${output}" "$@"
+   fi
 
    if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN:-}" = 'YES' ]
    then
@@ -315,7 +364,10 @@ _redirect_append_eval_exekutor()
    # You have a funny "not found" problem ? the base directory of output is missing!
    local output="$1"; shift
 
-   exekutor_trace_output "eval_exekutor_print" '>>' "${output}" "$@"
+   if [ "${MULLE_FLAG_LOG_EXEKUTOR:-}" = 'YES' ]
+   then
+      _exekutor_trace_output "eval_exekutor_print" '>>' "${output}" "$@"
+   fi
 
    if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN:-}" = 'YES' ]
    then
@@ -338,7 +390,10 @@ _append_tee_exekutor()
    local output="$1"; shift
    local teeoutput="$1"; shift
 
-   exekutor_trace_output "eval_exekutor_print" '>>' "${output}" "$@"
+   if [ "${MULLE_FLAG_LOG_EXEKUTOR:-}" = 'YES' ]
+   then
+      _exekutor_trace_output "eval_exekutor_print" '>>' "${output}" "$@"
+   fi
 
    if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN:-}" = 'YES' ]
    then
@@ -366,7 +421,10 @@ _append_tee_eval_exekutor()
    local output="$1"; shift
    local teeoutput="$1"; shift
 
-   exekutor_trace_output "eval_exekutor_print" '>>' "${output}" "$@"
+   if [ "${MULLE_FLAG_LOG_EXEKUTOR:-}" = 'YES' ]
+   then
+      _exekutor_trace_output "eval_exekutor_print" '>>' "${output}" "$@"
+   fi
 
    if [ "${MULLE_FLAG_EXEKUTOR_DRY_RUN:-}" = 'YES' ]
    then

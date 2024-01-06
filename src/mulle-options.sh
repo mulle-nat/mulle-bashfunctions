@@ -128,7 +128,7 @@ function options_setup_trace()
             # log_trace "1848 trace (set -x) started"
             # set -x # lol fcking zsh turns this off at function end
             #        # unsetopt localoptions does not help
-            PS4="+ ${ps4string} + "
+            PS4="+ ${MULLE_TRACE_PS4} + "
          fi
          rc=0
       ;;
@@ -316,9 +316,9 @@ function options_technical_flags()
          MULLE_TRACE='1848'
          if [ ${ZSH_VERSION+x} ]
          then
-            ps4string='%1x:%I' # TODO: fix for zsh
+            MULLE_TRACE_PS4='%1x:%I' # TODO: fix for zsh
          else
-            ps4string='${BASH_SOURCE[0]##*/}:${LINENO}'
+            MULLE_TRACE_PS4='${BASH_SOURCE[0]##*/}:${LINENO}'
          fi
          # propagate
       ;;
@@ -327,9 +327,9 @@ function options_technical_flags()
          MULLE_TRACE='1848'
          if [ ${ZSH_VERSION+x} ]
          then
-            ps4string='%1x:%I'
+            MULLE_TRACE_PS4='%1x:%I'
          else
-            ps4string='${BASH_SOURCE[0]##*/}:${LINENO}'
+            MULLE_TRACE_PS4='${BASH_SOURCE[0]##*/}:${LINENO}'
          fi
          return # don't propagate
       ;;
@@ -338,9 +338,9 @@ function options_technical_flags()
          before_trace_fail "${flag}"
          if [ ${ZSH_VERSION+x} ]
          then
-            ps4string='%1x:%I \"\w\"'
+            MULLE_TRACE_PS4='%1x:%I \"\w\"'
          else
-            ps4string='${BASH_SOURCE[0]##*/}:${LINENO} \"\w\"'
+            MULLE_TRACE_PS4='${BASH_SOURCE[0]##*/}:${LINENO} \"\w\"'
          fi
       ;;
 
@@ -360,17 +360,17 @@ function options_technical_flags()
                linux)
                   if [ ${ZSH_VERSION+x} ]
                   then
-                     ps4string='$(date "+%s.%N (%1x:%I)")'
+                     MULLE_TRACE_PS4='$(date "+%s.%N (%1x:%I)")'
                   else
-                     ps4string='$(date "+%s.%N (${BASH_SOURCE[0]##*/}:${LINENO})")'
+                     MULLE_TRACE_PS4='$(date "+%s.%N (${BASH_SOURCE[0]##*/}:${LINENO})")'
                   fi
                ;;
                *)
                   if [ ${ZSH_VERSION+x} ]
                   then
-                     ps4string='$(date "+%s (%1x:%I)")'
+                     MULLE_TRACE_PS4='$(date "+%s (%1x:%I)")'
                   else
-                     ps4string='$(date "+%s (${BASH_SOURCE[0]##*/}:${LINENO})")'
+                     MULLE_TRACE_PS4='$(date "+%s (${BASH_SOURCE[0]##*/}:${LINENO})")'
                   fi
                ;;
             esac
@@ -382,9 +382,9 @@ function options_technical_flags()
          before_trace_fail "${flag}"
          if [ ${ZSH_VERSION+x} ]
          then
-            ps4string='%1x:%I \".../\W\"'
+            MULLE_TRACE_PS4='%1x:%I \".../\W\"'
          else
-            ps4string='${BASH_SOURCE[0]##*/}:${LINENO} \".../\W\"'
+            MULLE_TRACE_PS4='${BASH_SOURCE[0]##*/}:${LINENO} \".../\W\"'
          fi
       ;;
 
@@ -402,9 +402,9 @@ function options_technical_flags()
          MULLE_TRACE='1848'
          if [ ${ZSH_VERSION+x} ]
          then
-            ps4string='%1x:%I'
+            MULLE_TRACE_PS4='%1x:%I'
          else
-            ps4string='${BASH_SOURCE[0]##*/}:${LINENO}'
+            MULLE_TRACE_PS4='${BASH_SOURCE[0]##*/}:${LINENO}'
          fi
          flag="${flag%T}"
       ;;

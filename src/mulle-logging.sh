@@ -369,7 +369,7 @@ log_set_trace_level()
    alias log_verbose='_log_verbose'
    alias log_warning='_log_warning'
 
-
+   # memo: need ': #' instead of '#' for if then else
    if [ "${MULLE_FLAG_LOG_DEBUG:-}" != 'YES' ]
    then
       alias log_entry=': #'

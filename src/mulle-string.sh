@@ -367,7 +367,7 @@ function r_colon_concat()
 #
 #    concatenate strings, separating them with a ','
 #    use for lists w/o empty elements. This function removes duplicate ','
-#    as well as leading and trailing ':'.
+#    as well as leading and trailing ','.
 #
 function r_comma_concat()
 {
@@ -413,7 +413,7 @@ function r_slash_concat()
 # RESET
 # NOCOLOR
 #
-#    A "list" is a string that consist of substrings (items), separated by a
+#    A "list" is a string that consists of substrings (items), separated by a
 #    separator string. A special sort of "list" uses the linefeed ($'\n') as
 #    the item separator. Here the item is called a "line" and the list is
 #    called "lines". There is extensive support for handling such line lists.
@@ -459,30 +459,22 @@ function r_comma_remove()
    r_list_remove "$1" "$2" ","
 }
 
-
 #
 # r_add_line <lines> <line>
 #
 #   Add a <line> to a <lines> which consists of zero, one or multiple
 #   substrings separated by linefeeds.
 #
-#   this function suppresses empty lines
+#   this function suppresses empty lines. To not suppress empty lines
+#   use r_add_line_lf (in 'array')
 #
 function r_add_line()
 {
-   local lines="$1"
-   local line="$2"
-
-   if [ ! -z "${lines:0:1}" ]
+   if [ ! -z "${1:0:1}" -a ! -z "${2:0:1}" ]
    then
-      if [ ! -z "${line:0:1}" ]
-      then
-         RVAL="${lines}"$'\n'"${line}"
-      else
-         RVAL="${lines}"
-      fi
+      RVAL="$1"$'\n'"$2"
    else
-      RVAL="${line}"
+      RVAL="$1$2"
    fi
 }
 
@@ -646,7 +638,7 @@ _find_empty_line_zsh()
 
 
 # zsh:
-# this is faster than calling grep -F externally
+# this is faster than calling grep -F externally (for small arrays)
 # this is faster than while read line <<< lines
 # this is faster than case ${lines} in 
 #
@@ -681,7 +673,7 @@ _find_line_zsh()
 
 
 #
-# find_line <lines> <line> [separator]
+# find_line <lines> <line>
 #
 #    Check if a substring <line> is contained in the <lines> string, which
 #    consists of substrings separated by linefeed.

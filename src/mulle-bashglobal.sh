@@ -120,26 +120,30 @@ then
 
       case "${MULLE_UNAME}" in 
          linux)
-            # check for WSL (Windows) we want this to be Windows then
-            # why not `uname -r` ?
-            read -r MULLE_UNAME < /proc/sys/kernel/osrelease
-            case "${MULLE_UNAME}" in
-               *-[Mm]icrosoft-*)
-                  MULLE_UNAME="windows" # wsl2, this is super slow on NTFS
-               ;;
+            # latest termux, does not like reading /proc (shucks)
+            # we assume other "real" linuxes are cool though
+            MULLE_UNAME="android"
+            if [ -r /proc/sys/kernel/osrelease ]
+            then
+               read -r MULLE_UNAME < /proc/sys/kernel/osrelease
+               case "${MULLE_UNAME}" in
+                  *-[Mm]icrosoft-*)
+                     MULLE_UNAME="windows" # wsl2, this is super slow on NTFS
+                  ;;
 
-               *-[Mm]icrosoft)
-                  MULLE_UNAME="windows" # wsl1
-               ;;
+                  *-[Mm]icrosoft)
+                     MULLE_UNAME="windows" # wsl1
+                  ;;
 
-               *-android-*|*-android)
-                  MULLE_UNAME="android"
-               ;;
-     
-               *)
-                  MULLE_UNAME="linux"
-               ;;
-            esac
+                  *-android-*|*-android)
+                     MULLE_UNAME="android"
+                  ;;
+
+                  *)
+                     MULLE_UNAME="linux"
+                  ;;
+               esac
+            fi
          ;;
 
          #

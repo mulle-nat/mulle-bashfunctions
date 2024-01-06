@@ -230,6 +230,25 @@ function r_smart_file_upcase_identifier()
 
 
 
+function r_smart_file_downcase_identifier()
+{
+   local s="$1"
+
+   s="${s//-/__}"
+
+   r_lowercase "$s"
+   r_identifier "${RVAL}"
+
+   if [ "${RVAL}" = "$s" ]
+   then
+      return
+   fi
+
+   r_de_camel_case_identifier "$s"
+   r_lowercase "${RVAL}"
+}
+
+
 fi
 
 :

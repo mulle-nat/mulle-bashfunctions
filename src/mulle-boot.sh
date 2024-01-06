@@ -1,3 +1,4 @@
+### >> START OF mulle-boot.sh >>
 # shellcheck shell=bash
 # shellcheck disable=SC2236
 # shellcheck disable=SC2166
@@ -87,3 +88,4 @@ case "$PATH" in
    ;;
 esac
 
+### << END OF mulle-boot.sh <<

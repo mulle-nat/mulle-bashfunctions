@@ -1,3 +1,13 @@
+### How to write single-file mulle-bash scripts
+
+Use `mulle-sde add my-script.sh` to create a mulle-bash script skeleton. This
+script needs mulle-bashfunctions installed to work.
+Search for desired functionality with `mulle-bashfunctions apropos`. Once your
+script is ready for distribution, say `mulle-bashfunction embed < my-script-sh`.
+Now you have a single script file, that you can copy to any other host/OS that
+has bash or zsh installed, but needs no mulle-bashfunctions installation.
+(Undo with `mulle-bashfunction extract`).
+
 ### Runtime environment
 
 If run under **zsh**, `mulle-bashfunctions.sh` will `setopt sh_word_split`
@@ -8,6 +18,7 @@ and `setopt POSIX_ARGZERO` and will also `set -o GLOB_SUBST`.
 * `expand_aliases` is set and required for use of the `.for .do .done` macros.
 * `-u` or `+u` should work
 * `-e` will not work (!)
+* `posix` is turned off
 
 Glob settings are unaffected and expected to be enabled by default.
 
@@ -15,17 +26,18 @@ Glob settings are unaffected and expected to be enabled by default.
 
 `RVAL` is a global variable. It is used to pass return values from functions.
 The RVAL value can be clobbered by **any** function. Functions that return RVAL
-are prefixed with `r_` or `_r_` or somesuch. Functions that return multiple
+are prefixed with `r_` or `_r_` or some such. Functions that return multiple
 values are currently prefixed with `__`. This may change to `g_` in the
 future.
 
 
 ### Develop
 
-Do not edit the almagamated `mulle-bashfunctions*.sh` files, they are generated
+Do not edit the amalgamated `mulle-bashfunctions*.sh` files, they are generated
 by running `cmake .` in the project directory.
 Check out the small pamphlet [Modern Bash (Zsh) Scripting](https://www.mulle-kybernetik.com/modern-bash-scripting)
 by yours truly, for some background information on the techniques being used.
+
 
 
 

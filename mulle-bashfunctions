@@ -65,6 +65,8 @@ Examples:
       eval \`mulle-bashfunctions load all\`
 
 Commands:
+   apropos <f>    : search for a function by keywords
+   embed          : embed mulle-bashfunctions into a script
    env            : environment needed for "mulle-bashfunctions.sh"
    functions      : list defined functions
    hostname       : show system hostname used by mulle-bashfunctions
@@ -76,6 +78,7 @@ Commands:
    uname          : show system short name used by mulle-bashfunctions
    version        : print currently used version
    versions       : list installed versions
+
 EOF
 
    exit 1
@@ -641,37 +644,59 @@ apropos_function()
 }
 
 
+MINIMAL_HEAD_MARKER='### >> START OF mulle-bashfunctions-minimal-embed.sh >>'
+MINIMAL_FOOT_MARKER='### << END OF mulle-bashfunctions-minimal-embed.sh <<'
 
+DEFAULT_HEAD_MARKER='### >> START OF mulle-bashfunctions-embed.sh >>'
+DEFAULT_FOOT_MARKER='### << END OF mulle-bashfunctions-embed.sh <<'
 
-HEAD_MARKER='### >> START OF mulle-bashfunctions-embed.sh >>'
-FOOT_MARKER='### << END OF mulle-bashfunctions-embed.sh <<'
+ALL_HEAD_MARKER='### >> START OF mulle-bashfunctions-all-embed.sh >>'
+ALL_FOOT_MARKER='### << END OF mulle-bashfunctions-all-embed.sh <<'
 
 BOOT_HEAD_MARKER='### >> START OF mulle-boot.sh >>'
 BOOT_FOOT_MARKER='### << END OF mulle-boot.sh <<'
 
 
-mulle_bashfunctions_usage()
+mulle_bashfunctions_embed_usage()
 {
    [ $# -ne 0 ] && log_error "$*"
-
 
    cat <<EOF >&2
 Usage:
    mulle-bashfunctions embed
 
-   Insert or update the mulle-bashfunctions-embed.sh code between these two
-   markers:
+   This lazy script just reads from stdio and outputs to stdout.
 
-   ${HEAD_MARKER}
-   ${FOOT_MARKER}
-
-   Insert or update the mulle-boot.sh code between these two markers:
+   Inserts or updates the mulle-boot.sh code between these two markers:
 
    ${BOOT_HEAD_MARKER}
    ${BOOT_FOOT_MARKER}
 
+   If there is a \`#!/usr/bin/env mulle-bash\` line on top, it will be replaced
+   by \`bin/sh\`. If these markers are missing the embed can not work.
+   The place should be at the very, very top (below the \${TRACE} = 'YES', if
+   that exists.
 
-   This lazy script just reads from stdio and outputs to stdout.
+   Inserts or updates the mulle-bashfunctions-embed.sh code between these two
+   markers for minimal:
+
+   ${MINIMAL_HEAD_MARKER}
+   ${MINIMAL_FOOT_MARKER}
+
+   default:
+
+   ${DEFAULT_HEAD_MARKER}
+   ${DEFAULT_FOOT_MARKER}
+
+   all:
+
+   ${ALL_HEAD_MARKER}
+   ${ALL_FOOT_MARKER}
+
+   If these markers are missing in your script the embed can not work. To
+   change the chose mulle-bashfunctions edit the markers in your script.
+   A convenient place to place these marker sis right after the booter
+   (below MULLE_EXECUTABLE_VERSION if that line exists).
 
 EOF
    exit 1
@@ -684,38 +709,53 @@ mulle_boot_embed()
    do
       case "$1" in
          *)
-            mulle_bashfunctions_usage
+            mulle_bashfunctions_embed_usage
          ;;
       esac
    done
 
    local line
+   local found='NO'
 
    # initial state, searching for start
-   IFS=$'\n'
-   while read -r line
+   while IFS=$'\n' read -r line
    do
+      if [ "${line}" = "#! /usr/bin/env mulle-bash" ]
+      then
+         printf "%s\n" "#! /bin/sh"
+         continue
+      fi
+
       if [ "${line}" = "${BOOT_HEAD_MARKER}" ]
       then
+         found='YES'
          break
       fi
       printf "%s\n" "${line}"
    done
 
+   if [ "${found}" = 'NO' ]
+   then
+      mulle_bashfunctions_embed_usage "Add boot markers to your source, before running embed"
+   fi
+
    # start found and consumed now put in embed.sh
    cat "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-boot.sh" || exit 1
 
-   # now search for end
-   while read -r line
-   do
-      if [ "${line}" = "${BOOT_FOOT_MARKER}" ]
-      then
-         break
-      fi
-   done
+   if [ "${found}" = 'YES' ]
+   then
+      # now search for end
+      while IFS=$'\n' read -r line
+      do
+         if [ "${line}" = "${BOOT_FOOT_MARKER}" ]
+         then
+            break
+         fi
+      done
+   fi
 
    # output rest
-   while read -r line
+   while IFS=$'\n' read -r line
    do
       printf "%s\n" "${line}"
    done
@@ -724,46 +764,193 @@ mulle_boot_embed()
 
 mulle_bashfunctions_embed()
 {
+   local filename
+
    while [ $# -ne 0 ]
    do
       case "$1" in
          *)
-            mulle_bashfunctions_usage
+            exit 1
          ;;
       esac
    done
 
    local line
+   local found
 
    # initial state, searching for start
-   IFS=$'\n'
-   while read -r line
+   while IFS=$'\n' read -r line
    do
-      if [ "${line}" = "${HEAD_MARKER}" ]
+      if [ "${line}" = "${MINIMAL_HEAD_MARKER}" -o \
+           "${line}" = "${DEFAULT_HEAD_MARKER}" -o \
+           "${line}" = "${ALL_HEAD_MARKER}" ]
       then
+         local found="${line}"
          break
       fi
       printf "%s\n" "${line}"
    done
 
+   if [ -z "${found}" ]
+   then
+      mulle_bashfunctions_embed_usage "Add embed markers to your source, before running embed"
+   fi
+
+   case "${found}" in
+      *-all-*)
+         log_verbose "Determined ${C_MAGENTA}${C_BOLD}all${C_VERBOSE} embedding"
+         filename="mulle-bashfunctions-all-embed.sh"
+      ;;
+
+      *-minimal-*)
+         log_verbose "Determined ${C_MAGENTA}${C_BOLD}minimal${C_VERBOSE} embedding"
+         filename="mulle-bashfunctions-minimal-embed.sh"
+      ;;
+
+      *)
+         log_verbose "Defaulting to standard embedding"
+         filename="mulle-bashfunctions-embed.sh"
+      ;;
+   esac
+
    # start found and consumed now put in embed.sh
-   cat "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions-embed.sh" || exit 1
+   cat "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/${filename}" || exit 1
 
    # now search for end
-   while read -r line
+   while IFS=$'\n' read -r line
    do
-      if [ "${line}" = "${FOOT_MARKER}" ]
+      if [ "${line}" = "${MINIMAL_FOOT_MARKER}" -o \
+           "${line}" = "${DEFAULT_FOOT_MARKER}" -o \
+           "${line}" = "${ALL_FOOT_MARKER}" ]
       then
          break
       fi
    done
 
    # output rest
-   while read -r line
+   while IFS=$'\n' read -r line
    do
       printf "%s\n" "${line}"
    done
 }
+
+
+mulle_bashfunctions_extract_usage()
+{
+   [ $# -ne 0 ] && log_error "$*"
+
+   cat <<EOF >&2
+Usage:
+   mulle-bashfunctions extract
+
+   Undo what embed did. See embed for more information.
+
+EOF
+   exit 1
+}
+
+
+mulle_boot_extract()
+{
+   while [ $# -ne 0 ]
+   do
+      case "$1" in
+         *)
+            mulle_bashfunctions_extract_usage
+         ;;
+      esac
+   done
+
+   local line
+   local found='NO'
+
+   # initial state, searching for start
+   while IFS=$'\n' read -r line
+   do
+      if [ "${line}" = "#! /bin/sh"  ]
+      then
+         printf "%s\n" "#! /usr/bin/env mulle-bash"
+         continue
+      fi
+
+      printf "%s\n" "${line}"
+
+      if [ "${line}" = "${BOOT_HEAD_MARKER}" ]
+      then
+         found='YES'
+         break
+      fi
+   done
+
+   if [ "${found}" = 'YES' ]
+   then
+      # now search for end
+      while IFS=$'\n' read -r line
+      do
+         if [ "${line}" = "${BOOT_FOOT_MARKER}" ]
+         then
+            printf "%s\n" "${line}"
+            break
+         fi
+      done
+   fi
+
+   # output rest
+   while IFS=$'\n' read -r line
+   do
+      printf "%s\n" "${line}"
+   done
+}
+
+
+mulle_bashfunctions_extract()
+{
+   while [ $# -ne 0 ]
+   do
+      case "$1" in
+         *)
+            exit 1 # dont do it twice
+         ;;
+      esac
+   done
+
+   local line
+   local found
+
+   # initial state, searching for start
+
+   while IFS=$'\n' read -r line
+   do
+      printf "%s\n" "${line}"
+
+      if [ "${line}" = "${MINIMAL_HEAD_MARKER}" -o \
+           "${line}" = "${DEFAULT_HEAD_MARKER}" -o \
+           "${line}" = "${ALL_HEAD_MARKER}" ]
+      then
+         local found='YES'
+         break
+      fi
+   done
+
+   # now search for end
+   while IFS=$'\n' read -r line
+   do
+      if [ "${line}" = "${MINIMAL_FOOT_MARKER}" -o \
+           "${line}" = "${DEFAULT_FOOT_MARKER}" -o \
+           "${line}" = "${ALL_FOOT_MARKER}" ]
+      then
+         printf "%s\n" "${line}"
+         break
+      fi
+   done
+
+   # output rest
+   while IFS=$'\n' read -r line
+   do
+      printf "%s\n" "${line}"
+   done
+}
+
 
 
 main()
@@ -829,7 +1016,11 @@ MULLE_UNAME=\"${MULLE_UNAME}\""
       ;;
 
       embed)
-         mulle_bashfunctions_embed "$@" | mulle_boot_embed "$@"
+         mulle_boot_embed "$@" | mulle_bashfunctions_embed "$@"
+      ;;
+
+      extract|unembed)
+         mulle_boot_extract "$@" | mulle_bashfunctions_extract "$@"
       ;;
 
       functions)

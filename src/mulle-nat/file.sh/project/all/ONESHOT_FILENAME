@@ -9,11 +9,17 @@
 && set -x  \
 && : "$0" "$@"
 
+### >> START OF mulle-boot.sh >>
+### << END OF mulle-boot.sh <<
+
 #
 # Versioning of this script
 #
 MULLE_EXECUTABLE_VERSION="0.0.0"
 
+
+### >> START OF mulle-bashfunctions-embed.sh >>
+### << END OF mulle-bashfunctions-embed.sh <<
 
 <|ONESHOT_PREFIXLESS_DOWNCASE_IDENTIFIER|>::print_flags()
 {
@@ -24,7 +30,7 @@ MULLE_EXECUTABLE_VERSION="0.0.0"
    ##
 
    options_technical_flags_usage \
-           "      : "
+                "         : "
 }
 
 
@@ -74,7 +80,7 @@ EOF
          ;;
 
          --value)
-            [ $# -eq 1 ] && match_list_usage "missing argument to $1"
+            [ $# -eq 1 ] && <|ONESHOT_PREFIXLESS_DOWNCASE_IDENTIFIER|>::usage "missing argument to $1"
             shift
 
             OPTION_VALUE="$1"

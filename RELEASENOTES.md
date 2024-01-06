@@ -1,3 +1,14 @@
+## 6.1.0
+
+* somewhat improved tracing speed
+* new function `r_smart_file_downcase_identifier` for C header shields for example e.g.  #ifndef `foo_h__`
+* bugfix for termux (android)
+* improved mulle-bashfunctions embedding (and update/removal) to create standalone scripts that don't need mulle-bashfunctions installed
+* fix `r_extensionless_filename`
+* add --silent-but-warn flag as a `MULLE_FLAG_LOG_TERSE` option
+* add `shell_is_builtin_command` function
+
+
 # 6.0.0
 
 * added shell_is_variable_defined function

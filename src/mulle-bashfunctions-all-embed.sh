@@ -1,4 +1,4 @@
-### >> START OF mulle-bashfunctions-embed.sh >>
+### >> START OF mulle-bashfunctions-all-embed.sh >>
 #
 #   Copyright (c) 2015-2023 Nat! - Mulle kybernetiK
 #   All rights reserved.
@@ -4269,4 +4269,2041 @@ function inplace_sed()
 
 fi
 :
-### << END OF mulle-bashfunctions-embed.sh <<
+if ! [ ${MULLE_ARRAY_SH+x} ]
+then
+MULLE_ARRAY_SH='included'
+
+[ -z "${MULLE_LOGGING_SH}" ] && _fatal "mulle-logging.sh must be included before mulle-array.sh"
+
+
+_array_value_check()
+{
+   local value="$1"
+
+   case "${value}" in
+      *$'\n'*)
+         _internal_fail "\"${value}\" has unescaped linefeeds"
+      ;;
+   esac
+}
+
+
+function r_add_line_lf()
+{
+   local lines="$1"
+   local line="$2"
+
+   if [ -z "${lines:0:1}" ]
+   then
+      RVAL="${line}"
+      return
+   fi
+   RVAL="${lines}"$'\n'"${line}"
+}
+
+function r_get_line_at_index()
+{
+   local array="$1"
+   local i="${2:-0}"
+
+
+   .foreachline RVAL in ${array}
+   .do
+      if [ $i -eq 0 ]
+      then
+         return 0
+      fi
+      i=$((i - 1))
+   .done
+   return 1
+}
+
+
+function r_insert_line_at_index()
+{
+   local array="$1"
+   local i="$2"
+   local value="$3"
+
+   _array_value_check "${value}"
+
+   local line
+   local rval
+
+   RVAL=
+   rval=1
+
+   .foreachline line in ${array}
+   .do
+      if [ $i -eq 0 ]
+      then
+         r_add_line "${RVAL}" "${value}"
+         rval=0
+      fi
+      r_add_line "${RVAL}" "${line}"
+      i=$((i - 1))
+   .done
+
+   if [ $i -eq 0 ]
+   then
+      r_add_line "${RVAL}" "${value}"
+      rval=0
+   fi
+
+   return $rval
+}
+
+
+function r_lines_in_range()
+{
+   local array="$1"
+   local i="$2"
+   local n="$3"
+
+   declare -a bash_array
+   declare -a res_array
+
+   IFS=$'\n' read -r -d '' -a bash_array <<< "${array}"
+
+   local j
+   local sentinel
+
+   sentinel=$((i + n))
+
+   j=0
+   while [ $i -lt ${sentinel} ]
+   do
+      res_array[${j}]="${bash_array[${i}]}"
+      i=$((i + 1))
+      j=$((j + 1))
+   done
+
+   RVAL="${res_array[*]}"
+}
+
+
+
+
+_assoc_array_key_check()
+{
+   local key="$1"
+
+   [ -z "${key}" ] && _internal_fail "key is empty"
+
+   local identifier
+
+   r_identifier "${key}"
+   identifier="${RVAL}"
+
+   [ "${identifier}" != "${key}" -a "${identifier}" != "_${key}" ] && _internal_fail "\"${key}\" has non-identifier characters"
+}
+
+
+_assoc_array_value_check()
+{
+   _array_value_check "$@"
+}
+
+
+_r_assoc_array_add()
+{
+   local array="$1"
+   local key="$2"
+   local value="$3"
+
+   _assoc_array_key_check "${key}"
+   _assoc_array_value_check "${value}"
+
+
+   r_add_line "${array}" "${key}=${value}"
+}
+
+
+_r_assoc_array_remove()
+{
+   local array="$1"
+   local key="$2"
+
+   local line
+   local delim
+
+   delim=""
+   RVAL=
+
+   .foreachline line in ${array}
+   .do
+      case "${line}" in
+         "${key}="*)
+         ;;
+
+         *)
+            RVAL="${line}${delim}${RVAL}"
+            delim=$'\n'
+         ;;
+      esac
+   .done
+}
+
+
+function r_assoc_array_get()
+{
+   local array="$1"
+   local key="$2"
+
+
+   local line
+   local rval
+
+   RVAL=
+   rval=1
+
+   .foreachline line in ${array}
+   .do
+      case "${line}" in
+         "${key}="*)
+            RVAL="${line#*=}"
+            rval=0
+            .break
+         ;;
+      esac
+   .done
+
+   return $rval
+}
+
+
+function assoc_array_all_keys()
+{
+   local array="$1"
+
+   sed -n 's/^\([^=]*\)=.*$/\1/p' <<< "${array}"
+}
+
+
+function assoc_array_all_values()
+{
+   local array="$1"
+
+   sed -n 's/^[^=]*=\(.*\)$/\1/p' <<< "${array}"
+}
+
+
+function r_assoc_array_set()
+{
+   local array="$1"
+   local key="$2"
+   local value="${3:-}"
+
+   if [ -z "${value}" ]
+   then
+      _r_assoc_array_remove "${array}" "${key}"
+      return
+   fi
+
+   local old_value
+
+   r_assoc_array_get "${array}" "${key}"
+   old_value="${RVAL}"
+
+   if [ ! -z "${old_value}" ]
+   then
+      _r_assoc_array_remove "${array}" "${key}"
+      array="${RVAL}"
+   fi
+
+   _r_assoc_array_add "${array}" "${key}" "${value}"
+}
+
+
+function assoc_array_merge_with_array()
+{
+   local array1="$1"
+   local array2="$2"
+
+   printf "%s%s\n" "${array2}" "${array1}" | sort -u -t'=' -k1,1
+}
+
+
+function assoc_array_augment_with_array()
+{
+   local array1="$1"
+   local array2="$2"
+
+   printf "%s%s\n" "${array1}" "${array2}" | sort -u -t'=' -k1,1
+}
+
+fi
+:
+
+
+
+mulle_isbase64_char()
+{
+   [ -z "${1//[A-Za-z0-9\/+]/}" ]
+}
+
+
+r_mulle_base64_encode_string()
+{
+   local width="$1"
+   local _src="$2"
+
+   _src="${_src}"$'\n'     # stay compatible
+
+   local inLen="${#_src}"
+   local inPos=0
+   local breakPos=0
+   local out
+   local c1
+   local c2
+   local c3
+   local d1
+   local d2
+   local d3
+   local d4
+   local i
+   local n
+   local index
+
+   local mulle_base64tab_string="\
+ABCDEFGHIJKLMNOPQRSTUVWXYZ\
+abcdefghijklmnopqrstuvwxyz0123456789+/"
+
+   breakPos=${width}
+
+   n=$(( inLen / 3 ))
+   remain=$(( inLen % 0x3 ))
+
+   i=0
+   while [ $i -lt $n ]
+   do
+      printf -v c1 "%d" "'${_src:${inPos}:1}"
+      inPos=$(( inPos + 1 ))
+      printf -v c2 "%d" "'${_src:${inPos}:1}"
+      inPos=$(( inPos + 1 ))
+      printf -v c3 "%d" "'${_src:${inPos}:1}"
+      inPos=$(( inPos + 1 ))
+
+      index=$(( c1 >> 2 ))
+      d1="${mulle_base64tab_string:${index}:1}"
+      index=$(( ((c1 & 0x03) << 4) | (c2 >> 4) ))
+      d2="${mulle_base64tab_string:${index}:1}"
+      index=$(( ((c2 & 0x0F) << 2) | ((c3 & 0xC0) >> 6) ))
+      d3="${mulle_base64tab_string:${index}:1}"
+      index=$(( c3 & 0x3F ))
+      d4="${mulle_base64tab_string:${index}:1}"
+
+      out="${out}${d1}${d2}${d3}${d4}"
+      outPos=$(( outPos + 4 ))
+
+      if [ "${width}" -gt 0  -a ${outPos} -ge ${breakPos} ]
+      then
+         out="${out}"$'\n'
+         outPos=$(( outPos + 1 ))
+         breakPos=$(( outPos + $width ))
+      fi
+      i=$(( i + 1))
+   done
+
+   case $remain in
+      2)
+         printf -v c1 "%d" "'${_src:${inPos}:1}"
+         inPos=$(( inPos + 1 ))
+         printf -v c2 "%d" "'${_src:${inPos}:1}"
+
+         index=$(( (c1 & 0xFC) >> 2 ))
+         d1="${mulle_base64tab_string:${index}:1}"
+         index=$(( ((c1 & 0x03) << 4) | ((c2 & 0xF0) >> 4) ))
+         d2="${mulle_base64tab_string:${index}:1}"
+         index=$(( ((c2 & 0x0F) << 2) ))
+         d3="${mulle_base64tab_string:${index}:1}"
+
+         out="${out}${d1}${d2}${d3}="
+      ;;
+
+      1)
+         printf -v c1 "%d" "'${_src:${inPos}:1}"
+         index=$(( (c1 & 0xFC) >> 2 ))
+         d1="${mulle_base64tab_string:${index}:1}"
+         index=$(( (c1 & 0x03) << 4 ))
+         d2="${mulle_base64tab_string:${index}:1}"
+         out="${out}${d1}${d2}=="
+      ;;
+
+      0)
+      ;;
+   esac
+
+   RVAL="${out}"
+}
+
+
+mulle_base64_encode()
+{
+   local width="$1"
+   local filename="${2:--}"
+
+   local _src
+
+   if [ "${filename}" = '-' ]
+   then
+      _src="`cat`" || return 1
+   else
+      _src="`cat "${filename}"`" || return 1
+   fi
+
+   if ! r_mulle_base64_encode_string "${width}" "${_src}"
+   then
+      return 1
+   fi
+
+   printf "%s\n" "${RVAL}"
+}
+
+
+mulle_base64idx_string=\
+$'\377\377\377\377\377\377\377\377'\
+$'\377\377\377\377\377\377\377\377'\
+$'\377\377\377\377\377\377\377\377'\
+$'\377\377\377\377\377\377\377\377'\
+$'\377\377\377\377\377\377\377\377'\
+$'\377\377\377\076\377\377\377\077'\
+$'\064\065\066\067\070\071\072\073'\
+$'\074\075\377\377\377\377\377\377'\
+$'\377'_$'\001\002\003\004\005\006'\
+$'\007\010\011\012\013\014\015\016'\
+$'\017\020\021\022\023\024\025\026'\
+$'\027\030\031\377\377\377\377\377'\
+$'\377\032\033\034\035\036\037\040'\
+$'\041\042\043\044\045\046\047\050'\
+$'\051\052\053\054\055\056\057\060'\
+$'\061\062\063\377\377\377\377\377'
+
+
+r_mulle_base64_decode_char()
+{
+   local c="$1"
+
+   if [ "$c" -eq 65 ]
+   then
+      RVAL=0
+      return
+   fi
+   printf -v RVAL "%d" "'${mulle_base64idx_string:${c}:1}"
+}
+
+
+r_mulle_base64_decode_string()
+{
+   local _src="$1"
+
+   local isErr=0
+   local isEndSeen=0
+   local b1
+   local b2
+   local b3
+   local a1
+   local a2
+   local a3
+   local a4
+   local inPos=0
+   local outPos=0
+   local inLen
+   local c
+   local out
+
+
+   inLen="${#_src}"
+
+   while [ $inPos -lt $inLen ]
+   do
+      for i in 1 2 3 4
+      do
+         while [ $inPos -lt $inLen ]
+         do
+            c="${_src:${inPos}:1}"
+            inPos=$(( inPos + 1 ))
+
+            if mulle_isbase64_char "${c}"
+            then
+               printf -v "a${i}" "${c}"
+               break
+            fi
+
+            case "${c}" in
+               '=')
+                  printf -v "a${i}" "0"
+                  isEndSeen=1
+                  break
+               ;;
+
+               $'\r'|$'\n'|' '|$'\t')
+               ;;
+
+               *)
+                  log_error "garbage character ${c} in base64 string"
+                  RVAL=
+                  return 1
+               ;;
+            esac
+         done
+
+         if [ $isEndSeen -ne 0 ]
+         then
+            i=$((i - 1))
+            break
+         fi
+      done
+
+      case "${i}" in
+         4)
+            printf -v a1 "%d" "'${a1}"
+            printf -v a2 "%d" "'${a2}"
+            printf -v a3 "%d" "'${a3}"
+            printf -v a4 "%d" "'${a4}"
+
+            r_mulle_base64_decode_char "$a1"
+            a1=${RVAL}
+            r_mulle_base64_decode_char "$a2"
+            a2=${RVAL}
+            r_mulle_base64_decode_char "$a3"
+            a3=${RVAL}
+            r_mulle_base64_decode_char "$a4"
+            a4=${RVAL}
+
+            b1=$(( ((a1 << 2) & 0xFC) | ((a2 >> 4) & 0x03) ))
+            b2=$(( ((a2 << 4) & 0xF0) | ((a3 >> 2) & 0x0F) ))
+            b3=$(( ((a3 << 6) & 0xC0) | ( a4     & 0x3F) ))
+
+            printf -v b1 \\$(printf '%03o' $b1)
+            printf -v b2 \\$(printf '%03o' $b2)
+            printf -v b3 \\$(printf '%03o' $b3)
+
+            out="${out}${b1}${b2}${b3}"
+         ;;
+
+         3)
+            printf -v a1 "%d" "'${a1}"
+            printf -v a2 "%d" "'${a2}"
+            printf -v a3 "%d" "'${a3}"
+
+            r_mulle_base64_decode_char "$a1"
+            a1=${RVAL}
+            r_mulle_base64_decode_char "$a2"
+            a2=${RVAL}
+            r_mulle_base64_decode_char "$a3"
+            a3=${RVAL}
+
+            b1=$(( ((a1 << 2) & 0xFC) | ((a2 >> 4) & 0x03) ))
+            b2=$(( ((a2 << 4) & 0xF0) | ((a3 >> 2) & 0x0F) ))
+
+            printf -v b1 \\$(printf '%03o' $b1)
+            printf -v b2 \\$(printf '%03o' $b2)
+
+            out="${out}${b1}${b2}"
+         ;;
+
+         2)
+            printf -v a1 "%d" "'${a1}"
+            printf -v a2 "%d" "'${a2}"
+
+            r_mulle_base64_decode_char "$a1"
+            a1=${RVAL}
+            r_mulle_base64_decode_char "$a2"
+            a2=${RVAL}
+
+            b1=$(( ((a1 << 2) & 0xFC) | ((a2 >> 4) & 0x03) ))
+
+            printf -v b1 \\$(printf '%03o' $b1)
+
+            out="${out}${b1}"
+         ;;
+
+         *)
+            if [ "${ignore_garbage}" = 'YES' ]
+            then
+               continue
+            fi
+
+            log_error "garbage character in base64 string"
+            RVAL=
+            return 1
+         ;;
+      esac
+
+      if [ $isEndSeen -eq 1 ]
+      then
+         break
+      fi
+   done
+
+   RVAL="${out%$'\n'}"
+   return 0
+}
+
+
+mulle_base64_decode()
+{
+   local filename="${1:--}"
+
+   local _src
+
+   if [ "${filename}" = '-' ]
+   then
+      _src="`cat`" || return 1
+   else
+      _src="`cat "${filename}"`" || return 1
+   fi
+
+   if ! r_mulle_base64_decode_string "${_src}"
+   then
+      return 1
+   fi
+
+   printf "%s\n" "${RVAL}"
+}
+
+
+mulle_base64()
+{
+   local decode
+   local ignore
+   local width=76
+
+   while [ $# -ne 0 ]
+   do
+      case "$1" in
+         -d|--decode)
+            decode='YES'
+         ;;
+
+         -i)
+            ignore_garbage='YES'
+         ;;
+
+         -w|--width|-b)
+            shift
+            width="$1"
+         ;;
+
+         *)
+            break
+         ;;
+      esac
+
+      shift
+   done
+
+   case "${MULLE_UNAME}" in
+      openbsd|netbsd)
+      ;;
+
+      *)
+         local base64
+
+         if base64="`command -v base64`"
+         then
+            if [ "${decode}" = 'YES' ]
+            then
+               rexekutor "${base64}" -d "$@"
+               return $?
+            fi
+
+            case "${MULLE_UNAME}" in
+               openbsd)
+                  rexekutor "${base64}" "$@"
+                  return $?
+               ;;
+
+               darwin|*bsd|dragonfly)
+                  rexekutor "${base64}" -b "${width}" "$@"
+                  return $?
+               ;;
+            esac
+
+            rexekutor "${base64}" -w "${width}"
+            return $?
+         fi
+      ;;
+   esac
+
+   if [ "${decode}" ]
+   then
+      mulle_base64_decode "${ignore_garbage}" "$@"
+      return $?
+   fi
+
+   mulle_base64_encode "${width}" "$@"
+}
+if ! [ ${MULLE_CASE_SH+x} ]
+then
+MULLE_CASE_SH='included'
+
+
+_r_tweaked_de_camel_case()
+{
+   local s="$1"
+
+   local output
+   local state
+   local collect
+
+   local c
+
+   s="${s//ObjC/Objc}"
+
+   state='start'
+   while [ ! -z "${s}" ]
+   do
+      c="${s:0:1}"
+      s="${s:1}"
+
+      case "${state}" in
+         'start')
+            case "${c}" in
+               [A-Z])
+                  state="upper";
+                  collect="${collect}${c}"
+                  continue
+               ;;
+
+               *)
+                  state="lower"
+               ;;
+            esac
+         ;;
+
+         'upper')
+            case "${c}" in
+               [A-Z])
+                  collect="${collect}${c}"
+                  continue
+               ;;
+
+               *)
+                  if [ ! -z "${output}" -a ! -z "${collect}" ]
+                  then
+                     if [ ! -z "${collect:1}" ]
+                     then
+                        output="${output}_${collect%?}_${collect#${collect%?}}"
+                     else
+                        output="${output}_${collect}"
+                     fi
+                  else
+                     if [ -z "${output}" -a "${#collect}" -gt 1 ]
+                     then
+                        output="${collect%?}_${collect: -1}"
+                     else
+                        output="${output}${collect}"
+                     fi
+                  fi
+                  collect=""
+                  state="lower"
+               ;;
+            esac
+         ;;
+
+         'lower')
+            case "${c}" in
+               [A-Z])
+                  output="${output}${collect}"
+                  collect="${c}"
+                  state="upper"
+                  continue
+               ;;
+            esac
+         ;;
+      esac
+
+      output="${output}${c}"
+   done
+
+   if [ ! -z "${output}" -a ! -z "${collect}" ]
+   then
+      output="${output}_${collect}"
+   else
+      output="${output}${collect}"
+   fi
+
+   RVAL="${output}"
+}
+
+
+function r_tweaked_de_camel_case()
+{
+   LC_ALL=C _r_tweaked_de_camel_case "$@"
+}
+
+
+function r_de_camel_case_identifier()
+{
+   r_tweaked_de_camel_case "$1"
+   r_identifier "${RVAL}"
+}
+
+
+function r_smart_downcase_identifier()
+{
+   r_de_camel_case_identifier "$1"
+   r_lowercase "${RVAL}"
+}
+
+
+function r_smart_upcase_identifier()
+{
+   r_uppercase "$1"
+   r_identifier "${RVAL}"
+
+   if [ "${RVAL}" = "$1" ]
+   then
+      return
+   fi
+
+   r_de_camel_case_identifier "$1"
+   r_uppercase "${RVAL}"
+}
+
+
+function r_smart_file_upcase_identifier()
+{
+   local s="$1"
+
+   s="${s//-/__}"
+
+   r_uppercase "$s"
+   r_identifier "${RVAL}"
+
+   if [ "${RVAL}" = "$s" ]
+   then
+      return
+   fi
+
+   r_de_camel_case_identifier "$s"
+   r_uppercase "${RVAL}"
+}
+
+
+
+function r_smart_file_downcase_identifier()
+{
+   local s="$1"
+
+   s="${s//-/__}"
+
+   r_lowercase "$s"
+   r_identifier "${RVAL}"
+
+   if [ "${RVAL}" = "$s" ]
+   then
+      return
+   fi
+
+   r_de_camel_case_identifier "$s"
+   r_lowercase "${RVAL}"
+}
+
+
+fi
+
+:
+if ! [ ${MULLE_ETC_SH+x} ]
+then
+MULLE_ETC_SH='included'
+
+
+
+
+
+function etc_make_file_from_symlinked_file()
+{
+   log_entry "etc_make_file_from_symlinked_file" "$@"
+
+   local dstfile="$1"
+
+   if [ ! -L "${dstfile}" ]
+   then
+      return 1
+   fi
+
+   local flags
+
+   if [ "${MULLE_FLAG_LOG_FLUFF}" = 'YES' ]
+   then
+      case "${MULLE_UNAME}" in
+         'sunos')
+         ;;
+
+         *)
+            flags=-v
+         ;;
+      esac
+   fi
+
+   log_verbose "Turn symlink \"${dstfile}\" into a file"
+
+   local targetfile
+
+   targetfile="`readlink "${dstfile}"`"
+   exekutor rm "${dstfile}"
+
+   local directory
+   local filename
+
+   r_dirname "${dstfile}"
+   directory="${RVAL}"
+   r_basename "${dstfile}"
+   filename="${RVAL}"
+   (
+      rexekutor cd "${directory}" || exit 1
+
+      if [ ! -f "${targetfile}" ]
+      then
+         log_fluff "Stale link encountered"
+         return 0
+      fi
+
+      exekutor cp ${flags} "${targetfile}" "${filename}" || exit 1
+      exekutor chmod ug+w "${filename}"
+   ) || fail "Could not copy \"${targetfile}\" to \"${dstfile}\""
+}
+
+
+
+function etc_prepare_for_write_of_file()
+{
+   log_entry "etc_prepare_for_write_of_file" "$@"
+
+   local filename="$1"
+
+   r_mkdir_parent_if_missing "${filename}"
+
+   etc_make_file_from_symlinked_file "${filename}"
+}
+
+
+
+function etc_make_symlink_if_possible()
+{
+   log_entry "etc_make_symlink_if_possible" "$@"
+
+   local dstfile="$1"
+   local sharedir="$2"
+   local symlink="$3"
+
+   if [ -z "${sharedir}" ]
+   then
+      return 2
+   fi
+
+   if [ -L "${dstfile}" ]
+   then
+      return 4
+   fi
+
+   local srcfile
+   local filename
+
+   r_basename "${dstfile}"
+   filename="${RVAL}"
+
+   r_filepath_concat "${sharedir}" "${filename}"
+   srcfile="${RVAL}"
+
+   if [ ! -e "${srcfile}" ]
+   then
+      return 2
+   fi
+
+   local DIFF
+
+   if ! DIFF="`command -v diff`"
+   then
+      fail "diff command not installed"
+   fi
+
+   local dstdir
+
+   r_dirname "${dstfile}"
+   dstdir="${RVAL}"
+
+   if ! "${DIFF}" -b "${dstfile}" "${srcfile}" > /dev/null
+   then
+      return 3
+   fi
+
+   log_verbose "\"${dstfile}\" has no user edits: replace with symlink"
+
+   remove_file_if_present "${dstfile}"
+   etc_symlink_or_copy_file "${srcfile}" \
+                            "${dstdir}" \
+                            "${filename}" \
+                            "${symlink}"
+   return $?
+}
+
+
+function etc_symlink_or_copy_file()
+{
+   log_entry "etc_symlink_or_copy_file" "$@"
+
+   local srcfile="$1"
+   local dstdir="$2"
+   local filename="$3"
+   local symlink="$4"
+
+   [ -f "${srcfile}" ] || _internal_fail "\"${srcfile}\" does not exist or is not a file"
+   [ -d "${dstdir}" ]  || _internal_fail "\"${dstdir}\" does not exist or is not a directory"
+
+   local dstfile
+
+   if [ -z "${filename}" ]
+   then
+   	r_basename "${srcfile}"
+   	filename="${RVAL}"
+	fi
+
+   r_filepath_concat "${dstdir}" "${filename}"
+   dstfile="${RVAL}"
+
+   if [ -e "${dstfile}" ]
+   then
+      log_error "\"${dstfile}\" already exists"
+      return 1
+   fi
+
+   r_mkdir_parent_if_missing "${dstfile}"
+
+   local flags
+
+   if [ "${MULLE_FLAG_LOG_FLUFF}" = 'YES' ]
+   then
+      case "${MULLE_UNAME}" in
+         'sunos')
+         ;;
+
+         *)
+            flags=-v
+         ;;
+      esac
+   fi
+
+   if [ -z "${symlink}" ]
+   then
+      case "${MULLE_UNAME}" in
+         'mingw'|'msys')
+            symlink='NO'
+         ;;
+
+         *)
+            symlink='YES'
+         ;;
+      esac
+   fi
+
+   if [ "${symlink}" = 'YES' ]
+   then
+      local linkrel
+
+      r_relative_path_between "${srcfile}" "${dstdir}"
+      linkrel="${RVAL}"
+
+      exekutor ln -s ${flags} "${linkrel}" "${dstfile}"
+      return $?
+   fi
+
+   exekutor cp ${flags} "${srcfile}" "${dstfile}" &&
+   exekutor chmod ug+w "${dstfile}"
+}
+
+
+function etc_setup_from_share_if_needed()
+{
+   log_entry "etc_setup_from_share_if_needed" "$@"
+
+   local etc="$1"
+   local share="$2"
+   local symlink="$3"
+
+   if [ -d "${etc}" ]
+   then
+      log_fluff "etc folder already setup"
+      return
+   fi
+
+   mkdir_if_missing "${etc}"
+
+   local flags
+
+   if [ "${MULLE_FLAG_LOG_FLUFF}" = 'YES' ]
+   then
+      case "${MULLE_UNAME}" in
+         'sunos')
+         ;;
+
+         *)
+            flags=-v
+         ;;
+      esac
+   fi
+
+   local filename
+
+   if [ -d "${share}" ] # sometimes it's not there, but find complains
+   then
+      .foreachline filename in `find "${share}" ! -type d -print`
+      .do
+         r_basename "${filename}"
+         etc_symlink_or_copy_file "${filename}" \
+                                  "${etc}" \
+                                  "${RVAL}" \
+                                  "${symlink}"
+      .done
+   fi
+}
+
+
+function etc_remove_if_possible()
+{
+   log_entry "etc_remove_if_possible" "$@"
+
+   [ $# -eq 2 ] || _internal_fail "API error"
+
+   local etcdir="$1"
+   local sharedir="$2"
+
+   if [ ! -d "${etcdir}" ]
+   then
+      return
+   fi
+
+   if dirs_contain_same_files "${etcdir}" "${sharedir}"
+   then
+      rmdir_safer "${etcdir}"
+   fi
+}
+
+
+function etc_repair_files()
+{
+   log_entry "etc_repair_files" "$@"
+
+   local srcdir="$1" # share
+   local dstdir="$2" # etc
+
+   local glob="$3"
+   local add="$4"
+   local symlink="$5"
+
+   if [ ! -d "${dstdir}" ]
+   then
+      log_verbose "Nothing to repair, as \"${dstdir}\" does not exist yet"
+      return
+   fi
+
+   local filename
+   local dstfile
+   local srcfile
+   local can_remove_etc
+
+   can_remove_etc='YES'
+
+   dstdir="${dstdir%%/}"
+   srcdir="${srcdir%%/}"
+
+   local DIFF
+
+   if ! DIFF="`command -v diff`"
+   then
+      fail "diff command not installed"
+   fi
+
+   .foreachline dstfile in `find "${dstdir}" ! -type d -print` # dstdir is etc
+   .do
+      filename="${dstfile#${dstdir}/}"
+      srcfile="${srcdir}/${filename}"
+
+      if [ -L "${dstfile}" ]
+      then
+         if ! ( cd "${dstdir}" && [ -f "`readlink "${filename}"`" ] )
+         then
+            globtest="${glob}${filename#${glob}}"
+            if [ ! -z "${glob}" ] && [ -f "${srcdir}"/${globtest} ]
+            then
+               log_verbose "\"${filename}\" moved to ${globtest}: relink"
+               remove_file_if_present "${dstfile}"
+               etc_symlink_or_copy_file "${srcdir}/"${globtest} \
+                                        "${dstdir}" \
+                                        "" \
+                                        "${symlink}"
+            else
+               log_verbose "\"${filename}\" no longer exists: remove"
+               remove_file_if_present "${dstfile}"
+            fi
+         else
+            log_fluff "\"${filename}\" is a healthy symlink: keep"
+         fi
+      else
+         if [ -f "${srcfile}" ]
+         then
+            if "${DIFF}" -b "${dstfile}" "${srcfile}" > /dev/null
+            then
+               log_verbose "\"${filename}\" has no user edits: replace with symlink"
+               remove_file_if_present "${dstfile}"
+               etc_symlink_or_copy_file "${srcfile}" \
+                                        "${dstdir}" \
+                                        "${filename}" \
+                                        "${symlink}"
+            else
+               log_fluff "\"${filename}\" contains edits: keep"
+               can_remove_etc='NO'
+            fi
+         else
+            log_fluff "\"${filename}\" is an addition: keep"
+            can_remove_etc='NO'
+         fi
+      fi
+   .done
+
+   .foreachline srcfile in `find "${srcdir}" ! -type d -print` # dstdir is etc
+   .do
+      filename="${srcfile#${srcdir}/}"
+      dstfile="${dstdir}/${filename}"
+
+      if [ ! -e "${dstfile}" ]
+      then
+         if [ "${add}" = 'YES' ]
+         then
+            log_verbose "\"${filename}\" is missing: recreate"
+            etc_symlink_or_copy_file "${srcfile}" \
+                                     "${dstdir}" \
+                                     "${filename}" \
+                                     "${symlink}"
+         else
+            log_info "\"${filename}\" is new but not used. Use \`repair --add\` to add it."
+            can_remove_etc='NO'
+         fi
+      fi
+   .done
+
+   if [ "${can_remove_etc}" = 'YES' ]
+   then
+      log_info "\"${dstdir#"${MULLE_USER_PWD}/"}\" contains no user changes so use \"share\" again"
+      rmdir_safer "${dstdir}"
+      rmdir_if_empty "${srcdir}"
+   fi
+}
+
+fi
+:
+if ! [ ${MULLE_PARALLEL_SH+x} ]
+then
+MULLE_PARALLEL_SH='included'
+
+[ -z "${MULLE_FILE_SH}" ] && _fatal "mulle-file.sh must be included before mulle-parallel.sh"
+
+
+
+
+
+very_short_sleep()
+{
+   local us="$1"
+
+   us="${us:0:6}"
+
+   local zeroes="000000"
+
+   us="0.${zeroes:${#us}}${us}"
+   us="${us%%0}"
+   case "${MULLE_UNAME}" in 
+      darwin|*bsd|dragonfly)
+      ;;
+
+      *)
+         us="${us}s"
+      ;;
+   esac
+   LC_ALL=C sleep "${us}"
+}  
+
+
+r_get_core_count()
+{
+   if ! [ ${MULLE_CORES+x} ]
+   then
+      MULLE_CORES="`PATH="$PATH:/usr/sbin:/sbin" nproc 2> /dev/null`"
+      if [ -z "${MULLE_CORES}" ]
+      then
+         MULLE_CORES="`PATH="$PATH:/usr/sbin:/sbin" sysctl -n hw.ncpu 2> /dev/null`"
+      fi
+
+      if [ -z "${MULLE_CORES}" ]
+      then
+         MULLE_CORES=4
+         log_verbose "Unknown core count, setting it to 4 as default"
+         RVAL=${MULLE_CORES}
+         return 2
+      fi
+   fi
+
+   RVAL=${MULLE_CORES}
+   return 0
+}
+
+
+r_convenient_max_load_average()
+{
+   local cores="$1"
+
+   if [ -z "${cores}" ]
+   then
+      r_get_core_count
+      cores="${RVAL}"
+   fi
+
+   case "${MULLE_UNAME}" in
+      linux)
+         RVAL=$((cores * 6))
+      ;;
+
+      *)
+         RVAL=$((cores * 2))
+      ;;
+   esac
+}
+
+
+wait_for_available_job()
+{
+   log_entry "wait_for_available_job" "$@"
+
+   local maxjobs="${1:-8}"
+
+   local running
+   local count
+   local us
+
+   us=1000 # start with 1 ms
+
+   while :
+   do
+      running=($(jobs -pr))  #  http://mywiki.wooledge.org/BashFAQ/004
+      count=${#running[@]}
+
+      if [ ${count} -le ${maxjobs} ]
+      then
+         log_debug "Currently only ${count} jobs run, spawn another"
+         break
+      fi
+
+      log_debug "Waiting $us us on jobs to finish (${#running[@]})"
+
+      very_short_sleep $us
+      us=$((us + us))
+      if [ ${us} -gt 500000 ]
+      then
+         us=500000
+      fi
+   done
+}
+
+
+get_current_load_average()
+{
+   case "${MULLE_UNAME}" in
+      'freebsd'|'darwin')
+         sysctl -n vm.loadavg | sed -n -e 's/.*{[ ]*\([0-9]*\).*/\1/p'
+      ;;
+
+      'mingw'|'msys')
+         echo "7"  # no way to know
+      ;;
+
+      *)
+         uptime | sed -n -e 's/.*average[s]*:[ ]*\([0-9]*\).*/\1/p'
+      ;;
+   esac
+}
+
+
+r_available_core_count()
+{
+   log_entry "r_available_core_count" "$@"
+
+   local maxaverage="$1"
+
+   local cores
+
+   r_get_core_count
+   cores="${RVAL}"
+
+   if [ -z "${maxaverage}" ]
+   then
+      r_convenient_max_load_average "${cores}"
+      maxaverage="${RVAL}"
+   fi
+
+   local loadavg
+   local available
+
+   loadavg="`get_current_load_average`"
+   available="$(( cores - loadavg ))"
+   if [ ${available} -lt 1 ]
+   then
+      available="1"
+   fi
+
+   RVAL="${available}"
+}
+
+
+wait_for_load_average()
+{
+   log_entry "wait_for_load_average" "$@"
+
+   local maxaverage="${1:-8}"
+
+   local loadavg
+
+   while :
+   do
+      loadavg="`get_current_load_average`"
+      if [ "${loadavg:-0}" -le ${maxaverage} ]
+      then
+         break
+      fi
+      log_debug "Waiting on load average to come down"
+
+      very_short_sleep
+   done
+}
+
+
+function __parallel_begin()
+{
+   log_entry "__parallel_begin" "$@"
+
+   _parallel_maxjobs="${1:-0}"
+
+   _parallel_jobs=0
+   _parallel_fails=0
+
+   r_make_tmp "mulle-parallel" || exit 1
+   _parallel_statusfile="${RVAL}"
+
+   if [ ${_parallel_maxjobs} -eq 0 ]
+   then
+      _parallel_maxjobs="${MULLE_PARALLEL_MAX_JOBS:-0}"
+      if [ ${_parallel_maxjobs} -eq 0 ]
+      then
+         r_get_core_count
+         _parallel_maxjobs="${RVAL}"
+      fi
+   fi
+}
+
+
+__parallel_status()
+{
+   log_entry "__parallel_status" "$@"
+
+   local rval="$1"; shift
+
+   [ -z "${_parallel_statusfile}" ] && _internal_fail "_parallel_statusfile must be defined"
+
+   if [ $rval -ne 0 ]
+   then
+      log_warning "warning: Parallel job \"$*\" failed with $rval"
+      redirect_append_exekutor "${_parallel_statusfile}" printf "%s\n" "${rval};$*"
+   fi
+}
+
+
+function __parallel_execute()
+{
+   log_entry "__parallel_execute" "$@"
+
+   wait_for_available_job "${_parallel_maxjobs}"
+   _parallel_jobs=$(($_parallel_jobs + 1))
+
+   log_debug "Running job #${_parallel_jobs}: $*"
+
+   (
+      local rval
+
+      ( exekutor "$@" ) # run in subshell to capture exit code
+      __parallel_status $? "$@"
+   ) &
+}
+
+
+function __parallel_end()
+{
+   log_entry "__parallel_end" "$@"
+
+   wait
+
+   _parallel_fails="`exekutor wc -l "${_parallel_statusfile}" | awk '{ printf $1 }'`"
+
+   log_setting "_parallel_jobs : ${_parallel_jobs}"
+   log_setting "_parallel_fails: ${_parallel_fails}"
+   log_setting "${_parallel_statusfile} : `exekutor cat "${_parallel_statusfile}"`"
+
+   exekutor rm "${_parallel_statusfile}"
+
+   if [ "${_parallel_fails:-1}" -ne 0 ]
+   then
+      log_warning "warning: ${_parallel_fails} parallel jobs failed"
+      return 1
+   fi
+
+   return 0
+}
+
+
+
+function parallel_execute()
+{
+   log_entry "parallel_execute" "$@"
+
+   local arguments="$1"; shift
+
+   local _parallel_statusfile
+   local _parallel_maxjobs
+   local _parallel_jobs
+   local _parallel_fails
+
+   [ $# -eq 0 ] && _internal_fail "missing commandline"
+
+   __parallel_begin
+
+   local argument
+
+   shell_disable_glob
+
+   .foreachline argument in ${arguments}
+   .do
+      __parallel_execute "$@" "${argument}"
+   .done
+
+   shell_enable_glob
+
+   __parallel_end
+}
+
+fi
+:
+
+
+declare -g ascending=1
+declare -g descending=255
+
+
+default_sort_compare()
+{
+   if [[ "$1" > "$2" ]]
+   then
+      return $descending
+   fi
+
+   [[ "$1" = "$2" ]]
+   return $?
+}
+
+
+function r_qsort()
+{
+
+   RVAL=()
+   (($#==0)) && return 0
+
+   if [ ${ZSH_VERSION+x} ]
+   then
+      setopt local_options KSH_ARRAYS
+   fi
+
+   local pivot="$1"
+   shift
+
+   local i
+   local smaller=()
+   local larger=()
+
+   local rval
+
+   for i in "$@"
+   do
+      ${SORT_COMPARE_FUNCTION:-default_sort_compare} "$i" "$pivot"
+      rval=$?
+
+      if [ $rval -eq $ascending ]
+      then
+         smaller+=( "$i" )
+      else
+         larger+=( "$i" )
+      fi
+   done
+
+   r_qsort "${smaller[@]}"
+   smaller=( "${RVAL[@]}" )
+
+   r_qsort "${larger[@]}"
+   larger=( "${RVAL[@]}" )
+
+   RVAL=( "${smaller[@]}" "$pivot" "${larger[@]}" )
+
+}
+
+
+
+
+function r_mergesort()
+{
+   local n
+
+
+   n=$#
+
+   if [ $n -le 1 ]
+   then
+      RVAL=( "$@" )
+      return
+   fi
+
+   if [ ${ZSH_VERSION+x} ]
+   then
+      setopt local_options KSH_ARRAYS
+   fi
+
+   local m
+   local o
+
+   m=$(( n / 2 ))
+   o=$(( n - m))
+
+   local in=( "$@" )
+   local smaller
+
+   r_mergesort "${in[@]:0:$m}"
+   smaller=( "${RVAL[@]}" )
+
+   local larger
+
+   r_mergesort "${in[@]:$m:$o}"
+   larger=( "${RVAL[@]}" )
+
+
+
+   local i
+   local j
+
+   i=0
+   j=0
+   RVAL=()
+
+   while :
+   do
+      if [ $i -lt $m ]
+      then
+         if [ $j -ge $o ]
+         then
+            RVAL+=( "${smaller[$i]}" )
+            i=$((i + 1))
+            continue
+         fi
+
+         ${SORT_COMPARE_FUNCTION:-default_sort_compare} "${smaller[$i]}" "${larger[$j]}"
+         rval=$?
+
+         if [ $rval -eq $ascending ]
+         then
+            RVAL+=( "${smaller[$i]}" )
+            i=$((i + 1))
+            continue
+         fi
+
+         RVAL+=( "${larger[$j]}" )
+         j=$((j + 1))
+         continue
+      fi
+
+      if [ $j -ge $o ]
+      then
+         break
+      fi
+
+      RVAL+=( "${larger[$j]}" )
+      j=$((j + 1))
+   done
+
+}
+
+
+if ! [ ${MULLE_URL_SH+x} ]
+then
+MULLE_URL_SH='included'
+
+
+
+
+function r_url_encode()
+{
+   local s="$1"
+
+   local c
+   local safe
+   local encode
+
+   RVAL=
+   while :
+   do
+      safe="${s%%[^a-zA-Z0-9.~_-]*}"
+      RVAL="${RVAL}${safe}"
+      s="${s#"${safe}"}"
+      if [ -z "${s}" ]
+      then
+         break
+      fi
+
+      c="${s:0:1}"
+      s="${s:1}"
+      printf -v encode '%%%02X' "'${c}'"
+      RVAL="${RVAL}${encode}"
+   done
+}
+
+
+function r_url_remove_scheme()
+{
+   RVAL="${1#*:}"
+}
+
+
+function r_url_remove_query()
+{
+   RVAL="${1%\?*}"
+}
+
+
+function r_url_remove_fragment()
+{
+   RVAL="${1%#*}"
+}
+
+function url_has_file_compression_extension()
+{
+   r_url_remove_query "$1"
+   case "${RVAL}" in
+      *.z|*.gz|*.bz2|*.xz)
+         return 0
+      ;;
+   esac
+   return 1
+}
+
+
+function r_url_remove_file_compression_extension()
+{
+   local url="$1"
+
+   r_url_remove_query "${url}"
+   url="${RVAL}"
+
+   RVAL="${url%.z}"
+   [ "${RVAL}" != "$url" ] && return
+   RVAL="${url%.gz}"
+   [ "${RVAL}" != "$url" ] && return
+   RVAL="${url%.bz2}"
+   [ "${RVAL}" != "$url" ] && return
+   RVAL="${url%.xz}"
+}
+
+
+
+MULLE_URI_REGEX='^(([^:/?#]+):)?(//((([^:/?#]+)@)?([^:/?#]+)(:([0-9]+))?))?(/([^?#]*))(\?([^#]*))?(#(.*))?'
+
+
+function __url_parse()
+{
+   log_entry "__url_parse" "$@"
+
+   local url="$1"
+
+   if [ ${ZSH_VERSION+x} ]
+   then
+      setopt local_options BASH_REMATCH
+      setopt local_options KSH_ARRAYS
+   fi
+
+   case "${url}" in
+      file://*)
+         _scheme="file"
+         _userinfo=""
+         _host=""
+         _port=""
+         _path="${url#file://}"
+         _query=""
+         case "${_path}" in
+            *\#*)
+               _fragment="${_path#*\#}"
+               _path="${_path%%*\#}"
+            ;;
+         esac
+      ;;
+
+      *://*)
+         if ! [[ "${url}" =~ ${MULLE_URI_REGEX} ]]
+         then
+            return 1
+         fi
+
+            _scheme="${BASH_REMATCH[2]}"
+            _userinfo="${BASH_REMATCH[6]}"
+            _host="${BASH_REMATCH[7]}"
+            _port="${BASH_REMATCH[9]}"
+            _path="${BASH_REMATCH[10]}"
+            _query="${BASH_REMATCH[13]}"
+            _fragment="${BASH_REMATCH[15]}"
+
+            if [ -z "${_host}" ]
+            then
+               case "${_path}" in
+                  //[^/]*/)
+                  ;;
+
+                  //*)
+                     _host="${_path}"
+                     _path=""
+                  ;;
+               esac
+            fi
+
+         if [ -z "${_userinfo}${_host}${_port}" -a "${_path:0:3}" = "///" ]
+         then
+            _path="${_path#//}"
+         fi
+      ;;
+
+      *:*)
+         _scheme=
+         _host="${url%:*}"
+         r_url_remove_query "${url##*:}"
+         r_url_remove_fragment "${RVAL}"
+         _path=${RVAL}
+         _userinfo=
+         _port=
+         case "${_host}" in 
+            *@*)
+               _userinfo="${_host%%@*}"
+               _host="${_host#*@}"
+            ;;
+         esac
+         case "${_host}" in 
+            *:*)
+               _port="${_host%%:*}"
+               _host="${_host#*:}"
+            ;;
+         esac
+         _query=
+         _fragment=
+      ;;
+
+      *)
+         _scheme="${url%:*}"
+         _host=
+         r_url_remove_query "${url##*:}"
+         r_url_remove_fragment "${RVAL}"
+         _path=${RVAL}
+         _userinfo=
+         _port=
+         _query=
+         _fragment=
+      ;;
+   esac
+}
+
+
+function r_url_get_path()
+{
+   log_entry "r_url_get_path" "$@"
+
+   local url="$1"
+
+   local _scheme
+   local _userinfo
+   local _host
+   local _port
+   local _path
+   local _query
+   local _fragment
+
+   if __url_parse "${url}"
+   then
+      RVAL="${_path}"
+      return
+   fi
+
+   return 1
+}
+
+
+function r_url_escaped_path()
+{
+   local s="$1"
+
+   s="${s// /%20}"
+   s="${s//!/%21}"
+   s="${s//\"/%22}"
+   s="${s//#/%23}"
+   s="${s//%/%25}"
+   s="${s//\'/%27}"
+   s="${s//\*/%2A}"
+   s="${s//</%3C}"
+   s="${s//>/%3E}"
+   s="${s//\?/%3F}"
+   s="${s//\[/%5B}"
+   s="${s//\\/%5C}"
+   s="${s//\]/%5D}"
+   s="${s//\`/%60}"
+   s="${s//|/%7C}"
+
+   RVAL="$s"
+}
+
+function r_url_unescaped_path()
+{
+   local s="$1"
+
+   s="${s//%20/ }"
+   s="${s//%21/!}"
+   s="${s//%22/\"}"
+   s="${s//%23/#}"
+   s="${s//%25/%}"
+   s="${s//%27/\'}"
+   s="${s//%2A/*}"
+   s="${s//%3C/<}"
+   s="${s//%3E/>}"
+   s="${s//%3F/?}"
+   s="${s//%5B/[}"
+   s="${s//%5C/\\}"
+   s="${s//%5D/]}"
+   s="${s//%60/\`}"
+   s="${s//%7C/|}"
+
+   RVAL="$s"
+}
+
+
+
+
+fi
+:
+
+
+if ! [ ${MULLE_VERSION_SH+x} ]
+then
+MULLE_VERSION_SH='included'
+
+
+
+function r_get_version_major()
+{
+   RVAL="${1%%\.*}"
+}
+
+
+function r_get_version_minor()
+{
+   RVAL="${1#*\.}"
+   if [ "${RVAL}" = "$1" ]
+   then
+      RVAL=0
+   else
+      RVAL="${RVAL%%\.*}"
+   fi
+}
+
+
+function r_get_version_patch()
+{
+   local prev
+
+   prev="${1#*\.}"
+   RVAL="${prev#*\.}"
+   if [ "${RVAL}" = "${prev}" ]
+   then
+      RVAL=0
+   else
+      RVAL="${RVAL%%\.*}"
+   fi
+}
+
+
+_r_version_value()
+{
+   RVAL="$((${1:-0} * 1048576 + ${2:-0} * 256 + ${3:-0}))"
+}
+
+
+function r_version_value()
+{
+   local major
+   local minor
+   local patch
+
+   r_get_version_major "$1"
+   major="${RVAL}"
+   r_get_version_minor "$1"
+   minor="${RVAL}"
+   r_get_version_patch "$1"
+   patch="${RVAL}"
+
+   _r_version_value "${major}" "${minor}" "${patch}"
+}
+
+
+_r_version_value_distance()
+{
+   RVAL="$(($2 - $1))"
+}
+
+
+function r_version_distance()
+{
+   local value1
+   local value2
+
+   r_version_value "$1"
+   value1="${RVAL}"
+   r_version_value "$2"
+   value2="${RVAL}"
+
+   _r_version_value_distance "${value1}" "${value2}"
+}
+
+
+_is_compatible_version_value_distance()
+{
+   if [ "$1" -ge 1048576 -o "$1" -le -1048575 ]
+   then
+      return 1
+   fi
+
+   if [ "$1" -gt 4096 ]
+   then
+      return 1
+   fi
+
+   [ "$1" -le 0 ]
+}
+
+
+function is_compatible_version()
+{
+   r_version_distance "$1" "$2"
+   _is_compatible_version_value_distance "${RVAL}"
+}
+
+fi
+:
+### << END OF mulle-bashfunctions-all-embed.sh <<

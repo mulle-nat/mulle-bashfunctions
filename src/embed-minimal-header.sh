@@ -1,4 +1,4 @@
-### >> START OF mulle-bashfunctions-embed.sh >>
+### >> START OF mulle-bashfunctions-minimal-embed.sh >>
 #
 #   Copyright (c) 2015-2023 Nat! - Mulle kybernetiK
 #   All rights reserved.

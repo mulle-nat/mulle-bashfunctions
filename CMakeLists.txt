@@ -22,25 +22,35 @@ set( NONE_SCRIPTS
 string( REPLACE ";" " " NONE_SCRIPTS_STR "${NONE_SCRIPTS}")
 
 
-set( MINIMAL_SCRIPTS
-${NONE_SCRIPTS}
+set( MINIMAL_ADDITIONAL_SCRIPTS
 "src/mulle-logging.sh"
 "src/mulle-exekutor.sh"
 "src/mulle-string.sh"
 "src/mulle-init.sh"
 "src/mulle-options.sh"
 )
+
+set( MINIMAL_SCRIPTS
+${NONE_SCRIPTS}
+${MINIMAL_ADDITIONAL_SCRIPTS}
+)
 string( REPLACE ";" " " MINIMAL_SCRIPTS_STR "${MINIMAL_SCRIPTS}")
 
-set( DEFAULT_SCRIPTS
-${MINIMAL_SCRIPTS}
+
+set( DEFAULT_ADDITIONAL_SCRIPTS
 "src/mulle-path.sh"
 "src/mulle-file.sh"
 )
+
+
+set( DEFAULT_SCRIPTS
+${MINIMAL_SCRIPTS}
+${DEFAULT_ADDITIONAL_SCRIPTS}
+)
 string( REPLACE ";" " " DEFAULT_SCRIPTS_STR "${DEFAULT_SCRIPTS}")
 
-set( ALL_SCRIPTS
-${DEFAULT_SCRIPTS}
+
+set( ALL_ADDITIONAL_SCRIPTS
 "src/mulle-array.sh"
 "src/mulle-base64.sh"
 "src/mulle-case.sh"
@@ -50,37 +60,70 @@ ${DEFAULT_SCRIPTS}
 "src/mulle-url.sh"
 "src/mulle-version.sh"
 )
+
+set( ALL_SCRIPTS
+${DEFAULT_SCRIPTS}
+${ALL_ADDITIONAL_SCRIPTS}
+)
 string( REPLACE ";" " " ALL_SCRIPTS_STR "${ALL_SCRIPTS}")
 
 
-set( EMBED_SCRIPTS
+set( MINIMAL_EMBED_SCRIPTS
 "src/mulle-bashglobal.sh"
 "src/mulle-compatibility.sh"
-"src/mulle-logging.sh"
-"src/mulle-exekutor.sh"
-"src/mulle-string.sh"
-"src/mulle-init.sh"
-"src/mulle-options.sh"
-"src/mulle-path.sh"
-"src/mulle-file.sh"
-"src/mulle-array.sh"
-"src/mulle-case.sh"
-"src/mulle-parallel.sh"
-"src/mulle-url.sh"
-"src/mulle-version.sh"
-"src/mulle-etc.sh"
-"src/mulle-base64.sh"
+${MINIMAL_ADDITIONAL_SCRIPTS}
 )
 
-string( REPLACE ";" " " EMBED_SCRIPTS_STR "${EMBED_SCRIPTS}")
+set( DEFAULT_EMBED_SCRIPTS
+"src/mulle-bashglobal.sh"
+"src/mulle-compatibility.sh"
+${MINIMAL_ADDITIONAL_SCRIPTS}
+${DEFAULT_ADDITIONAL_SCRIPTS}
+)
+
+set( ALL_EMBED_SCRIPTS
+"src/mulle-bashglobal.sh"
+"src/mulle-compatibility.sh"
+${MINIMAL_ADDITIONAL_SCRIPTS}
+${DEFAULT_ADDITIONAL_SCRIPTS}
+${ALL_ADDITIONAL_SCRIPTS}
+)
+
+
+string( REPLACE ";" " " DEFAULT_EMBED_SCRIPTS_STR "${DEFAULT_EMBED_SCRIPTS}")
 
 execute_process( COMMAND bash -c "[ ! -f \"src/mulle-bashfunctions-embed.sh\" ] || chmod a+w \"src/mulle-bashfunctions-embed.sh\""
                  WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
-execute_process( COMMAND bash -c "cat src/embed-header.sh ; grep -E -h -v \"^#|^\ *#\" ${EMBED_SCRIPTS_STR}; cat src/embed-footer.sh"
+execute_process( COMMAND bash -c "cat src/embed-header.sh ; grep -E -h -v \"^#|^\ *#\" ${DEFAULT_EMBED_SCRIPTS_STR}; cat src/embed-footer.sh"
                  WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
                  OUTPUT_FILE "src/mulle-bashfunctions-embed.sh")
 execute_process( COMMAND chmod a-w "src/mulle-bashfunctions-embed.sh"
                  WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
+
+
+string( REPLACE ";" " " MINIMAL_EMBED_SCRIPTS_STR "${MINIMAL_EMBED_SCRIPTS}")
+
+
+execute_process( COMMAND bash -c "[ ! -f \"src/mulle-bashfunctions-minimal-embed.sh\" ] || chmod a+w \"src/mulle-bashfunctions-minimal-embed.sh\""
+                 WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
+execute_process( COMMAND bash -c "cat src/embed-minimal-header.sh ; grep -E -h -v \"^#|^\ *#\" ${MINIMAL_EMBED_SCRIPTS_STR}; cat src/embed-minimal-footer.sh"
+                 WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+                 OUTPUT_FILE "src/mulle-bashfunctions-minimal-embed.sh")
+execute_process( COMMAND chmod a-w "src/mulle-bashfunctions-minimal-embed.sh"
+                 WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
+
+
+string( REPLACE ";" " " ALL_EMBED_SCRIPTS_STR "${ALL_EMBED_SCRIPTS}")
+
+execute_process( COMMAND bash -c "[ ! -f \"src/mulle-bashfunctions-all-embed.sh\" ] || chmod a+w \"src/mulle-bashfunctions-all-embed.sh\""
+                 WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
+execute_process( COMMAND bash -c "cat src/embed-all-header.sh ; grep -E -h -v \"^#|^\ *#\" ${ALL_EMBED_SCRIPTS_STR}; cat src/embed-all-footer.sh"
+                 WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+                 OUTPUT_FILE "src/mulle-bashfunctions-all-embed.sh")
+execute_process( COMMAND chmod a-w "src/mulle-bashfunctions-all-embed.sh"
+                 WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
+
+
 # probably more of a fun thing:
 # 
 # embed using eval `base64 <<< "<data>" | gzip -d -c`
