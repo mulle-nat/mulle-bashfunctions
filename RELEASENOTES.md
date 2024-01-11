@@ -1,3 +1,16 @@
+## 6.2.0
+
+* new commands eval and r-eval to quickly test a function without having to create a mulle-bashfunctions script
+* new commnads embed-booter and extract-booter to just add zsh/bash booting functionality to anotherwise non mulle-bashfunctions script
+* somewhat improved tracing speed
+* new function `r_smart_file_downcase_identifier` for C header shields for example e.g.  #ifndef `foo_h__`
+* bugfix for termux (android)
+* improved mulle-bashfunctions embedding (and update/removal) to create standalone scripts that don't need mulle-bashfunctions installed
+* fix `r_extensionless_filename`
+* add --silent-but-warn flag as a `MULLE_FLAG_LOG_TERSE` option
+* add `shell_is_builtin_command` function
+
+
 ## 6.1.0
 
 * somewhat improved tracing speed

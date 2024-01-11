@@ -58,6 +58,7 @@ Usage:
    * locate the "mulle-bashfunctions.sh" install path for a desired variant
    * show documentation for any of the defined functions
    * list the available libraries, which you can "include"
+   * run an arbitrary mulle-bashfunction with eval and r-eval
 
 Examples:
    Load "mulle-bashfunctions-all.sh" into the current interactive shell:
@@ -68,12 +69,14 @@ Commands:
    apropos <f>    : search for a function by keywords
    embed          : embed mulle-bashfunctions into a script
    env            : environment needed for "mulle-bashfunctions.sh"
+   eval <cmd>     : evaluate cmd inside of mulle-bashfunctions
    functions      : list defined functions
    hostname       : show system hostname used by mulle-bashfunctions
    libraries      : list available libraries
    load [variant] : use  eval \`mulle-bashfunctions load\`  to load
    man <function> : show documention for function, if available
    path [variant] : path to "mulle-bashfunctions.sh"
+   r-eval <cmd>   : evaluate cmd inside of mulle-bashfunctions and print RVAL
    username       : show username used by mulle-bashfunctions
    uname          : show system short name used by mulle-bashfunctions
    version        : print currently used version
@@ -698,6 +701,9 @@ Usage:
    A convenient place to place these marker sis right after the booter
    (below MULLE_EXECUTABLE_VERSION if that line exists).
 
+   Use mulle-bashfunctions boot-embed/boot-extract, if you just want to add
+   or remove the boot code.
+
 EOF
    exit 1
 }
@@ -971,6 +977,10 @@ main()
             usage
          ;;
 
+         -f|--force)
+            MULLE_FLAG_MAGNUM_FORCE='YES'
+         ;;
+
          --version)
             printf "%s\n" "${MULLE_BASHFUNCTIONS_VERSION}"
             exit 0
@@ -1015,8 +1025,16 @@ MULLE_HOSTNAME=\"${MULLE_HOSTNAME}\"
 MULLE_UNAME=\"${MULLE_UNAME}\""
       ;;
 
+      embed-boot)
+         mulle_boot_embed "$@"
+      ;;
+
       embed)
          mulle_boot_embed "$@" | mulle_bashfunctions_embed "$@"
+      ;;
+
+      extract-boot)
+         mulle_boot_extract "$@"
       ;;
 
       extract|unembed)
@@ -1080,6 +1098,35 @@ export MULLE_UNAME ;
          [ $# -ne 0 ] && format="-$1"
 
          echo "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions${format}.sh"
+      ;;
+
+      # useful for accessing a single function from the library
+      eval)
+         include "path"
+         include "file"
+         include "case"
+         include "parallel"
+         include "sort"
+         include "url"
+         include "version"
+
+         "$@"
+         return $?
+      ;;
+
+      # useful for accessing a r function from the library
+      r-eval)
+         include "path"
+         include "file"
+         include "case"
+         include "parallel"
+         include "sort"
+         include "url"
+         include "version"
+
+         "$@" || return $?
+         printf "%s\n" "${RVAL}"
+         return 0
       ;;
 
       shell)
