@@ -223,7 +223,7 @@ function rexekutor()
 #
 # eval_exekutor ...
 #
-#   eval version fo the exekutor
+#   eval version of the exekutor
 #
 function eval_exekutor()
 {
@@ -249,7 +249,7 @@ function eval_exekutor()
 #
 # eval_rexekutor ...
 #
-#   eval version fo the rexekutor
+#   eval version of the rexekutor
 #
 function eval_rexekutor()
 {
@@ -271,7 +271,9 @@ function eval_rexekutor()
 # redirect_exekutor <output> ...
 #
 #   The redirect_exekutor version fo the exekutor, will store stdout of the
-#   executed command line into <output>
+#   executed command line into <output>. The command will be executed in
+#   a subshell! Therefore redirect_exekutor cd /tmp, will not have
+#   the desired effect
 #
 function redirect_exekutor()
 {
@@ -301,7 +303,9 @@ function redirect_exekutor()
 #
 # redirect_eval_exekutor <output> ...
 #
-#   eval version of the redirect_exekutor
+#   eval version of the redirect_exekutor. The command will be executed in
+#   a subshell! Therefore redirect_eval_exekutor cd /tmp, will not have
+#   the desired effect
 #
 function redirect_eval_exekutor()
 {
@@ -332,7 +336,9 @@ function redirect_eval_exekutor()
 # redirect_append_exekutor <output> ...
 #
 #   The redirect_exekutor version fo the exekutor, will append stdout of the
-#   executed command line to <output>
+#   executed command line to <output>. The command will be executed in
+#   a subshell! Therefore redirect_append_exekutor cd /tmp, will not have
+#   the desired effect
 #
 redirect_append_exekutor()
 {
@@ -454,7 +460,9 @@ _append_tee_eval_exekutor()
 #   at the same time.
 #
 #   Output is supposed to be the logfile and teeoutput the console
-#
+#   The command will be executed in
+#   a subshell! Therefore logging_tee_exekutor cd /tmp, will not have
+#   the desired effect
 function logging_tee_exekutor()
 {
    local output="$1"; shift
@@ -474,7 +482,9 @@ function logging_tee_exekutor()
 #
 # logging_tee_eval_exekutor <output> <teeoutput> ...
 #
-#    eval version of the logging_tee_exekutor
+#   eval version of the logging_tee_exekutor. The command will be executed in
+#   a subshell! Therefore redirect_append_exekutor cd /tmp, will not have
+#   the desired effect
 #
 function logging_tee_eval_exekutor()
 {
@@ -496,7 +506,8 @@ function logging_tee_eval_exekutor()
 # logging_redirekt_exekutor <output>  ...
 #
 #    Also add trace output to <output> in addition to stdout of the command
-#    line.
+#    line. The command will be executed in a subshell! Therefore
+#    logging_redirekt_exekutor cd /tmp, will not have the desired effect.
 #
 function logging_redirekt_exekutor()
 {
@@ -513,7 +524,9 @@ function logging_redirekt_exekutor()
 #
 # logging_redirect_eval_exekutor <output>  ...
 #
-#    Eval version of logging_redirekt_exekutor
+#    Eval version of logging_redirekt_exekutor. The command will be executed
+#    in a subshell! Therefore logging_redirekt_exekutor cd /tmp, will not have
+#    the desired effect.
 #
 function logging_redirect_eval_exekutor()
 {
