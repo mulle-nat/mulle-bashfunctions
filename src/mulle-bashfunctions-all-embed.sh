@@ -5100,6 +5100,12 @@ function r_smart_file_downcase_identifier()
 
    r_de_camel_case_identifier "$s"
    r_lowercase "${RVAL}"
+
+   case "${s}" in
+      +(_)[A-Z]*)
+         RVAL="${RVAL#_}"
+      ;;
+   esac
 }
 
 
