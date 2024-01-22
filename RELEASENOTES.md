@@ -1,3 +1,7 @@
+### 6.2.1
+
+* pass through -lx* flags
+
 ## 6.2.0
 
 * new commands eval and r-eval to quickly test a function without having to create a mulle-bashfunctions script

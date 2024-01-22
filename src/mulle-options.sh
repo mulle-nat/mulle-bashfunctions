@@ -293,6 +293,11 @@ function options_technical_flags()
          # propagate
       ;;
 
+      -lx*)
+         # doesnt mean anything to mulle-bashfunctions but propagate
+         # used by mulle-sourcetree
+      ;;
+
       -lX)
          MULLE_FLAG_LOG_EXEKUTOR='YES'
          return # don't propagate

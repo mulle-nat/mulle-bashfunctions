@@ -61,7 +61,7 @@ _fatal()
 #
 if [ "${1:-}" != --no-auto-shell ]
 then
-   _MULLE_UNAME="`uname`"
+   _MULLE_UNAME="`PATH="/bin:/usr/bin:${PATH}" uname`"
    case "${_MULLE_UNAME}" in
       [Dd]arwin)
          [ -z "${ZSH_VERSION+x}" ]
@@ -121,7 +121,7 @@ EOF
       #
       # bash/zsh will use arg after -c <arg> as $0, convenient!
       #
-      exec "${exe_shell}" -c ". ${script} --no-auto-shell ${args}" "${script}"
+      PATH="/bin:/usr/bin:${PATH}" exec "${exe_shell}" -c ". ${script} --no-auto-shell ${args}" "${script}"
    fi
 else
    no_auto_shell='YES'
@@ -145,7 +145,7 @@ fi
 # this is "our" version
 # the actual loaded version may differ (and will change this variable)
 #
-MULLE_BASHFUNCTIONS_VERSION="6.2.0"
+MULLE_BASHFUNCTIONS_VERSION="6.2.1"
 MULLE_BASHFUNCTIONS_LIBEXEC_DIRNAME="libexec"
 MULLE_EXECUTABLE="$1"
 

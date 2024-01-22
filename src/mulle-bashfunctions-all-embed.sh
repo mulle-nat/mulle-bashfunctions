@@ -2467,6 +2467,9 @@ function options_technical_flags()
          MULLE_FLAG_LOG_EXEKUTOR='YES'
       ;;
 
+      -lx*)
+      ;;
+
       -lX)
          MULLE_FLAG_LOG_EXEKUTOR='YES'
          return # don't propagate

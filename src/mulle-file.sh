@@ -1020,7 +1020,8 @@ function dir_has_files()
                                        -name "[a-zA-Z0-9_-]*" \
                                        ${flags} \
                                        "$@" \
-                                       -print 2> /dev/null`"
+                                       -print \
+                                       -quit 2> /dev/null`"
    [ ! -z "$empty" ]
 }
 
