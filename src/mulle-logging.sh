@@ -184,7 +184,7 @@ _log_setting()
 # _log_debug
 #
 #    _log_debug prints out a message in "log debug" (-ld) mode only.
-#
+#    it preserves colorization in the input strings
 _log_debug()
 {
    # for debugging, not for user. same as fluff
@@ -203,6 +203,7 @@ _log_debug()
       ;;
    esac
 }
+
 
 
 #
@@ -226,6 +227,8 @@ _log_entry()
 
    if [ $# -ne 0 ]
    then
+      functionname="${functionname} " # add space for later
+
       truncate="$1"
       if [ "${#truncate}" -gt 200 ]
       then
@@ -246,7 +249,19 @@ _log_entry()
       shift
    done
 
-   _log_debug "${functionname} ${args}"
+   #
+   # avoid _log_debug, because we don't want $* to be interpreted for unicode
+   # characters .e.g.  c:\Users would be \U unicode
+   #
+   case "${MULLE_UNAME}" in
+      'linux'|'windows')
+         _log_printf "${C_DEBUG}$(date "+%s.%N") %s%s${C_RESET}\n" "${functionname}" "${args}"
+      ;;
+
+      *)
+         _log_printf "${C_DEBUG}$(date "+%s") %s%s${C_RESET}\n" "${functionname}" "${args}"
+      ;;
+   esac
 }
 
 

@@ -697,6 +697,7 @@ _log_debug()
 }
 
 
+
 _log_entry()
 {
    if [ "${MULLE_FLAG_LOG_DEBUG:-}" != 'YES' ]
@@ -711,6 +712,8 @@ _log_entry()
 
    if [ $# -ne 0 ]
    then
+      functionname="${functionname} " # add space for later
+
       truncate="$1"
       if [ "${#truncate}" -gt 200 ]
       then
@@ -731,7 +734,15 @@ _log_entry()
       shift
    done
 
-   _log_debug "${functionname} ${args}"
+   case "${MULLE_UNAME}" in
+      'linux'|'windows')
+         _log_printf "${C_DEBUG}$(date "+%s.%N") %s%s${C_RESET}\n" "${functionname}" "${args}"
+      ;;
+
+      *)
+         _log_printf "${C_DEBUG}$(date "+%s") %s%s${C_RESET}\n" "${functionname}" "${args}"
+      ;;
+   esac
 }
 
 
@@ -4232,7 +4243,8 @@ function dir_has_files()
                                        -name "[a-zA-Z0-9_-]*" \
                                        ${flags} \
                                        "$@" \
-                                       -print 2> /dev/null`"
+                                       -print \
+                                       -quit 2> /dev/null`"
    [ ! -z "$empty" ]
 }
 

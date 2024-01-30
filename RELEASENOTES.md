@@ -1,3 +1,7 @@
+### 6.2.2
+
+* Various small improvements
+
 ### 6.2.1
 
 * pass through -lx* flags
