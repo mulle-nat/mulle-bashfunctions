@@ -1,3 +1,7 @@
+### 6.2.3
+
+* fix `MULLE_BASH_EXE_SHELL` not being honored (any more ?)
+
 ### 6.2.2
 
 * Various small improvements

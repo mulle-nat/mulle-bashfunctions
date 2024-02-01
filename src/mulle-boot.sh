@@ -24,19 +24,26 @@ then
 
    if [ $? -eq 0 ]
    then
-      case "${_MULLE_UNAME}" in
-         [Dd]arwin)
-            exe_shell="`command -v "zsh" `"
-            exe_shell="${exe_shell:-zsh}" # for error if not installed
-         ;;
+      exe_shell=
+      if [ ! -z "${MULLE_BASH_EXE_SHELL}" ]
+      then
+         exe_shell="`command -v "${MULLE_BASH_EXE_SHELL}"`"
+      fi
+      if [ -z "${exe_shell}" ]
+      then
+         case "${_MULLE_UNAME}" in
+            [Dd]arwin)
+               exe_shell="`command -v "zsh" `"
+               exe_shell="${exe_shell:-zsh}" # for error if not installed
+            ;;
 
-         *)
-            exe_shell="`command -v "bash" `"
-            exe_shell="${exe_shell:-`command -v "zsh" `}"
-            exe_shell="${exe_shell:-bash}" # for error if not installed
-         ;;
-      esac
-
+            *)
+               exe_shell="`command -v "bash" `"
+               exe_shell="${exe_shell:-`command -v "zsh" `}"
+               exe_shell="${exe_shell:-bash}" # for error if not installed
+            ;;
+         esac
+      fi
       script="$0"
 
       #

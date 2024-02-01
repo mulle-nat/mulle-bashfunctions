@@ -34,6 +34,10 @@
 #
 
 # double inclusion of this file is OK!
+
+#
+# this file does the "include" command
+#
 if ! [ ${MULLE_BASHLOADER_SH+x} ]
 then
    MULLE_BASHLOADER_SH='included'
