@@ -1,0 +1,33 @@
+{%
+   haveFile = [exists file:"usage.txt"]
+   usage    = nil
+
+   if not haveFile and config.createUsage
+      pwd        = [[NSFileManager defaultManager] currentDirectoryPath]
+      name       = [pwd lastPathComponent]
+      executable = [pwd stringByAppendingPathComponent:name];
+      cmdline    = [executable stringByAppendingString:" "];
+      cmdline    = [cmdline stringByAppendingString:"help"];
+      taskInfo   = [NSTask mulleStringSystemCallWithCommandString:cmdline]
+      if taskInfo[ "standardErrorString"]
+         usage = taskInfo[ "standardErrorString"]
+      endif
+   endif
+%}
+{% if haveFile or usage %}
+## Usage
+
+{%  if usage %}
+```
+{{ usage }}
+```
+{%  else %}
+```
+{% includes optionally verbatim "usage.txt" %}
+```
+{%  endif %}
+{% else %}
+# No usage
+{% endif %}
+
+

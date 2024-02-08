@@ -1,12 +1,12 @@
 ### How to write single-file mulle-bash scripts
 
-Use `mulle-sde add my-script.sh` to create a mulle-bash script skeleton. This
-script needs mulle-bashfunctions installed to work.
-Search for desired functionality with `mulle-bashfunctions apropos`. Once your
-script is ready for distribution, say `mulle-bashfunction embed < my-script-sh`.
-Now you have a single script file, that you can copy to any other host/OS that
-has bash or zsh installed, but needs no mulle-bashfunctions installation.
-(Undo with `mulle-bashfunction extract`).
+1. Say `mulle-sde add my-script.sh` to create a mulle-bash script skeleton.
+2. ... actually write the script ...
+3. Say `mulle-bashfunction embed < my-script-sh` to create a standalone script.
+
+The resulting script will run with `#! /bin/sh` and does not need a
+mulle-bashfunctions installation.
+
 
 ### Runtime environment
 

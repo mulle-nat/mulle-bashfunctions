@@ -1,3 +1,7 @@
+### 6.2.4
+
+* add usage to README.md (and improve some text at the same time)
+
 ### 6.2.3
 
 * fix `MULLE_BASH_EXE_SHELL` not being honored (any more ?)

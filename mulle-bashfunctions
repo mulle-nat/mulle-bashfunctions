@@ -42,7 +42,7 @@ usage()
 {
    [ ! -z "$*" ] && echo "error: $*" >&2
 
-   cat <<EOF
+   cat <<EOF >&2
 Usage:
    ${MULLE_EXECUTABLE_NAME} [command]
 

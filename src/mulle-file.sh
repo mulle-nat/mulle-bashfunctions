@@ -1029,8 +1029,9 @@ function dir_has_files()
 #
 # dir_list_files <directory> [pattern] [filetypes]
 #
-#    Lists file in <directory> (or directories as <directory> may contain
-#    wildcards) line by line.
+#    Lists file in <directory> line by line.
+#    (<directory> may contain wildcards). Filenames will have the directory
+#    prepended, which maybe absolute or not.
 #    <directory> may contain white space but no tabs. filetypes may be "f" for
 #    files or "d" for directories or "l" for symlinks. It can be a combination
 #    of these filetypes.

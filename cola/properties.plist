@@ -3,6 +3,7 @@
    {
       showButtons = YES;
       showCodacy = NO;
+      createUsage = YES;
    };
    authors =
    (
