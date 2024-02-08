@@ -149,7 +149,7 @@ fi
 # this is "our" version
 # the actual loaded version may differ (and will change this variable)
 #
-MULLE_BASHFUNCTIONS_VERSION="6.2.4"
+MULLE_BASHFUNCTIONS_VERSION="6.3.0"
 MULLE_BASHFUNCTIONS_LIBEXEC_DIRNAME="libexec"
 MULLE_EXECUTABLE="$1"
 

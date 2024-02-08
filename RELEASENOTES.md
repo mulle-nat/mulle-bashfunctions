@@ -1,3 +1,8 @@
+## 6.3.0
+
+* added new command to keep mulle-sde out of the README picture
+
+
 ### 6.2.4
 
 * add usage to README.md (and improve some text at the same time)

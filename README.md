@@ -18,34 +18,29 @@ tested on **Debian**, **FreeBSD**, **macOS**, **Manjaro**, **MinGW**,
 | `mulle-bashfunctions` | Include support, documentation and more
 
 
-## API
+## Developer Guide
 
-Use mulle-bashfunctions for discovery and documentation about itself.
-
-You can list all the functions in **mulle-bashfunctions** like
-this:
+To create a new mulle-bashfunctions script say:
 
 ``` sh
-for i in `mulle-bashfunctions libraries`
-do
-    echo "### $i"
-    mulle-bashfunctions functions "$i"
-    echo
-done
+mulle-bashfunctions new my-script > my-script.sh
+chmod +x my-script.sh
 ```
 
-but you can also use `apropos` to discover functionality:
+Use **mulle-bashfunctions** also for discovery and documentation of the
+available functions. Lets say you want to produce identifiers
+for abitrary strings. You can use `apropos` to discover functionality:
 
 ``` sh
-mulle-bashfunctions apropos uppercase
+mulle-bashfunctions apropos identifier
 ```
 
 Once you have found a function of interest, you can checkout its description
-with
+with:
 
 
 ``` sh
-mulle-bashfunctions man r_uppercase
+mulle-bashfunctions man r_smart_downcase_identifier
 ```
 and try it out with `eval` for functions printing to standard output,
 or `r-eval`, for functions that return values in the `RVAL` global variable
@@ -53,9 +48,18 @@ or `r-eval`, for functions that return values in the `RVAL` global variable
 
 
 ``` sh
-$ mulle-bashfunctions r-eval r_uppercase xyz
-XYZ
+$ mulle-bashfunctions r-eval r_smart_downcase_identifier MyScript
+my_script
 ```
+
+Finally say
+
+```sh
+mulle-bashfunction embed < my-script.sh > my.sh
+```
+
+to create a standalone script. This script will run with `#! /bin/sh` and does
+not need a mulle-bashfunctions installation.
 
 
 ### Libraries
@@ -71,7 +75,7 @@ of libraries, namely:
 | [logging](src/mulle-logging.sh)             | log support with colorization, zero cost if unused  |
 | [exekutor](src/mulle-exekutor.sh)           | run external commands with logging and "dry-run"    |
 | [file](src/mulle-file.sh)                   | functions to manage files, directories, symlinks    |
-| [options](src/mulle-options.sh)             | default handling of commandline options and trace support |
+| [options](src/mulle-options.sh)             | default handling of command line options and trace support |
 | [path](src/mulle-path.sh)                   | functions dealing with file paths                   |
 | [string](src/mulle-string.sh)               | a multitude of string functions                     |
 
@@ -87,23 +91,6 @@ Use `include "<name>"` to get access to the functions not included in
 | [parallel](src/mulle-parallel.sh) | execute parallel processes without swamping the machine         |
 | [url](src/mulle-url.sh)           | URL parser                                                      |
 | [version](src/mulle-version.sh)   | semver version management major.minor.version                   |
-
-
-### Example
-
-This example loads some additional functionality into a mulle-bashfunctions
-script and executes it:
-
-
-``` sh
-#! /usr/bin/env mulle-bash
-
-
-include "case"
-
-r_smart_downcase_identifier "${1:-EO.Foundation}"
-printf "%s\n" "${RVAL}"
-```
 
 
 ## Usage
@@ -134,17 +121,18 @@ Examples:
 Commands:
    apropos <f>    : search for a function by keywords
    embed          : embed mulle-bashfunctions into a script
-   env            : environment needed for "mulle-bashfunctions.sh"
+   env            : print environment needed for "mulle-bashfunctions.sh"
    eval <cmd>     : evaluate cmd inside of mulle-bashfunctions
    functions      : list defined functions
-   hostname       : show system hostname used by mulle-bashfunctions
+   hostname       : show system hostname as used by mulle-bashfunctions
    libraries      : list available libraries
    load [variant] : use  eval `mulle-bashfunctions load`  to load
    man <function> : show documention for function, if available
+   new <name>     : prints a mulle-bash shell script
    path [variant] : path to "mulle-bashfunctions.sh"
    r-eval <cmd>   : evaluate cmd inside of mulle-bashfunctions and print RVAL
-   username       : show username used by mulle-bashfunctions
-   uname          : show system short name used by mulle-bashfunctions
+   username       : show username as used by mulle-bashfunctions
+   uname          : show system short name as used by mulle-bashfunctions
    version        : print currently used version
    versions       : list installed versions
 
@@ -152,15 +140,7 @@ Commands:
 
 
 
-### How to write single-file mulle-bash scripts
-
-1. Say `mulle-sde add my-script.sh` to create a mulle-bash script skeleton.
-2. ... actually write the script ...
-3. Say `mulle-bashfunction embed < my-script-sh` to create a standalone script.
-
-The resulting script will run with `#! /bin/sh` and does not need a
-mulle-bashfunctions installation.
-
+## Developer Info
 
 ### Runtime environment
 
