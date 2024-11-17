@@ -136,15 +136,18 @@ then
 
    if [ -z "${MULLE_HOSTNAME:-}" ]
    then
+      MULLE_HOSTNAME="${HOSTNAME}"
       case "${MULLE_UNAME}" in
          'mingw'|'msys'|'sunos')
-            MULLE_HOSTNAME="`hostname`"
+            MULLE_HOSTNAME="${MULLE_HOSTNAME:-`hostname 2> /dev/null`}"
          ;;
 
-         *)
-            MULLE_HOSTNAME="`hostname -s`"
+         *) # on AARCH hostname does not exist anymore (sigh)
+            MULLE_HOSTNAME="${MULLE_HOSTNAME:-`hostname -s 2> /dev/null`}"
          ;;
       esac
+      MULLE_HOSTNAME="${MULLE_HOSTNAME:-`grep -E -v '^#' "/etc/hostname" 2> /dev/null`}"
+      MULLE_HOSTNAME="${MULLE_HOSTNAME:-nautilus}"
 
       case "${MULLE_HOSTNAME}" in
          \.*)

@@ -1,3 +1,37 @@
+## 6.4.0
+
+feat: improve shell compatibility and error handling
+
+* Enhance hostname detection and fallbacks
+  - Add multiple hostname detection methods
+  - Improve fallback chain with /etc/hostname support
+  - Add nautilus as final fallback hostname
+  - Fix hostname handling for various Unix systems
+
+* Improve color and logging functionality
+  - Add color deinitialization support
+  - Add logging trap uninstallation
+  - Fix color handling for dumb terminals
+  - Make `NO_COLOR` handling more consistent
+
+* Enhance technical flags and options
+  - Rename --clear-flags to --mulle-clear-flags
+  - Add --mulle-no-color and --mulle-no-colors flags
+  - Add --mulle-no-error and --mulle-no-errors flags
+  - Improve technical flags documentation
+
+* Add filesystem improvements
+  - Add `timestamp_now` function
+  - Improve `file_devicenumber` for BSD systems
+  - Add better logging for directory operations
+  - Make directory listing more verbose in debug mode
+
+* CMake improvements
+  - Use `CMAKE_CURRENT_SOURCE_DIR` instead of `PROJECT_SOURCE_DIR`
+  - Add explicit project version (6.4.0)
+  - Add LANGUAGES NONE to project declaration
+
+
 ## 6.3.0
 
 * added new command to keep mulle-sde out of the README picture

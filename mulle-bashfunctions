@@ -68,6 +68,7 @@ Examples:
 Commands:
    apropos <f>    : search for a function by keywords
    embed          : embed mulle-bashfunctions into a script
+   common-unames  : list of known values for uname
    env            : print environment needed for "mulle-bashfunctions.sh"
    eval <cmd>     : evaluate cmd inside of mulle-bashfunctions
    functions      : list defined functions
@@ -430,7 +431,7 @@ ${prefix}usage()
 
    cat <<EOF >&2
 Usage:
-   x [flags]
+   ${name} [flags]
 
    ##
    ## ADD YOUR USAGE DESCRIPTION HERE
@@ -1197,15 +1198,15 @@ main()
    MULLE_EXECUTABLE_FAIL_PREFIX="${MULLE_EXECUTABLE_NAME} ${cmd}"
 
    case "${cmd}" in
-      help)
+      'help')
          usage
       ;;
 
-      apropos)
+      'apropos')
          apropos_function "$@" || exit 1
       ;;
 
-      env)
+      'env')
          echo "\
 MULLE_BASHFUNCTIONS_LIBEXEC_DIR=\"${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}\"
 MULLE_USERNAME=\"${MULLE_USERNAME}\"
@@ -1213,43 +1214,43 @@ MULLE_HOSTNAME=\"${MULLE_HOSTNAME}\"
 MULLE_UNAME=\"${MULLE_UNAME}\""
       ;;
 
-      embed-boot)
+      'embed-boot')
          mulle_boot_embed "$@"
       ;;
 
-      embed)
+      'embed')
          mulle_boot_embed "$@" | mulle_bashfunctions_embed "$@"
       ;;
 
-      extract-boot)
+      'extract-boot')
          mulle_boot_extract "$@"
       ;;
 
-      extract|unembed)
+      'extract'|'unembed')
          mulle_boot_extract "$@" | mulle_bashfunctions_extract "$@"
       ;;
 
-      functions)
+      'functions')
          list_functions "$@" || exit 1
       ;;
 
-      hostname)
+      'hostname')
          printf "%s\n" "${MULLE_HOSTNAME}"
       ;;
 
-      init|script)
+      'init'|'script')
          fail "Use mulle-sde add --extension \"mulle-nat/file.sh\" instead"
       ;;
 
-      libexec-dir)
+      'libexec-dir')
          printf "%s\n" "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}"
       ;;
 
-      libraries)
+      'libraries')
          list_libraries "$@" || exit 1
       ;;
 
-      load)
+      'load')
          local format
 
          [ $# -ne 0 ] && format="-$1"
@@ -1267,15 +1268,32 @@ export MULLE_UNAME ;
 "
       ;;
 
-      man)
+      'common-unames')
+         cat <<EOF
+android
+darwin
+dragonfly
+freebsd
+hpux
+linux
+mingw
+msys
+netbsd
+openbsd
+sunos
+windows
+EOF
+      ;;
+
+      'man')
          man_function "$@" || exit 1
       ;;
 
-      new|script)
+      'new')
          new_function "$@" || exit 1
       ;;
 
-      ncores)
+      'ncores')
          include "path"
          include "file"
          include "parallel"
@@ -1284,7 +1302,7 @@ export MULLE_UNAME ;
          printf "%s\n" "${RVAL}"
       ;;
 
-      path)
+      'path')
          local format
 
          [ $# -ne 0 ] && format="-$1"
@@ -1293,7 +1311,7 @@ export MULLE_UNAME ;
       ;;
 
       # useful for accessing a single function from the library
-      eval)
+      'eval')
          include "path"
          include "file"
          include "case"
@@ -1307,7 +1325,7 @@ export MULLE_UNAME ;
       ;;
 
       # useful for accessing a r function from the library
-      r-eval)
+      'r-eval')
          include "path"
          include "file"
          include "case"
@@ -1321,19 +1339,19 @@ export MULLE_UNAME ;
          return 0
       ;;
 
-      shell)
+      'shell')
          printf "%s\n" `ps -h -o cmd -p $$ | awk '{ print $1 }'`
       ;;
 
-      uname)
+      'uname')
          printf "%s\n" "${MULLE_UNAME}"
       ;;
 
-      username)
+      'username')
          printf "%s\n" "${MULLE_USERNAME}"
       ;;
 
-      uuid)
+      'uuid')
          include "path"
          include "file"
 
@@ -1341,11 +1359,11 @@ export MULLE_UNAME ;
          printf "%s\n" "${RVAL}"
       ;;
 
-      version)
+      'version')
          printf "%s\n" "${MULLE_BASHFUNCTIONS_VERSION}"
       ;;
 
-      versions)
+      'versions')
          list_versions "$@" || exit 1
       ;;
 

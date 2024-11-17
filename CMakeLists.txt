@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 3.13)
 
-project( mulle-bashfunctions NONE)
+project( mulle-bashfunctions VERSION 6.4.0 LANGUAGES NONE)
 
 
 #
@@ -93,76 +93,76 @@ ${ALL_ADDITIONAL_SCRIPTS}
 string( REPLACE ";" " " DEFAULT_EMBED_SCRIPTS_STR "${DEFAULT_EMBED_SCRIPTS}")
 
 execute_process( COMMAND bash -c "[ ! -f \"src/mulle-bashfunctions-embed.sh\" ] || chmod a+w \"src/mulle-bashfunctions-embed.sh\""
-                 WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
+                 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 execute_process( COMMAND bash -c "cat src/embed-header.sh ; grep -E -h -v \"^#|^\ *#\" ${DEFAULT_EMBED_SCRIPTS_STR}; cat src/embed-footer.sh"
-                 WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+                 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
                  OUTPUT_FILE "src/mulle-bashfunctions-embed.sh")
 execute_process( COMMAND chmod a-w "src/mulle-bashfunctions-embed.sh"
-                 WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
+                 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 
 
 string( REPLACE ";" " " MINIMAL_EMBED_SCRIPTS_STR "${MINIMAL_EMBED_SCRIPTS}")
 
 
 execute_process( COMMAND bash -c "[ ! -f \"src/mulle-bashfunctions-minimal-embed.sh\" ] || chmod a+w \"src/mulle-bashfunctions-minimal-embed.sh\""
-                 WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
+                 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 execute_process( COMMAND bash -c "cat src/embed-minimal-header.sh ; grep -E -h -v \"^#|^\ *#\" ${MINIMAL_EMBED_SCRIPTS_STR}; cat src/embed-minimal-footer.sh"
-                 WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+                 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
                  OUTPUT_FILE "src/mulle-bashfunctions-minimal-embed.sh")
 execute_process( COMMAND chmod a-w "src/mulle-bashfunctions-minimal-embed.sh"
-                 WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
+                 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 
 
 string( REPLACE ";" " " ALL_EMBED_SCRIPTS_STR "${ALL_EMBED_SCRIPTS}")
 
 execute_process( COMMAND bash -c "[ ! -f \"src/mulle-bashfunctions-all-embed.sh\" ] || chmod a+w \"src/mulle-bashfunctions-all-embed.sh\""
-                 WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
+                 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 execute_process( COMMAND bash -c "cat src/embed-all-header.sh ; grep -E -h -v \"^#|^\ *#\" ${ALL_EMBED_SCRIPTS_STR}; cat src/embed-all-footer.sh"
-                 WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+                 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
                  OUTPUT_FILE "src/mulle-bashfunctions-all-embed.sh")
 execute_process( COMMAND chmod a-w "src/mulle-bashfunctions-all-embed.sh"
-                 WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
+                 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 
 
 # probably more of a fun thing:
 # 
 # embed using eval `base64 <<< "<data>" | gzip -d -c`
 # execute_process( COMMAND bash "-c" "gzip -c -9 \"src/mulle-bashfunctions-embed.sh\" | base64 \"src/mulle-bashfunctions-embed.sh.gz.base64\"" 
-#                  WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+#                  WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
 #                  INPUT_FILE "src/mulle-bashfunctions-embed.sh"
 #                  OUTPUT_FILE "src/mulle-bashfunctions-embed.sh.gz.base64")
 
 execute_process( COMMAND bash -c "[ ! -f \"src/mulle-bashfunctions-none.sh\" ] || chmod a+w \"src/mulle-bashfunctions-none.sh\""
-                 WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
+                 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 execute_process( COMMAND bash -c "cat src/header.sh ; grep -E -h -v \"^#|^\ *#\" ${NONE_SCRIPTS_STR}"
-                 WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+                 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
                  OUTPUT_FILE "src/mulle-bashfunctions-none.sh")
 execute_process( COMMAND chmod a-w "src/mulle-bashfunctions-none.sh"
-                 WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
+                 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 
 execute_process( COMMAND bash -c "[ ! -f \"src/mulle-bashfunctions.sh\" ] || chmod a+w \"src/mulle-bashfunctions.sh\""
-                 WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
+                 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 execute_process( COMMAND bash -c "cat src/header.sh ; grep -E -h -v \"^#|^\ *#\" ${DEFAULT_SCRIPTS_STR}"
-                 WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+                 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
                  OUTPUT_FILE "src/mulle-bashfunctions.sh")
 execute_process( COMMAND chmod a-w "src/mulle-bashfunctions.sh"
-                 WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
+                 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 
 execute_process( COMMAND bash -c "[ ! -f \"src/mulle-bashfunctions-minimal.sh\" ] || chmod a+w \"src/mulle-bashfunctions-minimal.sh\""
-                 WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
+                 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 execute_process( COMMAND bash -c "cat src/header.sh ; grep -E -h -v \"^#|^\ *#\" ${MINIMAL_SCRIPTS_STR}"
-                 WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+                 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
                  OUTPUT_FILE "src/mulle-bashfunctions-minimal.sh")
 execute_process( COMMAND chmod a-w "src/mulle-bashfunctions-minimal.sh"
-                 WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
+                 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 
 execute_process( COMMAND bash -c "[ ! -f \"src/mulle-bashfunctions-all.sh\" ] || chmod a+w \"src/mulle-bashfunctions-all.sh\""
-                 WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
+                 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 execute_process( COMMAND bash -c "cat src/header.sh ; grep -E -h -v \"^#|^\ *#\" ${ALL_SCRIPTS_STR}"
-                 WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+                 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
                  OUTPUT_FILE "src/mulle-bashfunctions-all.sh")
 execute_process( COMMAND chmod a-w "src/mulle-bashfunctions-all.sh"
-                 WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}")
+                 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")
 
 
 set( SCRIPTS
@@ -184,8 +184,8 @@ file( GLOB LIBRARY_SCRIPTS
 #
 # Install
 #
-execute_process( COMMAND "${PROJECT_SOURCE_DIR}/mulle-bashfunctions" version
-                 WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+execute_process( COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/mulle-bashfunctions" version
+                 WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
                  OUTPUT_VARIABLE MULLE_BASHFUNCTIONS_VERSION
                  OUTPUT_STRIP_TRAILING_WHITESPACE)
 message( STATUS "MULLE_BASHFUNCTIONS_VERSION is ${MULLE_BASHFUNCTIONS_VERSION} according to mulle-bashfunctions")

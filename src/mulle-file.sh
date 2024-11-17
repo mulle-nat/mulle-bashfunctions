@@ -267,7 +267,7 @@ _remove_file_if_present()
    #
    if ! rm -f "$1" 2> /dev/null
    then
-      # oughta be superflous on macOS but gives error codes...
+      # oughta be superfluous on macOS but gives error codes...
       # and sun gives warnings for symlinks
       case "${MULLE_UNAME}" in
          'sunos')
@@ -801,6 +801,17 @@ function modification_timestamp()
 }
 
 #
+# timestamp_now <file>
+#
+#    Get the current time (now). Output to stdout.
+#    This is just: date '+%s'
+#
+function timestamp_now()
+{
+   date '+%s'
+}
+
+#
 # file_devicenumber <file>
 #
 #    Get the device ID, where the file is located. Can be useful to check
@@ -808,9 +819,16 @@ function modification_timestamp()
 #
 function file_devicenumber()
 {
-   stat -c "%d" "$1" # returns the decimal device number
-}
+   case "${MULLE_UNAME}" in
+      darwin|*bsd|dragonfly)
+         stat -f "%d" "$1"
+      ;;
 
+      *)
+         stat -c "%d" "$1" # returns the decimal device number
+      ;;
+   esac
+}
 
 #
 # r_file_type <file>
@@ -1046,7 +1064,9 @@ function dir_list_files()
 
    [ ! -z "${directory}" ] || _internal_fail "directory is empty"
 
-   log_debug "flagchars=${flagchars}"
+   log_setting "directory=${directory}"
+   log_setting "pattern=${pattern}"
+   log_setting "flagchars=${flagchars}"
 
    case "${MULLE_UNAME}" in
       sunos)

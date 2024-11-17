@@ -125,7 +125,9 @@ EOF
       #
       # bash/zsh will use arg after -c <arg> as $0, convenient!
       #
-      PATH="/bin:/usr/bin:${PATH}" exec "${exe_shell}" -c ". ${script} --no-auto-shell ${args}" "${script}"
+      # MEMO: this used to be  PATH="/bin:/usr/bin:${PATH}" but i can't
+      #       remember why, and it also tripped up our path search
+      PATH="${PATH:-/bin:/usr/bin}" exec "${exe_shell}" -c ". ${script} --no-auto-shell ${args}" "${script}"
    fi
 else
    no_auto_shell='YES'
@@ -149,7 +151,7 @@ fi
 # this is "our" version
 # the actual loaded version may differ (and will change this variable)
 #
-MULLE_BASHFUNCTIONS_VERSION="6.3.0"
+MULLE_BASHFUNCTIONS_VERSION="6.4.0"
 MULLE_BASHFUNCTIONS_LIBEXEC_DIRNAME="libexec"
 MULLE_EXECUTABLE="$1"
 
@@ -771,7 +773,7 @@ then
 fi
 
 
-# get rid of all these functions, so mulle-bashfunctions can silenty load
+# get rid of all these functions, so mulle-bashfunctions can silently load
 # better versions
 
 unset -f r_add_line
@@ -794,7 +796,7 @@ unset -f versions_sort
 # ***
 
 #
-# Conondrum : if we turn off posix the :: separators don't work anymore
+# Conundrum : if we turn off posix the :: separators don't work anymore
 # on older  : if we turn posix on the alias expansion doesn't work anymore
 # bash      :
 #

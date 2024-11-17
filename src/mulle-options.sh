@@ -444,16 +444,17 @@ function options_technical_flags()
          return # don't propagate
       ;;
 
-      --clear-flags)
+      --mulle-clear-flags)
          MULLE_TECHNICAL_FLAGS=''
          return 0
       ;;
 
-      --list-technical-flags)
+      --mulle-list-technical-flags)
          echo "\
---clear-flags
 --dry-run
---no-errors
+--mulle-clear-flags
+--mulle-no-errors
+--mulle-no-colors
 --log-debug
 --log-environment
 --log-settings
@@ -471,7 +472,12 @@ function options_technical_flags()
          return 0
       ;;
 
-      --no-errors)
+      --mulle-no-color|--mulle-no-colors)
+         MULLE_NO_COLOR='YES'
+         logging_deinitialize_color
+      ;;
+
+      --mulle-no-error|--mulle-no-errors)
          MULLE_FLAG_LOG_ERROR='NO'
       ;;
 

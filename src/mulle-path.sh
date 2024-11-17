@@ -56,7 +56,7 @@ MULLE_PATH_SH='included'
 # r_filepath_cleaned <filepath>
 #
 #    r_filepath_cleaned makes somewhat prettier filenames, removing
-#    superflous "." and trailing '/'. It's fairly cheap though.
+#    superfluous "." and trailing '/'. It's fairly cheap though.
 #    DO NOT USE ON URLs
 #
 function r_filepath_cleaned()

@@ -328,7 +328,7 @@ alias log_fluff='_log_fluff'
 #
 # log_info
 #
-#    log_fluff prints out a message unless in in "terse mode" (-t)
+#    log_fluff prints out a message unless in in "terse mode" (-s)
 #    log_info is an alias for _log_info.
 #
 alias log_info='_log_info'
@@ -373,7 +373,6 @@ alias log_warning='_log_warning'
 #
 log_set_trace_level()
 {
-   # reset to default
    alias log_debug='_log_debug'
    alias log_entry='_log_entry'
    alias log_error='_log_error'
@@ -542,6 +541,12 @@ logging_trap_install()
 }
 
 
+logging_trap_uninstall()
+{
+   trap - TERM INT
+}
+
+
 logging_initialize_color()
 {
    # https://stackoverflow.com/questions/4842424/list-of-ansi-color-escape-sequences
@@ -552,7 +557,7 @@ logging_initialize_color()
    # fix for Xcode
    case "${TERM:-}" in
       dumb)
-         MULLE_NO_COLOR=YES
+         MULLE_NO_COLOR='YES'
       ;;
    esac
 
@@ -579,6 +584,47 @@ logging_initialize_color()
       then
          logging_trap_install
       fi
+   fi
+
+   C_RESET_BOLD="${C_RESET}${C_BOLD}"
+
+   C_ERROR="${C_BR_RED}${C_BOLD}"
+   C_WARNING="${C_RED}${C_BOLD}"
+   C_INFO="${C_CYAN}${C_BOLD}"
+   C_VERBOSE="${C_GREEN}${C_BOLD}"
+   C_FLUFF="${C_GREEN}${C_BOLD}"
+   C_SETTING="${C_GREEN}${C_FAINT}"
+   C_TRACE="${C_FLUFF}${C_FAINT}"
+   C_TRACE2="${C_RESET}${C_FAINT}"
+   C_DEBUG="${C_SPECIAL_BLUE}"
+
+   C_ERROR_TEXT="${C_RESET}${C_BR_RED}${C_BOLD}"
+}
+
+
+logging_deinitialize_color()
+{
+   C_RESET=
+
+   C_RED=
+   C_GREEN=
+   C_BLUE=
+   C_MAGENTA=
+   C_CYAN=
+
+   C_BR_RED=
+   C_BR_GREEN=
+   C_BR_BLUE=
+   C_BR_CYAN=
+   C_BR_MAGENTA=
+   C_BOLD=
+   C_FAINT=
+   C_UNDERLINE=
+   C_SPECIAL_BLUE=
+
+   if [ "${MULLE_LOGGING_TRAP:-}" != 'NO' ]
+   then
+      logging_trap_uninstall
    fi
 
    C_RESET_BOLD="${C_RESET}${C_BOLD}"

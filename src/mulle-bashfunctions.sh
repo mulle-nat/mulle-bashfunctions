@@ -136,15 +136,18 @@ then
 
    if [ -z "${MULLE_HOSTNAME:-}" ]
    then
+      MULLE_HOSTNAME="${HOSTNAME}"
       case "${MULLE_UNAME}" in
          'mingw'|'msys'|'sunos')
-            MULLE_HOSTNAME="`hostname`"
+            MULLE_HOSTNAME="${MULLE_HOSTNAME:-`hostname 2> /dev/null`}"
          ;;
 
-         *)
-            MULLE_HOSTNAME="`hostname -s`"
+         *) # on AARCH hostname does not exist anymore (sigh)
+            MULLE_HOSTNAME="${MULLE_HOSTNAME:-`hostname -s 2> /dev/null`}"
          ;;
       esac
+      MULLE_HOSTNAME="${MULLE_HOSTNAME:-`grep -E -v '^#' "/etc/hostname" 2> /dev/null`}"
+      MULLE_HOSTNAME="${MULLE_HOSTNAME:-nautilus}"
 
       case "${MULLE_HOSTNAME}" in
          \.*)
@@ -924,12 +927,18 @@ logging_trap_install()
 }
 
 
+logging_trap_uninstall()
+{
+   trap - TERM INT
+}
+
+
 logging_initialize_color()
 {
 
    case "${TERM:-}" in
       dumb)
-         MULLE_NO_COLOR=YES
+         MULLE_NO_COLOR='YES'
       ;;
    esac
 
@@ -955,6 +964,47 @@ logging_initialize_color()
       then
          logging_trap_install
       fi
+   fi
+
+   C_RESET_BOLD="${C_RESET}${C_BOLD}"
+
+   C_ERROR="${C_BR_RED}${C_BOLD}"
+   C_WARNING="${C_RED}${C_BOLD}"
+   C_INFO="${C_CYAN}${C_BOLD}"
+   C_VERBOSE="${C_GREEN}${C_BOLD}"
+   C_FLUFF="${C_GREEN}${C_BOLD}"
+   C_SETTING="${C_GREEN}${C_FAINT}"
+   C_TRACE="${C_FLUFF}${C_FAINT}"
+   C_TRACE2="${C_RESET}${C_FAINT}"
+   C_DEBUG="${C_SPECIAL_BLUE}"
+
+   C_ERROR_TEXT="${C_RESET}${C_BR_RED}${C_BOLD}"
+}
+
+
+logging_deinitialize_color()
+{
+   C_RESET=
+
+   C_RED=
+   C_GREEN=
+   C_BLUE=
+   C_MAGENTA=
+   C_CYAN=
+
+   C_BR_RED=
+   C_BR_GREEN=
+   C_BR_BLUE=
+   C_BR_CYAN=
+   C_BR_MAGENTA=
+   C_BOLD=
+   C_FAINT=
+   C_UNDERLINE=
+   C_SPECIAL_BLUE=
+
+   if [ "${MULLE_LOGGING_TRAP:-}" != 'NO' ]
+   then
+      logging_trap_uninstall
    fi
 
    C_RESET_BOLD="${C_RESET}${C_BOLD}"
@@ -2799,16 +2849,17 @@ function options_technical_flags()
          return # don't propagate
       ;;
 
-      --clear-flags)
+      --mulle-clear-flags)
          MULLE_TECHNICAL_FLAGS=''
          return 0
       ;;
 
-      --list-technical-flags)
+      --mulle-list-technical-flags)
          echo "\
---clear-flags
 --dry-run
---no-errors
+--mulle-clear-flags
+--mulle-no-errors
+--mulle-no-colors
 --log-debug
 --log-environment
 --log-settings
@@ -2826,7 +2877,12 @@ function options_technical_flags()
          return 0
       ;;
 
-      --no-errors)
+      --mulle-no-color|--mulle-no-colors)
+         MULLE_NO_COLOR='YES'
+         logging_deinitialize_color
+      ;;
+
+      --mulle-no-error|--mulle-no-errors)
          MULLE_FLAG_LOG_ERROR='NO'
       ;;
 
@@ -4077,11 +4133,23 @@ function modification_timestamp()
    esac
 }
 
-function file_devicenumber()
+function timestamp_now()
 {
-   stat -c "%d" "$1" # returns the decimal device number
+   date '+%s'
 }
 
+function file_devicenumber()
+{
+   case "${MULLE_UNAME}" in
+      darwin|*bsd|dragonfly)
+         stat -f "%d" "$1"
+      ;;
+
+      *)
+         stat -c "%d" "$1" # returns the decimal device number
+      ;;
+   esac
+}
 
 function r_file_type()
 {
@@ -4258,7 +4326,9 @@ function dir_list_files()
 
    [ ! -z "${directory}" ] || _internal_fail "directory is empty"
 
-   log_debug "flagchars=${flagchars}"
+   log_setting "directory=${directory}"
+   log_setting "pattern=${pattern}"
+   log_setting "flagchars=${flagchars}"
 
    case "${MULLE_UNAME}" in
       sunos)
