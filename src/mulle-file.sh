@@ -483,6 +483,7 @@ _r_make_tmp_in_dir()
    name="${name:-${MULLE_EXECUTABLE_NAME}}"
    name="${name:-mulle}"
 
+   extension="${extension#\.}"
    if [ ! -z "${extension}" ]
    then
       extension=".${extension}"
@@ -496,7 +497,7 @@ _r_make_tmp_in_dir()
 #
 # r_make_tmp <name> <filetype>
 #
-#    Create a temporary file, or dirctory if <filetype> is "d".
+#    Create a temporary file, or directory if <filetype> is "d".
 #    You can leave name empty, in which case the name of the script will
 #    be used.
 #

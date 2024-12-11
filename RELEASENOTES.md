@@ -1,3 +1,9 @@
+## 6.5.0
+
+* `r_make_tmp` file extension can be specified as .foo or foo, the first . will be removed
+* new function `r_escaped_json`
+
+
 ## 6.4.0
 
 feat: improve shell compatibility and error handling

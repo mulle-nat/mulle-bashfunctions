@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 3.13)
 
-project( mulle-bashfunctions VERSION 6.4.0 LANGUAGES NONE)
+project( mulle-bashfunctions VERSION 6.5.0 LANGUAGES NONE)
 
 
 #
@@ -225,4 +225,3 @@ PATTERN "*._DS_Store" EXCLUDE)
 # must be after CPACK_PACKAGE_VERSION
 include( CMakePackage.cmake)
 include( CPack)
-

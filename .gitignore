@@ -27,3 +27,4 @@ Makefile
 release-entry-0.21.md
 mulle-markdown-preview-*.html
 test/34-mod-time/file
+.mulle/etc/make
