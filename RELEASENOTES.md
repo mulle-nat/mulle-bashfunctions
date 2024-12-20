@@ -1,3 +1,7 @@
+### 6.5.1
+
+* updated sed escaping for mulle-template
+
 ## 6.5.0
 
 * `r_make_tmp` file extension can be specified as .foo or foo, the first . will be removed

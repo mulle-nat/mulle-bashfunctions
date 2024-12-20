@@ -1005,7 +1005,10 @@ function r_escaped_sed_pattern()
    s="${s//\*/\\*}"
    s="${s//\./\\.}"
    s="${s//\^/\\^}"
-   s="${s//$'\n'/\\$'\n'}" # assume
+   s="${s//$'\n'/\\$'\n'}"
+   s="${s//$'\t'/\\$'\t'}"
+   s="${s//$'\r'/\\$'\r'}"
+   s="${s//$'\f'/\\$'\f'}"
 
    RVAL="$s"
 }
@@ -1022,10 +1025,15 @@ function r_escaped_sed_replacement()
 {
    local s="$1"
 
-   s="${s//\\/\\\\}"
-   s="${s//\//\\/}"
-   s="${s//&/\\&}"
-   s="${s//$'\n'/\\$'\n'}"
+   s="${s//\\/\\\\}"        # escape backslashes first
+   s="${s//\//\\/}"         # escape forward slashes
+   s="${s//\'/\'\\\'\'}"    # escape single quotes by closing and reopening the quote
+   s="${s//&/\\&}"          # escape ampersands
+   # Convert literal newlines to \n
+   s="${s//$'\t'/\\t}"  # escape tabs returns
+   s="${s//$'\r'/\\r}"  # escape crlf returns
+   s="${s//$'\n'/\\n}"  # escape newlines returns
+   s="${s//$'\f'/\\f}"  # escape form feeds returns
 
    RVAL="$s"
 }
@@ -1117,63 +1125,63 @@ function r_escaped_shell_string()
 #
 function r_escaped_json()
 {
-    # Escape backslashes
-    RVAL="${*//\\/\\\\}"
+   # Escape backslashes
+   RVAL="${*//\\/\\\\}"
 
-    # Escape double quotes
-    RVAL="${RVAL//\"/\\\"}"
+   # Escape double quotes
+   RVAL="${RVAL//\"/\\\"}"
 
-    # Escape newlines
-    RVAL="${RVAL//$'\n'/\\n}"
+   # Escape newlines
+   RVAL="${RVAL//$'\n'/\\n}"
 
-    # Escape carriage returns
-    RVAL="${RVAL//$'\r'/\\r}"
+   # Escape carriage returns
+   RVAL="${RVAL//$'\r'/\\r}"
 
-    # Escape tabs
-    RVAL="${RVAL//$'\t'/\\t}"
+   # Escape tabs
+   RVAL="${RVAL//$'\t'/\\t}"
 
-    # Escape backspaces (not commonly needed, but included for completeness)
-    RVAL="${RVAL//$'\b'/\\b}"
+   # Escape backspaces (not commonly needed, but included for completeness)
+   RVAL="${RVAL//$'\b'/\\b}"
 
-    # Escape form feeds (not commonly needed, but included for completeness)
-    RVAL="${RVAL//$'\f'/\\f}"
+   # Escape form feeds (not commonly needed, but included for completeness)
+   RVAL="${RVAL//$'\f'/\\f}"
 
-    # Escape solidus (optional, but can be done)
-    RVAL="${RVAL//\//\\/}"
+   # Escape solidus (optional, but can be done)
+   RVAL="${RVAL//\//\\/}"
 
-    # Use sed to replace control characters with their Unicode escape sequences
-    RVAL="${RVAL//$'\x1'/\\u0001}"
-    RVAL="${RVAL//$'\x2'/\\u0002}"
-    RVAL="${RVAL//$'\x3'/\\u0003}"
-    RVAL="${RVAL//$'\x4'/\\u0004}"
-    RVAL="${RVAL//$'\x5'/\\u0005}"
-    RVAL="${RVAL//$'\x6'/\\u0006}"
-    RVAL="${RVAL//$'\x7'/\\u0007}"
-    # RVAL="${RVAL//$'\x8'/\\u0008}" "\t"
-    # RVAL="${RVAL//$'\x9'/\\u0009}" "\b"
-    # RVAL="${RVAL//$'\xA'/\\u000A}" "\n"
-    RVAL="${RVAL//$'\xB'/\\u000B}"
-    # RVAL="${RVAL//$'\xC'/\\u000C}" "\f"
-    # RVAL="${RVAL//$'\xD'/\\u000D}" "\r"
-    RVAL="${RVAL//$'\xE'/\\u000E}"
-    RVAL="${RVAL//$'\xF'/\\u000F}"
-    RVAL="${RVAL//$'\x10'/\\u0010}"
-    RVAL="${RVAL//$'\x11'/\\u0011}"
-    RVAL="${RVAL//$'\x12'/\\u0012}"
-    RVAL="${RVAL//$'\x13'/\\u0013}"
-    RVAL="${RVAL//$'\x14'/\\u0014}"
-    RVAL="${RVAL//$'\x15'/\\u0015}"
-    RVAL="${RVAL//$'\x16'/\\u0016}"
-    RVAL="${RVAL//$'\x17'/\\u0017}"
-    RVAL="${RVAL//$'\x18'/\\u0018}"
-    RVAL="${RVAL//$'\x19'/\\u0019}"
-    RVAL="${RVAL//$'\x1A'/\\u001A}"
-    RVAL="${RVAL//$'\x1B'/\\u001B}"
-    RVAL="${RVAL//$'\x1C'/\\u001C}"
-    RVAL="${RVAL//$'\x1D'/\\u001D}"
-    RVAL="${RVAL//$'\x1E'/\\u001E}"
-    RVAL="${RVAL//$'\x1F'/\\u001F}"
- }
+   # Use sed to replace control characters with their Unicode escape sequences
+   RVAL="${RVAL//$'\x1'/\\u0001}"
+   RVAL="${RVAL//$'\x2'/\\u0002}"
+   RVAL="${RVAL//$'\x3'/\\u0003}"
+   RVAL="${RVAL//$'\x4'/\\u0004}"
+   RVAL="${RVAL//$'\x5'/\\u0005}"
+   RVAL="${RVAL//$'\x6'/\\u0006}"
+   RVAL="${RVAL//$'\x7'/\\u0007}"
+   # RVAL="${RVAL//$'\x8'/\\u0008}" "\t"
+   # RVAL="${RVAL//$'\x9'/\\u0009}" "\b"
+   # RVAL="${RVAL//$'\xA'/\\u000A}" "\n"
+   RVAL="${RVAL//$'\xB'/\\u000B}"
+   # RVAL="${RVAL//$'\xC'/\\u000C}" "\f"
+   # RVAL="${RVAL//$'\xD'/\\u000D}" "\r"
+   RVAL="${RVAL//$'\xE'/\\u000E}"
+   RVAL="${RVAL//$'\xF'/\\u000F}"
+   RVAL="${RVAL//$'\x10'/\\u0010}"
+   RVAL="${RVAL//$'\x11'/\\u0011}"
+   RVAL="${RVAL//$'\x12'/\\u0012}"
+   RVAL="${RVAL//$'\x13'/\\u0013}"
+   RVAL="${RVAL//$'\x14'/\\u0014}"
+   RVAL="${RVAL//$'\x15'/\\u0015}"
+   RVAL="${RVAL//$'\x16'/\\u0016}"
+   RVAL="${RVAL//$'\x17'/\\u0017}"
+   RVAL="${RVAL//$'\x18'/\\u0018}"
+   RVAL="${RVAL//$'\x19'/\\u0019}"
+   RVAL="${RVAL//$'\x1A'/\\u001A}"
+   RVAL="${RVAL//$'\x1B'/\\u001B}"
+   RVAL="${RVAL//$'\x1C'/\\u001C}"
+   RVAL="${RVAL//$'\x1D'/\\u001D}"
+   RVAL="${RVAL//$'\x1E'/\\u001E}"
+   RVAL="${RVAL//$'\x1F'/\\u001F}"
+}
 
 
 # ####################################################################

@@ -64,6 +64,8 @@ Examples:
    Load "mulle-bashfunctions-all.sh" into the current interactive shell:
 
       eval \`mulle-bashfunctions load all\`
+      r_escaped_json '{ "url": "https://www.mulle-kybernetik.com" }'
+      echo \$RVAL
 
 Commands:
    apropos <f>    : search for a function by keywords
