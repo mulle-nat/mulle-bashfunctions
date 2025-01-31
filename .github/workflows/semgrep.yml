@@ -8,7 +8,7 @@ on:
     paths:
     - .github/workflows/semgrep.yml
   schedule:
-    - cron: ${GITHUB_ACTION_RANDOM:0-59} ${GITHUB_ACTION_RANDOM:0-23} ${GITHUB_ACTION_RANDOM:1-28} * *
+    - cron: 48 18 18 * *
 name: Semgrep
 jobs:
   semgrep:
