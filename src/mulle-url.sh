@@ -52,7 +52,7 @@ MULLE_URL_SH='included'
 #
 #    Escape unsafe characters of <url> as %XX hex.
 #    Works nicely if there are few characters that need encoding.
-#    "foo bar" -> "foo%20bar"
+#    "/foo bar/" -> "%2Ffoo%20bar%2F"
 #
 function r_url_encode()
 {
@@ -66,6 +66,42 @@ function r_url_encode()
    while :
    do
       safe="${s%%[^a-zA-Z0-9.~_-]*}"
+      RVAL="${RVAL}${safe}"
+      s="${s#"${safe}"}"
+      if [ -z "${s}" ]
+      then
+         break
+      fi
+
+      c="${s:0:1}"
+      s="${s:1}"
+      printf -v encode '%%%02X' "'${c}'"
+      RVAL="${RVAL}${encode}"
+   done
+}
+
+
+#
+# r_url_path_encode <url>
+#
+#    Escape unsafe characters of <url> as %XX hex, but preserves
+#    forwards slashes.
+#    Works nicely if there are few characters that need encoding.
+#    "/foo bar/" -> "/foo%20bar/"
+#
+#
+function r_url_path_encode()
+{
+   local s="$1"
+
+   local c
+   local safe
+   local encode
+
+   RVAL=
+   while :
+   do
+      safe="${s%%[^a-zA-Z0-9.~/_-]*}"
       RVAL="${RVAL}${safe}"
       s="${s#"${safe}"}"
       if [ -z "${s}" ]

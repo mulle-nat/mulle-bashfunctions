@@ -823,5 +823,32 @@ function r_assert_sane_path()
    esac
 }
 
+#
+# filepath_contains_filepath <filepath> <other>
+#
+#    Check if <other> is identical to <filepath> or a plausible file or 
+#    subdirectoy. This is just string matching!
+#
+filepath_contains_filepath()
+{
+    local string1="${1%/}"  # Path to check, remove trailing slash
+    local string2="${2%/}"  # Directory path, remove trailing slash
+    
+    case "${string2}" in
+        # Case 1: Strings are identical
+        ${string1})
+            return 0
+            ;;
+        # Case 2: string1 is a subdirectory or file inside string2
+        ${string1}/*)
+            return 0
+            ;;
+        # Not a match
+        *)
+            return 1
+            ;;
+    esac
+}
+
 fi
 :

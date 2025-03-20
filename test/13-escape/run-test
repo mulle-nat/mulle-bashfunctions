@@ -24,6 +24,10 @@ expect_output()
    if [ "${output}" != "${expected}" ]
    then
       echo "Got \"${output}\". Expected: \"${expected}\"" >&2
+      echo "Output:" >&2
+      hexdump -C <<< "${output}"
+      echo "Expected:" >&2
+      hexdump -C <<< "${expected}"
       stacktrace >&2
       exit 1
    fi
@@ -163,11 +167,50 @@ test_comma_concat()
 }
 
 
+
+test_sed_escape_pattern()
+{
+   r_escaped_sed_pattern ''
+   expect_output "${RVAL}" ''
+
+   r_escaped_sed_pattern "\\"
+   expect_output "${RVAL}" "\\\\"
+
+   r_escaped_sed_pattern '[$]/*.^'
+   expect_output "${RVAL}" '\[\$\]\/\*\.\^'
+
+   r_escaped_sed_pattern $'\n'
+   expect_output "${RVAL}" "\\"$'\n'
+}
+
+
+test_sed_escape_replacement()
+{
+   r_escaped_sed_replacement ''
+   expect_output "${RVAL}" ''
+
+   r_escaped_sed_replacement "/"
+   expect_output "${RVAL}" "\/"
+
+   r_escaped_sed_replacement "\\"
+   expect_output "${RVAL}" "\\\\"
+
+   r_escaped_sed_replacement '&/'
+   expect_output "${RVAL}" '\&\/'
+
+   r_escaped_sed_replacement $'\n'
+   expect_output "${RVAL}" "\\"$'\n'
+}
+
+
+
 main()
 {
    test_backslash
    test_doublequote
    test_singlequote
+   test_sed_escape_pattern
+   test_sed_escape_replacement
 
    echo "All tests passed" >&2
 }

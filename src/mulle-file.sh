@@ -1165,7 +1165,7 @@ function dir_list_files()
                                     -name "'${pattern:-*}'" \
                                     ${flags} \
                                     -print  | sort -n
-   IFS=' '$'\t'$'\n'
+   IFS="${DEFAULT_IFS}"
 }
 
 

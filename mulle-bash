@@ -125,9 +125,9 @@ EOF
       #
       # bash/zsh will use arg after -c <arg> as $0, convenient!
       #
-      # MEMO: this used to be  PATH="/bin:/usr/bin:${PATH}" but i can't
-      #       remember why, and it also tripped up our path search
-      PATH="${PATH:-/bin:/usr/bin}" exec "${exe_shell}" -c ". ${script} --no-auto-shell ${args}" "${script}"
+      # MEMO: this used to be  PATH="/bin:/usr/bin:${PATH}" but this tripped up
+      #       our path search. It's now in the back as a fallback
+      PATH="${PATH}:/usr/bin:/bin}" exec "${exe_shell}" -c ". ${script} --no-auto-shell ${args}" "${script}"
    fi
 else
    no_auto_shell='YES'
@@ -151,7 +151,7 @@ fi
 # this is "our" version
 # the actual loaded version may differ (and will change this variable)
 #
-MULLE_BASHFUNCTIONS_VERSION="6.5.1"
+MULLE_BASHFUNCTIONS_VERSION="6.6.0"
 MULLE_BASHFUNCTIONS_LIBEXEC_DIRNAME="libexec"
 MULLE_EXECUTABLE="$1"
 

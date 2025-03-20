@@ -1805,13 +1805,11 @@ function r_reverse_lines()
    delim=""
    RVAL=
 
-   IFS=$'\n'
-   while read -r line
+   while IFS=$'\n' read -r line
    do
       RVAL="${line}${delim}${RVAL}"
       delim=$'\n'
    done <<< "${lines}"
-   IFS="${DEFAULT_IFS}"
 }
 
 
@@ -1871,16 +1869,39 @@ function r_escaped_grep_pattern()
 {
    local s="$1"
 
-   s="${s//\\/\\\\}"
-   s="${s//\[/\\[}"
-   s="${s//\]/\\]}"
-   s="${s//\$/\\$}"
-   s="${s//\*/\\*}"
-   s="${s//\./\\.}"
-   s="${s//\^/\\^}"
-   s="${s//\|/\\|}"
 
-   RVAL="$s"
+   if [ ${ZSH_VERSION+x} ]
+   then
+      local i
+      local c
+
+      RVAL=
+      for (( i=0; i < ${#s}; i++ ))
+      do
+         c="${s:$i:1}"
+         case "$c" in
+            $'\n'|$'\r'|$'\t'|$'\f'|"\\"|'['|']'|'$'|'*'|'.'|'^'|'|')
+               RVAL+="\\"
+            ;;
+         esac
+         RVAL+="$c"
+      done
+   else
+      s="${s//\\/\\\\}"
+      s="${s//\[/\\[}"
+      s="${s//\]/\\]}"
+      s="${s//\$/\\$}"
+      s="${s//\*/\\*}"
+      s="${s//\./\\.}"
+      s="${s//\^/\\^}"
+      s="${s//\|/\\|}"
+
+      s="${s//$'\n'/\\$'\n'}"
+      s="${s//$'\t'/\\$'\t'}"
+      s="${s//$'\r'/\\$'\r'}"
+      s="${s//$'\f'/\\$'\f'}"
+      RVAL="$s"
+   fi
 }
 
 
@@ -1888,20 +1909,37 @@ function r_escaped_sed_pattern()
 {
    local s="$1"
 
-   s="${s//\\/\\\\}"
-   s="${s//\[/\\[}"
-   s="${s//\]/\\]}"
-   s="${s//\//\\/}"
-   s="${s//\$/\\$}"
-   s="${s//\*/\\*}"
-   s="${s//\./\\.}"
-   s="${s//\^/\\^}"
-   s="${s//$'\n'/\\$'\n'}"
-   s="${s//$'\t'/\\$'\t'}"
-   s="${s//$'\r'/\\$'\r'}"
-   s="${s//$'\f'/\\$'\f'}"
+   if [ ${ZSH_VERSION+x} ]
+   then
+      local i
+      local c
 
-   RVAL="$s"
+      RVAL=
+      for (( i=0; i < ${#s}; i++ ))
+      do
+         c="${s:$i:1}"
+         case "$c" in
+            $'\n'|$'\r'|$'\t'|$'\f'|"\\"|'['|']'|'/'|'$'|'*'|'.'|'^')
+               RVAL+="\\"
+            ;;
+         esac
+         RVAL+="$c"
+      done
+   else
+      s="${s//\\/\\\\}"
+      s="${s//\[/\\[}"
+      s="${s//\]/\\]}"
+      s="${s//\//\\/}"
+      s="${s//\$/\\$}"
+      s="${s//\*/\\*}"
+      s="${s//\./\\.}"
+      s="${s//\^/\\^}"
+      s="${s//$'\n'/\\$'\n'}"
+      s="${s//$'\t'/\\$'\t'}"
+      s="${s//$'\r'/\\$'\r'}"
+      s="${s//$'\f'/\\$'\f'}"
+      RVAL="$s"
+   fi
 }
 
 
@@ -1909,16 +1947,33 @@ function r_escaped_sed_replacement()
 {
    local s="$1"
 
-   s="${s//\\/\\\\}"        # escape backslashes first
-   s="${s//\//\\/}"         # escape forward slashes
-   s="${s//\'/\'\\\'\'}"    # escape single quotes by closing and reopening the quote
-   s="${s//&/\\&}"          # escape ampersands
-   s="${s//$'\t'/\\t}"  # escape tabs returns
-   s="${s//$'\r'/\\r}"  # escape crlf returns
-   s="${s//$'\n'/\\n}"  # escape newlines returns
-   s="${s//$'\f'/\\f}"  # escape form feeds returns
+   if [ ${ZSH_VERSION+x} ]
+   then
+      local i
+      local c
 
-   RVAL="$s"
+      RVAL=
+      for (( i=0; i < ${#s}; i++ ))
+      do
+         c="${s:$i:1}"
+         case "$c" in
+            $'\n'|$'\r'|$'\t'|$'\f'|"\\"|'/'|'&')
+               RVAL+="\\"
+            ;;
+         esac
+         RVAL+="$c"
+      done
+   else
+      s="${s//\\/\\\\}"        # escape backslashes first
+      s="${s//\//\\/}"         # escape forward slashes
+      s="${s//&/\\&}"          # escape ampersands
+
+      s="${s//$'\n'/\\$'\n'}"
+      s="${s//$'\t'/\\$'\t'}"
+      s="${s//$'\r'/\\$'\r'}"
+      s="${s//$'\f'/\\$'\f'}"
+      RVAL="$s"
+   fi
 }
 
 
@@ -3401,6 +3456,24 @@ function r_assert_sane_path()
    esac
 }
 
+filepath_contains_filepath()
+{
+    local string1="${1%/}"  # Path to check, remove trailing slash
+    local string2="${2%/}"  # Directory path, remove trailing slash
+    
+    case "${string2}" in
+        ${string1})
+            return 0
+            ;;
+        ${string1}/*)
+            return 0
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
 fi
 :
 if ! [ ${MULLE_FILE_SH+x} ]
@@ -4297,7 +4370,7 @@ function dir_list_files()
                                     -name "'${pattern:-*}'" \
                                     ${flags} \
                                     -print  | sort -n
-   IFS=' '$'\t'$'\n'
+   IFS="${DEFAULT_IFS}"
 }
 
 
