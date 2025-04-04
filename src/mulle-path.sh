@@ -827,26 +827,42 @@ function r_assert_sane_path()
 # filepath_contains_filepath <filepath> <other>
 #
 #    Check if <other> is identical to <filepath> or a plausible file or 
-#    subdirectoy. This is just string matching!
+#    subdirectory. This is just string matching! No filesystem checks
 #
 filepath_contains_filepath()
 {
-    local string1="${1%/}"  # Path to check, remove trailing slash
-    local string2="${2%/}"  # Directory path, remove trailing slash
+    local filepath="${1%/}"  # Path to check, remove trailing slash
+    local other="${2%/}"  # Directory path, remove trailing slash
     
-    case "${string2}" in
-        # Case 1: Strings are identical
-        ${string1})
-            return 0
-            ;;
-        # Case 2: string1 is a subdirectory or file inside string2
-        ${string1}/*)
-            return 0
-            ;;
-        # Not a match
-        *)
+    r_simplified_path "${filepath}"
+    filepath="${RVAL}"
+
+    r_simplified_path "${other}"
+    RVAL=${RVAL}
+
+    case "${filepath}" in 
+      .)
+         if is_absolutepath "${other}"
+         then 
             return 1
-            ;;
+         fi
+         return 0
+      ;;
+    esac
+
+    case "${other}" in
+         # Case 1: Strings are identical
+         ${filepath})
+             return 0
+         ;;
+         # Case 2: string1 is a subdirectory or file inside other
+         ${filepath}/*)
+             return 0
+         ;;
+         # Not a match
+         *)
+             return 1
+         ;;
     esac
 }
 
