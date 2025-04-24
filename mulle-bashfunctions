@@ -1267,21 +1267,32 @@ MULLE_UNAME=\"${MULLE_UNAME}\""
 
       'load')
          local format
+         local check
 
-         [ $# -ne 0 ] && format="-$1"
+         [ $# -ne 0 -a "$1" = "--if-missing" ] && check='YES' && shift
+         [ $# -ne 0 ] && format="-$1" && shift
+
+         if [ "${check}" = 'YES' ]
+         then
+            echo "if [ -z \"\${MULLE_BASHGLOBAL_SH}\" ]; then"
+         fi
 
          echo "\
-MULLE_BASHFUNCTIONS_LIBEXEC_DIR=\"${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}\" ;
-export MULLE_BASHFUNCTIONS_LIBEXEC_DIR ;
-MULLE_USERNAME=\"${MULLE_USERNAME}\" ;
-export MULLE_USERNAME ;
-MULLE_HOSTNAME=\"${MULLE_HOSTNAME}\" ;
-export MULLE_HOSTNAME ;
-MULLE_UNAME=\"${MULLE_UNAME}\" ;
-export MULLE_UNAME ;
-. \"${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions${format}.sh\"
-"
+MULLE_BASHFUNCTIONS_LIBEXEC_DIR=\"${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}\"
+export MULLE_BASHFUNCTIONS_LIBEXEC_DIR
+MULLE_USERNAME=\"${MULLE_USERNAME}\"
+export MULLE_USERNAME
+MULLE_HOSTNAME=\"${MULLE_HOSTNAME}\"
+export MULLE_HOSTNAME
+MULLE_UNAME=\"${MULLE_UNAME}\"
+export MULLE_UNAME
+. \"${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions${format}.sh\""
+         if [ "${check}" = 'YES' ]
+         then
+            echo "fi"
+         fi
       ;;
+
 
       'common-unames')
          cat <<EOF

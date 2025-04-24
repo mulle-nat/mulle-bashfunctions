@@ -3258,43 +3258,35 @@ function is_relativepath()
 
 function r_absolutepath()
 {
-  local directory="$1"
-  local working="${2:-${PWD}}"
+   local filepath="$1"
+   local working="$2"
 
-   case "${directory}" in
+   case "${filepath}" in
       "")
         RVAL=''
+        return 1
       ;;
 
       /*|~*)
-        RVAL="${directory}"
-      ;;
-
-      *)
-        RVAL="${working}/${directory}"
+        RVAL="${filepath}"
+        return 0
       ;;
    esac
+   
+   working="${working:-`pwd`}"
+   if ! is_absolutepath "${working}"
+   then
+      fail "working directory \"${working}\" must be an absolute path"
+   fi
+
+   RVAL="${working%%/}/${filepath}"
 }
 
 
 function r_simplified_absolutepath()
 {
-  local directory="$1"
-  local working="${2:-${PWD}}"
-
-   case "${1}" in
-      "")
-        RVAL=''
-      ;;
-
-      /*|~*)
-        r_simplified_path "${directory}"
-      ;;
-
-      *)
-        r_simplified_path "${working}/${directory}"
-      ;;
-   esac
+   r_absolutepath "$@"
+   r_simplified_path "${RVAL}"
 }
 
 function r_symlink_relpath()
@@ -3563,29 +3555,33 @@ function r_mkdir_parent_if_missing()
 
 function dir_is_empty()
 {
-   [ -z "$1" ] && _internal_fail "empty path"
+   local directory="$1"
 
-   if [ ! -d "$1" ]
+   [ -z "${directory}" ] && _internal_fail "empty path"
+
+   if [ ! -d "${directory}" ]
    then
       return 2
    fi
 
    local empty
 
-   empty="`ls -A "$1" 2> /dev/null`"
+   empty="`ls -A "${directory}" 2> /dev/null`"
    [ -z "$empty" ]
 }
 
 
 rmdir_safer()
 {
-   [ -z "$1" ] && _internal_fail "empty path"
+   local directory="$1"
+
+   [ -z "${directory}" ] && _internal_fail "empty path"
 
    [ $"PWD" = "${directory}" ] && fail "Refuse to remove PWD"
 
-   if [ -d "$1" ]
+   if [ -d "${directory}" ]
    then
-      r_assert_sane_path "$1"
+      r_assert_sane_path "${directory}"
 
       case "${MULLE_UNAME}" in
          'android'|'sunos')
@@ -3602,11 +3598,13 @@ rmdir_safer()
 
 rmdir_if_empty()
 {
-   [ -z "$1" ] && _internal_fail "empty path"
+   local directory="$1"
 
-   if dir_is_empty "$1"
+   [ -z "${directory}" ] && _internal_fail "empty path"
+
+   if dir_is_empty "${directory}"
    then
-      exekutor rmdir "$1"  >&2 || fail "failed to remove $1"
+      exekutor rmdir "${directory}"  >&2 || fail "failed to remove $1"
    fi
 }
 
@@ -3626,6 +3624,7 @@ _create_file_if_missing()
 
    r_dirname "${filepath}"
    directory="${RVAL}"
+
    if [ ! -z "${directory}" ]
    then
       mkdir_if_missing "${directory}"

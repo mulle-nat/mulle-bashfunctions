@@ -1,3 +1,23 @@
+### 6.6.2
+
+* up to date README.md and RELEASENOTES.md
+* fixed assertion code in `rmdir_safer`
+* `r_absolutepath` will now fail if it can't figure out the working directory for a provided relative path (empty path is OK but returns 1)
+
+### 6.6.1
+
+* fixed filepath_contains_filepath for the '.' directory where foo.sh now matches
+
+## 6.6.0
+
+* fix IFS restore in r_reverse_lines
+* add filepath_contains_filepath function to check if a path contains another
+* add r_url_path_encode function that preserves forward slashes
+* improve PATH fallback in mulle-bash
+* add globals command to list MULLE_ variables
+* fix dir_list_files IFS restore
+* fix sed and grep escaping painfully for zsh
+ 
 ### 6.5.1
 
 * updated sed escaping for mulle-template

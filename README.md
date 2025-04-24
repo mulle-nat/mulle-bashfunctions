@@ -20,6 +20,19 @@ tested on **Debian**, **FreeBSD**, **macOS**, **Manjaro**, **MinGW**,
 
 ## Developer Guide
 
+### Use mulle-bashfunctions in an old bash script
+
+Add this near the top of your script. This will load the default set of
+mulle-bashfunctions:
+
+
+``` bash
+eval "`mulle-bashfunctions load --if-missing `"
+[ -z "${MULLE_BASHGLOBAL_SH}" ] && exit 1
+```
+
+### Create a new mulle-bash script
+
 To create a new mulle-bashfunctions script say:
 
 ``` sh
@@ -29,7 +42,7 @@ chmod +x my-script.sh
 
 Use **mulle-bashfunctions** also for discovery and documentation of the
 available functions. Lets say you want to produce identifiers
-for abitrary strings. You can use `apropos` to discover functionality:
+for arbitrary strings. You can use `apropos` to discover functionality:
 
 ``` sh
 mulle-bashfunctions apropos identifier
@@ -99,40 +112,47 @@ Use `include "<name>"` to get access to the functions not included in
 Usage:
    mulle-bashfunctions [command]
 
-   mulle-bashfunctions main purpose is to help load the library functions
-   into an interactive shell. The library functions are almalgamated in a
-   file called "mulle-bashfunctions.sh". There are variants though (none,
-   minimal, all) with different sizes.
+   Use mulle-bashfunctions to
 
-   But mulle-bashfunctions can also
-
+   * load the mulle-bashfunctions into an interactive shell
+   * show documentation for the provided shell functions
    * embed "mulle-bashfunctions.sh" into another shell script
    * show the path to "mulle-bashfunctions.sh"
    * locate the "mulle-bashfunctions.sh" install path for a desired variant
-   * show documentation for any of the defined functions
    * list the available libraries, which you can "include"
    * run an arbitrary mulle-bashfunction with eval and r-eval
+   * get some information about the execution environment
 
-Examples:
-   Load "mulle-bashfunctions-all.sh" into the current interactive shell:
+Example:
+   Load mulle-bashfunctions into the current interactive shell:
 
       eval `mulle-bashfunctions load all`
+
+   Now try out an r_function, a function which returns a value in the global
+   variable RVAL:
+
+      r_escaped_json '{ "url": "https://www.mulle-kybernetik.com" }'
+      echo $RVAL
 
 Commands:
    apropos <f>    : search for a function by keywords
    embed          : embed mulle-bashfunctions into a script
+   common-unames  : list of known values for uname
    env            : print environment needed for "mulle-bashfunctions.sh"
    eval <cmd>     : evaluate cmd inside of mulle-bashfunctions
+   globals [-a]   : list global MULLE_ prefixed variables, -a for all globals
    functions      : list defined functions
    hostname       : show system hostname as used by mulle-bashfunctions
    libraries      : list available libraries
-   load [variant] : use  eval `mulle-bashfunctions load`  to load
+   load [variant] : eval `mulle-bashfunctions load <none|minimal|all>`
    man <function> : show documention for function, if available
    new <name>     : prints a mulle-bash shell script
    path [variant] : path to "mulle-bashfunctions.sh"
    r-eval <cmd>   : evaluate cmd inside of mulle-bashfunctions and print RVAL
+   shell          : path of executing shell
    username       : show username as used by mulle-bashfunctions
    uname          : show system short name as used by mulle-bashfunctions
+   uuid           : generate a UUID
    version        : print currently used version
    versions       : list installed versions
 

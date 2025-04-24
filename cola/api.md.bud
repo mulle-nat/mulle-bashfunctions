@@ -1,5 +1,18 @@
 ## Developer Guide
 
+### Use mulle-bashfunctions in an old bash script
+
+Add this near the top of your script. This will load the default set of
+mulle-bashfunctions:
+
+
+``` bash
+eval "`mulle-bashfunctions load --if-missing `"
+[ -z "${MULLE_BASHGLOBAL_SH}" ] && exit 1
+```
+
+### Create a new mulle-bash script
+
 To create a new mulle-bashfunctions script say:
 
 ``` sh
@@ -9,7 +22,7 @@ chmod +x my-script.sh
 
 Use **mulle-bashfunctions** also for discovery and documentation of the
 available functions. Lets say you want to produce identifiers
-for abitrary strings. You can use `apropos` to discover functionality:
+for arbitrary strings. You can use `apropos` to discover functionality:
 
 ``` sh
 mulle-bashfunctions apropos identifier

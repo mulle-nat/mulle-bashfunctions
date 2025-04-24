@@ -576,56 +576,48 @@ function is_relativepath()
 # r_absolutepath <filepath> [pwd]
 #
 #    Creates an absolute filepath from <filepath> The current directory may
-#    be passed as [pwd]. Otherwise the contents of PWD is used. If <filepath>
+#    be passed as [pwd]. Otherwise the result from `pwd` is used. If <filepath>
 #    is already absolute, no changes happen.
 #
 #    e.g. "/foo" -> 1  "./x" -> 0
 #
 function r_absolutepath()
 {
-  local directory="$1"
-  local working="${2:-${PWD}}"
+   local filepath="$1"
+   local working="$2"
 
-   case "${directory}" in
+   case "${filepath}" in
       "")
         RVAL=''
+        return 1
       ;;
 
       /*|~*)
-        RVAL="${directory}"
-      ;;
-
-      *)
-        RVAL="${working}/${directory}"
+        RVAL="${filepath}"
+        return 0
       ;;
    esac
+   
+   working="${working:-`pwd`}"
+   if ! is_absolutepath "${working}"
+   then
+      fail "working directory \"${working}\" must be an absolute path"
+   fi
+
+   RVAL="${working%%/}/${filepath}"
 }
 
 
 #
-# r_simplified_absolutepath <directory> [pwd]
+# r_simplified_absolutepath <filepath> [pwd]
 #
 #    Like r_absolutepath but the resultant path is then simplified with
 #    r_simplified_path.
 #
 function r_simplified_absolutepath()
 {
-  local directory="$1"
-  local working="${2:-${PWD}}"
-
-   case "${1}" in
-      "")
-        RVAL=''
-      ;;
-
-      /*|~*)
-        r_simplified_path "${directory}"
-      ;;
-
-      *)
-        r_simplified_path "${working}/${directory}"
-      ;;
-   esac
+   r_absolutepath "$@"
+   r_simplified_path "${RVAL}"
 }
 
 #
