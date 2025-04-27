@@ -29,8 +29,11 @@ then
       then
          if ! exe_shell="`command -v "${MULLE_BASH_EXE_SHELL}"`"
          then
-            echo "Desired MULLE_BASH_EXE_SHELL \"${MULLE_BASH_EXE_SHELL}\" not found" >&2
-            exit 1
+            if [ "${MULLE_BASH_EXE_SHELL_STRICT}" = 'YES' ]
+            then
+               echo "Desired MULLE_BASH_EXE_SHELL \"${MULLE_BASH_EXE_SHELL}\" not found" >&2
+               exit 1
+            fi
          fi
       fi
       if [ -z "${exe_shell}" ]
