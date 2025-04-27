@@ -1,3 +1,9 @@
+### 6.6.3
+
+* that was too harsh, the exit will only happen if you set `MULLE_BASH_EXE_SHELL_STRICT` to YES
+
+* if you specify `MULLE_BASH_EXE_SHELL` (either zsh or bash) then the booter fails if that shell is not present, which should make sense
+
 ### 6.6.2
 
 * up to date README.md and RELEASENOTES.md
