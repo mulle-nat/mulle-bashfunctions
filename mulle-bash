@@ -77,7 +77,11 @@ then
       exe_shell=
       if [ ! -z "${MULLE_BASH_EXE_SHELL}" ]
       then
-         exe_shell="`command -v "${MULLE_BASH_EXE_SHELL}"`"
+         if ! exe_shell="`command -v "${MULLE_BASH_EXE_SHELL}"`"
+         then
+            echo "Desired MULLE_BASH_EXE_SHELL \"${MULLE_BASH_EXE_SHELL}\" not found" >&2
+            exit 1
+         fi
       fi
       if [ -z "${exe_shell}" ]
       then
@@ -151,7 +155,7 @@ fi
 # this is "our" version
 # the actual loaded version may differ (and will change this variable)
 #
-MULLE_BASHFUNCTIONS_VERSION="6.6.2"
+MULLE_BASHFUNCTIONS_VERSION="6.6.3"
 MULLE_BASHFUNCTIONS_LIBEXEC_DIRNAME="libexec"
 MULLE_EXECUTABLE="$1"
 
