@@ -1615,6 +1615,22 @@ function r_concat()
 }
 
 
+function r_concat_if_missing()
+{
+   local separator="${3:- }"
+
+   case "${separator}${1}${separator}" in
+      *${separator}${2}${separator}*)
+         RVAL="${1}"
+         return 0
+      ;;
+   esac
+
+   r_concat "$@"
+}
+
+
+
 r_remove_duplicate_separators()
 {
    local s="$1"
@@ -1684,11 +1700,26 @@ function r_colon_concat()
    r_remove_ugly "${RVAL}" ":"
 }
 
+function r_colon_concat_if_missing()
+{
+   r_concat_if_missing "$1" "$2" ":"
+   r_remove_ugly "${RVAL}" ":"
+}
+
+
 function r_comma_concat()
 {
    r_concat "$1" "$2" ","
    r_remove_ugly "${RVAL}" ","
 }
+
+
+function r_comma_concat_if_missing()
+{
+   r_concat_if_missing "$1" "$2" ","
+   r_remove_ugly "${RVAL}" ","
+}
+
 
 function r_semicolon_concat()
 {
@@ -2443,6 +2474,7 @@ function r_expanded_string()
 
    return $rval
 }
+
 
 fi
 :
@@ -6643,6 +6675,136 @@ function r_url_unescaped_path()
 fi
 :
 
+if ! [ ${MULLE_USAGE_SH+x} ]
+then
+MULLE_USAGE_SH='included'
+
+[ -z "${MULLE_BASHGLOBAL_SH}" ]    && _fatal "mulle-bashglobal.sh must be included before mulle-file.sh"
+[ -z "${MULLE_COMPATIBILITY_SH}" ] && _fatal "mulle-compatibility.sh must be included before mulle-string.sh"
+
+
+
+
+
+
+
+r_reflow_paragraph()
+{
+   local text="$1"
+   local column_width="${2:-80}"
+   local indent="${3:-   }"
+
+   local current_line=""
+   local indent_length=${#indent}
+   local result=""
+   local width=$((column_width - indent_length - 1))  # Subtract 1 to avoid terminal wrapping
+   local word
+
+   RVAL=""
+
+   for word in $text
+   do
+      if [ ${#current_line} -eq 0 ]
+      then
+         current_line="$word"
+      else
+         if [ $((${#current_line} + ${#word} + 1)) -le $width ]
+         then
+            current_line="$current_line $word"
+         else
+            if [ -n "$result" ]
+            then
+               result="$result"$'\n'"$indent$current_line"
+            else
+               result="$indent$current_line"
+            fi
+            current_line="$word"
+         fi
+      fi
+   done
+
+   if [ ${#current_line} -gt 0 ]
+   then
+      if [ -n "$result" ]
+      then
+         result="$result"$'\n'"$indent$current_line"
+      else
+         result="$indent$current_line"
+      fi
+   fi
+
+   RVAL="$result"
+}
+
+
+function reflow_file()
+{
+   local column_width="${1:-80}"
+   local indent="${2:-   }"
+
+   local min_indent_length=${#indent}
+   local in_paragraph='NO'
+   local line
+   local paragraph_text=""
+   local text_part
+
+   while IFS= read -r line || [[ -n "$line" ]]
+   do
+      if [[ "$line" =~ ^[[:space:]]{${min_indent_length},} ]]
+      then
+         text_part=$(printf "%s" "$line" | sed 's/^[[:space:]]*//')
+
+         if [ "$in_paragraph" = 'YES' ]
+         then
+            paragraph_text="$paragraph_text $text_part"
+         else
+            in_paragraph='YES'
+            paragraph_text="$text_part"
+         fi
+      else
+         if [ "$in_paragraph" = 'YES' ]
+         then
+            r_reflow_paragraph "$paragraph_text" "$column_width" "$indent"
+            printf "%s\n" "${RVAL}"
+            in_paragraph='NO'
+            paragraph_text=""
+         fi
+
+         printf "%s\n" "$line"
+      fi
+   done
+
+   if [ "$in_paragraph" = 'YES' ]
+   then
+      r_reflow_paragraph "$paragraph_text" "$column_width" "$indent"
+      printf "%s\n" "${RVAL}"
+   fi
+}
+
+
+function usage_cat()
+{
+   local min_width="${1:-40}"
+   local max_width="${2:-120}"
+
+   local width
+
+   width="${COLUMNS:-$(tput cols)}"
+   if [ "$width" -gt "${max_width}" ]
+   then
+      width="${max_width}"
+   fi
+   if [ "$width" -lt "${min_width}" ]
+   then
+      width="${min_width}"
+   fi
+
+   reflow_file "${width}"
+}
+
+
+fi
+:
 
 if ! [ ${MULLE_VERSION_SH+x} ]
 then

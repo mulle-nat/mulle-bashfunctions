@@ -1432,6 +1432,22 @@ function r_concat()
 }
 
 
+function r_concat_if_missing()
+{
+   local separator="${3:- }"
+
+   case "${separator}${1}${separator}" in
+      *${separator}${2}${separator}*)
+         RVAL="${1}"
+         return 0
+      ;;
+   esac
+
+   r_concat "$@"
+}
+
+
+
 r_remove_duplicate_separators()
 {
    local s="$1"
@@ -1501,11 +1517,26 @@ function r_colon_concat()
    r_remove_ugly "${RVAL}" ":"
 }
 
+function r_colon_concat_if_missing()
+{
+   r_concat_if_missing "$1" "$2" ":"
+   r_remove_ugly "${RVAL}" ":"
+}
+
+
 function r_comma_concat()
 {
    r_concat "$1" "$2" ","
    r_remove_ugly "${RVAL}" ","
 }
+
+
+function r_comma_concat_if_missing()
+{
+   r_concat_if_missing "$1" "$2" ","
+   r_remove_ugly "${RVAL}" ","
+}
+
 
 function r_semicolon_concat()
 {
@@ -2260,6 +2291,7 @@ function r_expanded_string()
 
    return $rval
 }
+
 
 fi
 :

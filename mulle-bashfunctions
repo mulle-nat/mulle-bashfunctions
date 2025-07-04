@@ -42,7 +42,7 @@ usage()
 {
    [ ! -z "$*" ] && echo "error: $*" >&2
 
-   cat <<EOF >&2
+   usage_cat <<EOF >&2
 Usage:
    ${MULLE_EXECUTABLE_NAME} [command]
 
@@ -559,7 +559,7 @@ man_function()
    log_entry "man_function" "$@"
 
    [ $# -eq 0 ] && usage "${MULLE_EXECUTABLE_FAIL_PREFIX}: Missing name"
-   [ $# -gt 1 ] && shift && usage "${MULLE_EXECUTABLE_FAIL_PREFIX}: Superflous parameter \"$*\""
+   [ $# -gt 1 ] && shift && usage "${MULLE_EXECUTABLE_FAIL_PREFIX}: Superfluous parameter \"$*\""
 
    local name="$1"
 
@@ -807,7 +807,7 @@ apropos_function()
    done
 
    [ $# -eq 0 ] && usage "${MULLE_EXECUTABLE_FAIL_PREFIX}: Missing name"
-   [ $# -gt 1 ] && shift && usage "${MULLE_EXECUTABLE_FAIL_PREFIX}: Superflous parameter \"$*\""
+   [ $# -gt 1 ] && shift && usage "${MULLE_EXECUTABLE_FAIL_PREFIX}: Superfluous parameter \"$*\""
 
    local name="$1"
 
@@ -1430,6 +1430,8 @@ _init()
    include "logging" || _internal_fail "include mulle-version.sh fail"
    # shellcheck source=src/mulle-version.sh
    include "version" || _internal_fail "include mulle-version.sh fail"
+   # shellcheck source=src/mulle-usage.sh
+   include "usage" || _internal_fail "include mulle-usage.sh fail"
 
    shell_enable_pipefail
    shell_enable_extglob

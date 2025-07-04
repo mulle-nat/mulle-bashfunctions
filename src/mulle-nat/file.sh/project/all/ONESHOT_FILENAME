@@ -40,8 +40,9 @@ MULLE_EXECUTABLE_VERSION="0.0.0"
 {
    [ $# -ne 0 ] && log_error "$*"
 
+   include "usage"
 
-   cat <<EOF >&2
+   usage_cat <<EOF >&2
 Usage:
    <|ONESHOT_NAME|> [flags]
 

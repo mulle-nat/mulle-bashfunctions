@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.13)
+cmake_minimum_required( VERSION 3.13...99.99)
 
 project( mulle-bashfunctions VERSION 6.6.3 LANGUAGES NONE)
 
@@ -58,6 +58,7 @@ set( ALL_ADDITIONAL_SCRIPTS
 "src/mulle-parallel.sh"
 "src/mulle-sort.sh"
 "src/mulle-url.sh"
+"src/mulle-usage.sh"
 "src/mulle-version.sh"
 )
 

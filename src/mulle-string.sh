@@ -272,6 +272,35 @@ function r_concat()
 
 
 #
+# r_concat_if_missing <s1> <s2> [separator]
+#
+#    Concatenates s2 unto s1, unless s2 already exists in s1 (delimited by
+#    separator).
+#    If one or both strings are empty, the separator is omitted.
+#    This function does not remove duplicate separators.
+#
+#   "a" "b"   -> "a b"
+#   "a b" "a" -> "a b"
+#   "a b" "b" -> "a b"
+#   "a b" "c" -> "a b c"
+#
+function r_concat_if_missing()
+{
+   local separator="${3:- }"
+
+   case "${separator}${1}${separator}" in
+      *${separator}${2}${separator}*)
+         RVAL="${1}"
+         return 0
+      ;;
+   esac
+
+   r_concat "$@"
+}
+
+
+
+#
 # r_remove_duplicate_separators <s1> [separator]
 #
 #    Removes all duplicate separators. The default separator is " ".
@@ -363,6 +392,23 @@ function r_colon_concat()
 }
 
 #
+# r_colon_concat_if_missing <s1> <s2>
+#
+#    Concatenates s2 unto s1, unless s2 already exists in s1 delimted by ':'
+#    Useful for PATHs. This function removes duplicate ':' as well as leading
+#    and trailing ':'
+#
+# "/usr/bin:/usr/local/bin"  "/bin"      -> "/usr/bin:/usr/local/bin:/bin"
+# "/usr/bin:/usr/local/bin"  "/usr/bin"  -> "/usr/bin:/usr/local/bin"
+#
+function r_colon_concat_if_missing()
+{
+   r_concat_if_missing "$1" "$2" ":"
+   r_remove_ugly "${RVAL}" ":"
+}
+
+
+#
 # r_comma_concat <s1> <s2>
 #
 #    concatenate strings, separating them with a ','
@@ -374,6 +420,24 @@ function r_comma_concat()
    r_concat "$1" "$2" ","
    r_remove_ugly "${RVAL}" ","
 }
+
+
+#
+# r_comma_concat_if_missing <s1> <s2>
+#
+#    Concatenates s2 unto s1, unless s2 already exists in s1 delimted by ','
+#    Useful for item lists. This function removes duplicate ',' as well as
+#    leading and trailing ','
+#
+# "/usr/bin:/usr/local/bin"  "/bin"      -> "/usr/bin:/usr/local/bin:/bin"
+# "/usr/bin:/usr/local/bin"  "/usr/bin"  -> "/usr/bin:/usr/local/bin"
+#
+function r_comma_concat_if_missing()
+{
+   r_concat_if_missing "$1" "$2" ","
+   r_remove_ugly "${RVAL}" ","
+}
+
 
 #
 # r_semicolon_concat <s1> <s2>
@@ -1557,6 +1621,7 @@ function r_expanded_string()
 
    return $rval
 }
+
 
 fi
 :
