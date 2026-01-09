@@ -464,13 +464,14 @@ _r_make_tmp_in_dir_uuidgen()
          continue
       fi
 
+      # MEMO: reconsidered to classify /tmp operations as not needing exekutor
       case "${filetype}" in
          *d*)
-            exekutor "${MKDIR}" "${RVAL}" 2> /dev/null && return 0
+            rexekutor "${MKDIR}" "${RVAL}" 2> /dev/null && return 0
          ;;
 
          *)
-            exekutor "${TOUCH}" "${RVAL}" 2> /dev/null && return 0
+            rexekutor "${TOUCH}" "${RVAL}" 2> /dev/null && return 0
          ;;
       esac
    done

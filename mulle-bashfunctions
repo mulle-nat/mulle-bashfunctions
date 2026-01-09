@@ -44,19 +44,19 @@ usage()
 
    usage_cat <<EOF >&2
 Usage:
-   ${MULLE_EXECUTABLE_NAME} [command]
-
-   Use ${MULLE_EXECUTABLE_NAME} to
-
-   * load the mulle-bashfunctions into an interactive shell
-   * show documentation for the provided shell functions
-   * embed "mulle-bashfunctions.sh" into another shell script
-   * show the path to "mulle-bashfunctions.sh"
-   * locate the "mulle-bashfunctions.sh" install path for a desired variant
-   * list the available libraries, which you can "include"
-   * run an arbitrary mulle-bashfunction with eval and r-eval
-   * get some information about the execution environment
-
+|   ${MULLE_EXECUTABLE_NAME} [command]
+|
+|   Use ${MULLE_EXECUTABLE_NAME} to
+|
+|   * load the mulle-bashfunctions into an interactive shell
+|   * show documentation for the provided shell functions
+|   * embed "mulle-bashfunctions.sh" into another shell script
+|   * show the path to "mulle-bashfunctions.sh"
+|   * locate the "mulle-bashfunctions.sh" install path for a desired variant
+|   * list the available libraries, which you can "include"
+|   * run an arbitrary mulle-bashfunction with eval and r-eval
+|   * get some information about the execution environment
+|
 Example:
    Load mulle-bashfunctions into the current interactive shell:
 
@@ -69,26 +69,26 @@ Example:
       echo \$RVAL
 
 Commands:
-   apropos <f>    : search for a function by keywords
-   embed          : embed mulle-bashfunctions into a script
-   common-unames  : list of known values for uname
-   env            : print environment needed for "mulle-bashfunctions.sh"
-   eval <cmd>     : evaluate cmd inside of mulle-bashfunctions
-   globals [-a]   : list global MULLE_ prefixed variables, -a for all globals
-   functions      : list defined functions
-   hostname       : show system hostname as used by mulle-bashfunctions
-   libraries      : list available libraries
-   load [variant] : eval \`mulle-bashfunctions load <none|minimal|all>\`
-   man <function> : show documention for function, if available
-   new <name>     : prints a mulle-bash shell script
-   path [variant] : path to "mulle-bashfunctions.sh"
-   r-eval <cmd>   : evaluate cmd inside of mulle-bashfunctions and print RVAL
-   shell          : path of executing shell
-   username       : show username as used by mulle-bashfunctions
-   uname          : show system short name as used by mulle-bashfunctions
-   uuid           : generate a UUID
-   version        : print currently used version
-   versions       : list installed versions
+:   apropos <f>    : search for a function by keywords
+:   embed          : embed mulle-bashfunctions into a script
+:   common-unames  : list of known values for uname
+:   env            : print environment needed for "mulle-bashfunctions.sh"
+:   eval <cmd>     : evaluate cmd inside of mulle-bashfunctions
+:   globals [-a]   : list global MULLE_ prefixed variables, -a for all globals
+:   functions      : list defined functions
+:   hostname       : show system hostname as used by mulle-bashfunctions
+:   libraries      : list available libraries
+:   load [variant] : eval \`mulle-bashfunctions load <none|minimal|all>\`
+:   man <function> : show documention for function, if available
+:   new <name>     : prints a mulle-bash shell script
+:   path [variant] : path to "mulle-bashfunctions.sh"
+:   r-eval <cmd>   : evaluate cmd inside of mulle-bashfunctions and print RVAL
+:   shell          : path of executing shell
+:   username       : show username as used by mulle-bashfunctions
+:   uname          : show system short name as used by mulle-bashfunctions
+:   uuid           : generate a UUID
+:   version        : print currently used version
+:   versions       : list installed versions
 
 EOF
 

@@ -256,6 +256,32 @@ function r_smart_file_downcase_identifier()
 }
 
 
+
+#
+# r_smart_file_upcase_identifier <string>
+#
+#    Uses r_smart_upcase_identifier to create an uppercase identifier.
+#
+#    turns mulle-scion into MULLE__SCION to distinguish from
+#    MulleScion -> MULLE_SCION
+#
+function r_smart_file_identifier()
+{
+   local s="$1"
+
+   s="${s//-/__}"
+
+   r_identifier "${RVAL}"
+   if [ "${RVAL}" = "$s" ]
+   then
+      return
+   fi
+
+   r_de_camel_case_identifier "$s"
+}
+
+
+
 fi
 
 :

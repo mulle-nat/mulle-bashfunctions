@@ -58,6 +58,7 @@ function etc_make_file_from_symlinked_file()
 
    if [ ! -L "${dstfile}" ]
    then
+      log_debug "${dstfile} is not a symlink"
       return 1
    fi
 
@@ -125,6 +126,98 @@ function etc_prepare_for_write_of_file()
 
 
 #
+# etc_prepare_for_write_of_file_with_policy <etcfile> <sharedir> [policy]
+#
+#    Prepare an etc file for writing according to the specified policy.
+#
+#    etcfile  : the file path in etc/ to prepare for writing
+#    sharedir : the corresponding share directory (for dirlevel policy)
+#    policy   : <granularity>/<mode> (default: filelevel/symlink)
+#               granularity: filelevel | dirlevel
+#               mode: symlink | copy
+#
+# filelevel: Just ensure parent directory exists and convert symlinks
+# dirlevel:  On first write, copy entire sharedir to etc directory
+#
+# Examples:
+#    filelevel/symlink - per-file inheritance, use symlinks (default)
+#    filelevel/copy    - per-file inheritance, use copies
+#    dirlevel/symlink  - copy entire dir on first write, use symlinks
+#    dirlevel/copy     - copy entire dir on first write, use copies
+#
+function etc_prepare_for_write_of_file_with_policy()
+{
+   log_entry "etc_prepare_for_write_of_file_with_policy" "$@"
+
+   local etcfile="$1"
+   local sharedir="$2"
+   local policy="${3:-filelevel/symlink}"
+
+   local granularity
+   local mode
+
+   granularity="${policy%%/*}"
+   mode="${policy#*/}"
+
+   # Default mode if not specified (backward compat with just "filelevel" or "dirlevel")
+   if [ "${mode}" = "${policy}" ]
+   then
+      mode='symlink'
+   fi
+
+   case "${granularity}" in
+      'dirlevel')
+         local etcdir
+
+         r_dirname "${etcfile}"
+         etcdir="${RVAL}"
+
+         # If etc dir doesn't exist but share dir does, copy entire share dir
+         if [ ! -d "${etcdir}" ] && [ -d "${sharedir}" ]
+         then
+            log_verbose "Creating etc directory from share: \"${etcdir}\""
+
+            local symlink_flag
+            case "${mode}" in
+               'symlink')
+                  symlink_flag='YES'
+               ;;
+               'copy')
+                  symlink_flag='NO'
+               ;;
+               *)
+                  _internal_fail "Unknown mode '${mode}', use 'symlink' or 'copy'"
+               ;;
+            esac
+
+            r_mkdir_parent_if_missing "${etcdir}"
+            etc_copy_from_share "${sharedir}" "${etcdir}" "${symlink_flag}"
+         fi
+
+         # Ensure parent directory exists
+         r_mkdir_parent_if_missing "${etcfile}"
+
+         # Convert symlink to file if needed
+         etc_make_file_from_symlinked_file "${etcfile}"
+      ;;
+
+      'filelevel')
+         # Just ensure directory structure exists
+         r_mkdir_parent_if_missing "${etcfile}"
+
+         # Convert symlink to file if needed
+         etc_make_file_from_symlinked_file "${etcfile}"
+      ;;
+
+      *)
+         _internal_fail "Unknown granularity '${granularity}', use 'filelevel' or 'dirlevel'"
+      ;;
+   esac
+}
+
+
+
+#
 # etc_make_symlink_if_possible <filename>
 #
 #    Turns <filename> into a symlink, if the contents are the
@@ -168,6 +261,11 @@ function etc_make_symlink_if_possible()
       return 2
    fi
 
+   if [ -L "${srcfile}" ]
+   then
+      fail "Source \"${srcfile}\" can't be a symlink"
+   fi
+
    local DIFF
 
    if ! DIFF="`command -v diff`"
@@ -180,8 +278,9 @@ function etc_make_symlink_if_possible()
    r_dirname "${dstfile}"
    dstdir="${RVAL}"
 
-   if ! "${DIFF}" -b "${dstfile}" "${srcfile}" > /dev/null
+   if ! rexekutor "${DIFF}" -b "${dstfile}" "${srcfile}" > /dev/null
    then
+      log_debug "Contents of \"${dstfile}\" \"${srcfile}\" differ"
       return 3
    fi
 
@@ -192,20 +291,15 @@ function etc_make_symlink_if_possible()
                             "${dstdir}" \
                             "${filename}" \
                             "${symlink}"
-   return $?
 }
 
 
 #
-# etc_symlink_or_copy_file <srcfile> <dstdir> [filename] [symlink]
+# etc_symlink_or_copy_file <srcfile> <dstdir> [dstfilename] [symlink]
 #
-#    Copy or symlink a <srcfile> to directory <dstdir>. You may choose a
-#    a different <filename> for the destination.
-#    You can force the use of symlinks, with 'YES' for <symlink>. Use 'NO' for
-#    copy, or leave empty for the default actions (which is to use symlinks,
-#    if available on the platform)
+#    Create a symlink or copy a file from srcfile to dstdir
 #
-#    If the destination exists, this function does returns with 1.
+#    symlink : 'YES' or 'NO' or empty (default: YES)
 #
 function etc_symlink_or_copy_file()
 {
@@ -213,98 +307,49 @@ function etc_symlink_or_copy_file()
 
    local srcfile="$1"
    local dstdir="$2"
-   local filename="$3"
-   local symlink="$4"
+   local dstfilename="$3"
+   local symlink="${4:-YES}"
 
-   [ -f "${srcfile}" ] || _internal_fail "\"${srcfile}\" does not exist or is not a file"
-   [ -d "${dstdir}" ]  || _internal_fail "\"${dstdir}\" does not exist or is not a directory"
+   [ -z "${dstfilename}" ] && r_basename "${srcfile}"
+   dstfilename="${dstfilename:-${RVAL}}"
 
    local dstfile
 
-   if [ -z "${filename}" ]
-   then
-   	r_basename "${srcfile}"
-   	filename="${RVAL}"
-	fi
-
-   r_filepath_concat "${dstdir}" "${filename}"
+   r_filepath_concat "${dstdir}" "${dstfilename}"
    dstfile="${RVAL}"
-
-   if [ -e "${dstfile}" ]
-   then
-      log_error "\"${dstfile}\" already exists"
-      return 1
-   fi
-
-   r_mkdir_parent_if_missing "${dstfile}"
-
-   local flags
-
-   if [ "${MULLE_FLAG_LOG_FLUFF}" = 'YES' ]
-   then
-      case "${MULLE_UNAME}" in
-         'sunos')
-         ;;
-
-         *)
-            flags=-v
-         ;;
-      esac
-   fi
-
-   if [ -z "${symlink}" ]
-   then
-      case "${MULLE_UNAME}" in
-         'mingw'|'msys')
-            symlink='NO'
-         ;;
-
-         *)
-            symlink='YES'
-         ;;
-      esac
-   fi
 
    if [ "${symlink}" = 'YES' ]
    then
-      local linkrel
+      local relative
 
       r_relative_path_between "${srcfile}" "${dstdir}"
-      linkrel="${RVAL}"
-
-      exekutor ln -s ${flags} "${linkrel}" "${dstfile}"
-      return $?
+      relative="${RVAL}"
+      exekutor ln -s "${relative}" "${dstfile}"
+   else
+      exekutor cp "${srcfile}" "${dstfile}"
    fi
-
-   exekutor cp ${flags} "${srcfile}" "${dstfile}" &&
-   exekutor chmod ug+w "${dstfile}"
 }
 
 
 #
-# etc_setup_from_share_if_needed <etc> <share> [symlink]
+# etc_copy_from_share <share> <etc> [symlink]
 #
-#    Setup an <etc> directory from <share>. This will by done by coping or
-#    by generating symlinks in <etc>.
-#    You can force the use of symlinks, with 'YES' for <symlink>. Use 'NO' for
-#    copy, or leave empty for the default actions (which is to use symlinks,
-#    if available on the platform)
+#    Copy or symlink all files from share to etc.
+#    Use YES for symlink to symlink files instead of copying them.
 #
-function etc_setup_from_share_if_needed()
+function etc_copy_from_share()
 {
-   log_entry "etc_setup_from_share_if_needed" "$@"
+   log_entry "etc_copy_from_share" "$@"
 
-   local etc="$1"
-   local share="$2"
-   local symlink="$3"
+   [ $# -lt 2 ] && _internal_fail "API error"
 
-   if [ -d "${etc}" ]
-   then
-      log_fluff "etc folder already setup"
-      return
-   fi
+   local share="$1"
+   local etc="$2"
+   local symlink="${3:-NO}"
 
-   # always create etc now
+   [ -z "${etc}" ]   && _internal_fail "etc is empty"
+   [ -z "${share}" ] && _internal_fail "share is empty"
+
    mkdir_if_missing "${etc}"
 
    local flags
@@ -338,6 +383,33 @@ function etc_setup_from_share_if_needed()
                                   "${symlink}"
       .done
    fi
+}
+
+
+#
+# etc_setup_from_share_if_needed <etc> <share> [symlink]
+#
+#    Setup an <etc> directory from <share>. This will by done by coping or
+#    by generating symlinks in <etc>.
+#    You can use symlinks, with 'YES' for <symlink>. Use 'NO' for
+#    copy, or leave empty for the default actions (which is to use symlinks,
+#    if available on the platform)
+#
+function etc_setup_from_share_if_needed()
+{
+   log_entry "etc_setup_from_share_if_needed" "$@"
+
+   local etc="$1"
+   local share="$2"
+   local symlink="${3:-YES}"
+
+   if [ -d "${etc}" ]
+   then
+      log_fluff "etc folder already setup"
+      return
+   fi
+
+   etc_copy_from_share "${share}" "${etc}" "${symlink}"
 }
 
 

@@ -135,6 +135,23 @@ _log_info()
 
 
 #
+# _log_vibe
+#
+#    _log_vibe prints out an informational message. depending on MULLE_VIBECODING
+#    being set to 'YES' this uses _log_info otherwise it will be _log_verbose.
+#
+_log_vibe()
+{
+   if [ "${MULLE_VIBECODING:-}" = 'YES' ]
+   then
+      _log_info "$*"
+   else
+      _log_verbose "${*//${C_VIBE}/${C_VERBOSE}}"
+   fi
+}
+
+
+#
 # _log_verbose
 #
 #    _log_verbose prints out a message in verbose mode (-v).
@@ -328,10 +345,18 @@ alias log_fluff='_log_fluff'
 #
 # log_info
 #
-#    log_fluff prints out a message unless in in "terse mode" (-s)
+#    log_info prints out a message unless in in "terse mode" (-s)
 #    log_info is an alias for _log_info.
 #
 alias log_info='_log_info'
+
+#
+# log_info
+#
+#    log_vibe is an alias for _log_vibe.
+#
+alias log_vibe='_log_vibe'
+
 
 #
 # log_setting
@@ -378,6 +403,7 @@ log_set_trace_level()
    alias log_error='_log_error'
    alias log_fluff='_log_fluff'
    alias log_info='_log_info'
+   alias log_vibe='_log_vibe'
    alias log_setting='_log_setting'
    alias log_trace='_log_trace'
    alias log_verbose='_log_verbose'
@@ -414,6 +440,7 @@ log_set_trace_level()
    if [ "${MULLE_FLAG_LOG_TERSE:-}" = 'YES' -o "${MULLE_FLAG_LOG_TERSE:-}" = 'WARN' ]
    then
       alias log_info=': #'
+      alias log_vibe=': #'
    fi
 
    if [ "${MULLE_FLAG_LOG_TERSE:-}" = 'YES' ]
@@ -588,15 +615,17 @@ logging_initialize_color()
 
    C_RESET_BOLD="${C_RESET}${C_BOLD}"
 
-   C_ERROR="${C_BR_RED}${C_BOLD}"
-   C_WARNING="${C_RED}${C_BOLD}"
-   C_INFO="${C_CYAN}${C_BOLD}"
-   C_VERBOSE="${C_GREEN}${C_BOLD}"
-   C_FLUFF="${C_GREEN}${C_BOLD}"
-   C_SETTING="${C_GREEN}${C_FAINT}"
-   C_TRACE="${C_FLUFF}${C_FAINT}"
-   C_TRACE2="${C_RESET}${C_FAINT}"
    C_DEBUG="${C_SPECIAL_BLUE}"
+   C_ERROR="${C_BR_RED}${C_BOLD}"
+   C_FLUFF="${C_GREEN}${C_BOLD}"
+   C_INFO="${C_CYAN}${C_BOLD}"
+   C_SETTING="${C_GREEN}${C_FAINT}"
+   C_TRACE2="${C_RESET}${C_FAINT}"
+   C_TRACE="${C_FLUFF}${C_FAINT}"
+   C_VERBOSE="${C_GREEN}${C_BOLD}"
+   C_WARNING="${C_RED}${C_BOLD}"
+
+   C_VIBE="${C_INFO}"
 
    C_ERROR_TEXT="${C_RESET}${C_BR_RED}${C_BOLD}"
 }
@@ -629,15 +658,17 @@ logging_deinitialize_color()
 
    C_RESET_BOLD="${C_RESET}${C_BOLD}"
 
-   C_ERROR="${C_BR_RED}${C_BOLD}"
-   C_WARNING="${C_RED}${C_BOLD}"
-   C_INFO="${C_CYAN}${C_BOLD}"
-   C_VERBOSE="${C_GREEN}${C_BOLD}"
-   C_FLUFF="${C_GREEN}${C_BOLD}"
-   C_SETTING="${C_GREEN}${C_FAINT}"
-   C_TRACE="${C_FLUFF}${C_FAINT}"
-   C_TRACE2="${C_RESET}${C_FAINT}"
    C_DEBUG="${C_SPECIAL_BLUE}"
+   C_ERROR="${C_BR_RED}${C_BOLD}"
+   C_FLUFF="${C_GREEN}${C_BOLD}"
+   C_INFO="${C_CYAN}${C_BOLD}"
+   C_SETTING="${C_GREEN}${C_FAINT}"
+   C_TRACE2="${C_RESET}${C_FAINT}"
+   C_TRACE="${C_FLUFF}${C_FAINT}"
+   C_VERBOSE="${C_GREEN}${C_BOLD}"
+   C_WARNING="${C_RED}${C_BOLD}"
+
+   C_VIBE="${C_INFO}"
 
    C_ERROR_TEXT="${C_RESET}${C_BR_RED}${C_BOLD}"
 }

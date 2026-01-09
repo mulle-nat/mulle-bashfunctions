@@ -272,7 +272,7 @@ function r_concat()
 
 
 #
-# r_concat_if_missing <s1> <s2> [separator]
+# r_concat_unique <s1> <s2> [separator]
 #
 #    Concatenates s2 unto s1, unless s2 already exists in s1 (delimited by
 #    separator).
@@ -284,7 +284,7 @@ function r_concat()
 #   "a b" "b" -> "a b"
 #   "a b" "c" -> "a b c"
 #
-function r_concat_if_missing()
+function r_concat_unique()
 {
    local separator="${3:- }"
 
@@ -298,6 +298,11 @@ function r_concat_if_missing()
    r_concat "$@"
 }
 
+# old name
+function r_concat_if_missing()
+{
+   r_concat_unique "$@"
+}
 
 
 #

@@ -470,6 +470,17 @@ _log_info()
 }
 
 
+_log_vibe()
+{
+   if [ "${MULLE_VIBECODING:-}" = 'YES' ]
+   then
+      _log_info "$*"
+   else
+      _log_verbose "${*//${C_VIBE}/${C_VERBOSE}}"
+   fi
+}
+
+
 _log_verbose()
 {
    if [ "${MULLE_FLAG_LOG_VERBOSE:-}" = 'YES' ]
@@ -591,6 +602,9 @@ alias log_fluff='_log_fluff'
 
 alias log_info='_log_info'
 
+alias log_vibe='_log_vibe'
+
+
 alias log_setting='_log_setting'
 
 alias log_trace='_log_trace'
@@ -607,6 +621,7 @@ log_set_trace_level()
    alias log_error='_log_error'
    alias log_fluff='_log_fluff'
    alias log_info='_log_info'
+   alias log_vibe='_log_vibe'
    alias log_setting='_log_setting'
    alias log_trace='_log_trace'
    alias log_verbose='_log_verbose'
@@ -641,6 +656,7 @@ log_set_trace_level()
    if [ "${MULLE_FLAG_LOG_TERSE:-}" = 'YES' -o "${MULLE_FLAG_LOG_TERSE:-}" = 'WARN' ]
    then
       alias log_info=': #'
+      alias log_vibe=': #'
    fi
 
    if [ "${MULLE_FLAG_LOG_TERSE:-}" = 'YES' ]
@@ -785,15 +801,17 @@ logging_initialize_color()
 
    C_RESET_BOLD="${C_RESET}${C_BOLD}"
 
-   C_ERROR="${C_BR_RED}${C_BOLD}"
-   C_WARNING="${C_RED}${C_BOLD}"
-   C_INFO="${C_CYAN}${C_BOLD}"
-   C_VERBOSE="${C_GREEN}${C_BOLD}"
-   C_FLUFF="${C_GREEN}${C_BOLD}"
-   C_SETTING="${C_GREEN}${C_FAINT}"
-   C_TRACE="${C_FLUFF}${C_FAINT}"
-   C_TRACE2="${C_RESET}${C_FAINT}"
    C_DEBUG="${C_SPECIAL_BLUE}"
+   C_ERROR="${C_BR_RED}${C_BOLD}"
+   C_FLUFF="${C_GREEN}${C_BOLD}"
+   C_INFO="${C_CYAN}${C_BOLD}"
+   C_SETTING="${C_GREEN}${C_FAINT}"
+   C_TRACE2="${C_RESET}${C_FAINT}"
+   C_TRACE="${C_FLUFF}${C_FAINT}"
+   C_VERBOSE="${C_GREEN}${C_BOLD}"
+   C_WARNING="${C_RED}${C_BOLD}"
+
+   C_VIBE="${C_INFO}"
 
    C_ERROR_TEXT="${C_RESET}${C_BR_RED}${C_BOLD}"
 }
@@ -826,15 +844,17 @@ logging_deinitialize_color()
 
    C_RESET_BOLD="${C_RESET}${C_BOLD}"
 
-   C_ERROR="${C_BR_RED}${C_BOLD}"
-   C_WARNING="${C_RED}${C_BOLD}"
-   C_INFO="${C_CYAN}${C_BOLD}"
-   C_VERBOSE="${C_GREEN}${C_BOLD}"
-   C_FLUFF="${C_GREEN}${C_BOLD}"
-   C_SETTING="${C_GREEN}${C_FAINT}"
-   C_TRACE="${C_FLUFF}${C_FAINT}"
-   C_TRACE2="${C_RESET}${C_FAINT}"
    C_DEBUG="${C_SPECIAL_BLUE}"
+   C_ERROR="${C_BR_RED}${C_BOLD}"
+   C_FLUFF="${C_GREEN}${C_BOLD}"
+   C_INFO="${C_CYAN}${C_BOLD}"
+   C_SETTING="${C_GREEN}${C_FAINT}"
+   C_TRACE2="${C_RESET}${C_FAINT}"
+   C_TRACE="${C_FLUFF}${C_FAINT}"
+   C_VERBOSE="${C_GREEN}${C_BOLD}"
+   C_WARNING="${C_RED}${C_BOLD}"
+
+   C_VIBE="${C_INFO}"
 
    C_ERROR_TEXT="${C_RESET}${C_BR_RED}${C_BOLD}"
 }
@@ -1432,7 +1452,7 @@ function r_concat()
 }
 
 
-function r_concat_if_missing()
+function r_concat_unique()
 {
    local separator="${3:- }"
 
@@ -1446,6 +1466,10 @@ function r_concat_if_missing()
    r_concat "$@"
 }
 
+function r_concat_if_missing()
+{
+   r_concat_unique "$@"
+}
 
 
 r_remove_duplicate_separators()
@@ -3870,11 +3894,11 @@ _r_make_tmp_in_dir_uuidgen()
 
       case "${filetype}" in
          *d*)
-            exekutor "${MKDIR}" "${RVAL}" 2> /dev/null && return 0
+            rexekutor "${MKDIR}" "${RVAL}" 2> /dev/null && return 0
          ;;
 
          *)
-            exekutor "${TOUCH}" "${RVAL}" 2> /dev/null && return 0
+            rexekutor "${TOUCH}" "${RVAL}" 2> /dev/null && return 0
          ;;
       esac
    done
@@ -5369,6 +5393,24 @@ function r_smart_file_downcase_identifier()
 }
 
 
+
+function r_smart_file_identifier()
+{
+   local s="$1"
+
+   s="${s//-/__}"
+
+   r_identifier "${RVAL}"
+   if [ "${RVAL}" = "$s" ]
+   then
+      return
+   fi
+
+   r_de_camel_case_identifier "$s"
+}
+
+
+
 fi
 
 :
@@ -5388,6 +5430,7 @@ function etc_make_file_from_symlinked_file()
 
    if [ ! -L "${dstfile}" ]
    then
+      log_debug "${dstfile} is not a symlink"
       return 1
    fi
 
@@ -5448,6 +5491,72 @@ function etc_prepare_for_write_of_file()
 
 
 
+function etc_prepare_for_write_of_file_with_policy()
+{
+   log_entry "etc_prepare_for_write_of_file_with_policy" "$@"
+
+   local etcfile="$1"
+   local sharedir="$2"
+   local policy="${3:-filelevel/symlink}"
+
+   local granularity
+   local mode
+
+   granularity="${policy%%/*}"
+   mode="${policy#*/}"
+
+   if [ "${mode}" = "${policy}" ]
+   then
+      mode='symlink'
+   fi
+
+   case "${granularity}" in
+      'dirlevel')
+         local etcdir
+
+         r_dirname "${etcfile}"
+         etcdir="${RVAL}"
+
+         if [ ! -d "${etcdir}" ] && [ -d "${sharedir}" ]
+         then
+            log_verbose "Creating etc directory from share: \"${etcdir}\""
+
+            local symlink_flag
+            case "${mode}" in
+               'symlink')
+                  symlink_flag='YES'
+               ;;
+               'copy')
+                  symlink_flag='NO'
+               ;;
+               *)
+                  _internal_fail "Unknown mode '${mode}', use 'symlink' or 'copy'"
+               ;;
+            esac
+
+            r_mkdir_parent_if_missing "${etcdir}"
+            etc_copy_from_share "${sharedir}" "${etcdir}" "${symlink_flag}"
+         fi
+
+         r_mkdir_parent_if_missing "${etcfile}"
+
+         etc_make_file_from_symlinked_file "${etcfile}"
+      ;;
+
+      'filelevel')
+         r_mkdir_parent_if_missing "${etcfile}"
+
+         etc_make_file_from_symlinked_file "${etcfile}"
+      ;;
+
+      *)
+         _internal_fail "Unknown granularity '${granularity}', use 'filelevel' or 'dirlevel'"
+      ;;
+   esac
+}
+
+
+
 function etc_make_symlink_if_possible()
 {
    log_entry "etc_make_symlink_if_possible" "$@"
@@ -5480,6 +5589,11 @@ function etc_make_symlink_if_possible()
       return 2
    fi
 
+   if [ -L "${srcfile}" ]
+   then
+      fail "Source \"${srcfile}\" can't be a symlink"
+   fi
+
    local DIFF
 
    if ! DIFF="`command -v diff`"
@@ -5492,8 +5606,9 @@ function etc_make_symlink_if_possible()
    r_dirname "${dstfile}"
    dstdir="${RVAL}"
 
-   if ! "${DIFF}" -b "${dstfile}" "${srcfile}" > /dev/null
+   if ! rexekutor "${DIFF}" -b "${dstfile}" "${srcfile}" > /dev/null
    then
+      log_debug "Contents of \"${dstfile}\" \"${srcfile}\" differ"
       return 3
    fi
 
@@ -5504,7 +5619,6 @@ function etc_make_symlink_if_possible()
                             "${dstdir}" \
                             "${filename}" \
                             "${symlink}"
-   return $?
 }
 
 
@@ -5514,87 +5628,42 @@ function etc_symlink_or_copy_file()
 
    local srcfile="$1"
    local dstdir="$2"
-   local filename="$3"
-   local symlink="$4"
+   local dstfilename="$3"
+   local symlink="${4:-YES}"
 
-   [ -f "${srcfile}" ] || _internal_fail "\"${srcfile}\" does not exist or is not a file"
-   [ -d "${dstdir}" ]  || _internal_fail "\"${dstdir}\" does not exist or is not a directory"
+   [ -z "${dstfilename}" ] && r_basename "${srcfile}"
+   dstfilename="${dstfilename:-${RVAL}}"
 
    local dstfile
 
-   if [ -z "${filename}" ]
-   then
-   	r_basename "${srcfile}"
-   	filename="${RVAL}"
-	fi
-
-   r_filepath_concat "${dstdir}" "${filename}"
+   r_filepath_concat "${dstdir}" "${dstfilename}"
    dstfile="${RVAL}"
-
-   if [ -e "${dstfile}" ]
-   then
-      log_error "\"${dstfile}\" already exists"
-      return 1
-   fi
-
-   r_mkdir_parent_if_missing "${dstfile}"
-
-   local flags
-
-   if [ "${MULLE_FLAG_LOG_FLUFF}" = 'YES' ]
-   then
-      case "${MULLE_UNAME}" in
-         'sunos')
-         ;;
-
-         *)
-            flags=-v
-         ;;
-      esac
-   fi
-
-   if [ -z "${symlink}" ]
-   then
-      case "${MULLE_UNAME}" in
-         'mingw'|'msys')
-            symlink='NO'
-         ;;
-
-         *)
-            symlink='YES'
-         ;;
-      esac
-   fi
 
    if [ "${symlink}" = 'YES' ]
    then
-      local linkrel
+      local relative
 
       r_relative_path_between "${srcfile}" "${dstdir}"
-      linkrel="${RVAL}"
-
-      exekutor ln -s ${flags} "${linkrel}" "${dstfile}"
-      return $?
+      relative="${RVAL}"
+      exekutor ln -s "${relative}" "${dstfile}"
+   else
+      exekutor cp "${srcfile}" "${dstfile}"
    fi
-
-   exekutor cp ${flags} "${srcfile}" "${dstfile}" &&
-   exekutor chmod ug+w "${dstfile}"
 }
 
 
-function etc_setup_from_share_if_needed()
+function etc_copy_from_share()
 {
-   log_entry "etc_setup_from_share_if_needed" "$@"
+   log_entry "etc_copy_from_share" "$@"
 
-   local etc="$1"
-   local share="$2"
-   local symlink="$3"
+   [ $# -lt 2 ] && _internal_fail "API error"
 
-   if [ -d "${etc}" ]
-   then
-      log_fluff "etc folder already setup"
-      return
-   fi
+   local share="$1"
+   local etc="$2"
+   local symlink="${3:-NO}"
+
+   [ -z "${etc}" ]   && _internal_fail "etc is empty"
+   [ -z "${share}" ] && _internal_fail "share is empty"
 
    mkdir_if_missing "${etc}"
 
@@ -5625,6 +5694,24 @@ function etc_setup_from_share_if_needed()
                                   "${symlink}"
       .done
    fi
+}
+
+
+function etc_setup_from_share_if_needed()
+{
+   log_entry "etc_setup_from_share_if_needed" "$@"
+
+   local etc="$1"
+   local share="$2"
+   local symlink="${3:-YES}"
+
+   if [ -d "${etc}" ]
+   then
+      log_fluff "etc folder already setup"
+      return
+   fi
+
+   etc_copy_from_share "${share}" "${etc}" "${symlink}"
 }
 
 
@@ -6519,6 +6606,7 @@ r_reflow_paragraph()
 
    RVAL=""
 
+   shell_disable_glob
    for word in $text
    do
       if [ ${#current_line} -eq 0 ]
@@ -6539,6 +6627,7 @@ r_reflow_paragraph()
          fi
       fi
    done
+   shell_enable_glob
 
    if [ ${#current_line} -gt 0 ]
    then
@@ -6554,22 +6643,47 @@ r_reflow_paragraph()
 }
 
 
-function reflow_file()
+reflow_file()
 {
    local column_width="${1:-80}"
    local indent="${2:-   }"
-
    local min_indent_length=${#indent}
+
    local in_paragraph='NO'
    local line
    local paragraph_text=""
    local text_part
 
+   end_paragraph()
+   {
+      if [ "$in_paragraph" = 'YES' ]
+      then
+         r_reflow_paragraph "$paragraph_text" "$column_width" "$indent"
+         printf "%s\n" "${RVAL}"
+         in_paragraph='NO'
+         paragraph_text=""
+      fi
+   }
+
    while IFS= read -r line || [[ -n "$line" ]]
    do
+      case "${line}" in
+      '|'*)
+         end_paragraph
+         r_reflow_paragraph "${line#|}" "$column_width" "$indent"
+         printf "%s\n" "${RVAL}"
+         continue
+      ;;
+      ':'*)
+         end_paragraph
+         printf "%s\n" "${line#:}"
+         continue
+      ;;
+      esac
+
       if [[ "$line" =~ ^[[:space:]]{${min_indent_length},} ]]
       then
-         text_part=$(printf "%s" "$line" | sed 's/^[[:space:]]*//')
+         text_part="${line#"${line%%[![:space:]]*}"}"
 
          if [ "$in_paragraph" = 'YES' ]
          then
@@ -6579,25 +6693,13 @@ function reflow_file()
             paragraph_text="$text_part"
          fi
       else
-         if [ "$in_paragraph" = 'YES' ]
-         then
-            r_reflow_paragraph "$paragraph_text" "$column_width" "$indent"
-            printf "%s\n" "${RVAL}"
-            in_paragraph='NO'
-            paragraph_text=""
-         fi
-
+         end_paragraph
          printf "%s\n" "$line"
       fi
    done
 
-   if [ "$in_paragraph" = 'YES' ]
-   then
-      r_reflow_paragraph "$paragraph_text" "$column_width" "$indent"
-      printf "%s\n" "${RVAL}"
-   fi
+   end_paragraph
 }
-
 
 function usage_cat()
 {

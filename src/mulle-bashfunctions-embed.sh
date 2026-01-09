@@ -470,6 +470,17 @@ _log_info()
 }
 
 
+_log_vibe()
+{
+   if [ "${MULLE_VIBECODING:-}" = 'YES' ]
+   then
+      _log_info "$*"
+   else
+      _log_verbose "${*//${C_VIBE}/${C_VERBOSE}}"
+   fi
+}
+
+
 _log_verbose()
 {
    if [ "${MULLE_FLAG_LOG_VERBOSE:-}" = 'YES' ]
@@ -591,6 +602,9 @@ alias log_fluff='_log_fluff'
 
 alias log_info='_log_info'
 
+alias log_vibe='_log_vibe'
+
+
 alias log_setting='_log_setting'
 
 alias log_trace='_log_trace'
@@ -607,6 +621,7 @@ log_set_trace_level()
    alias log_error='_log_error'
    alias log_fluff='_log_fluff'
    alias log_info='_log_info'
+   alias log_vibe='_log_vibe'
    alias log_setting='_log_setting'
    alias log_trace='_log_trace'
    alias log_verbose='_log_verbose'
@@ -641,6 +656,7 @@ log_set_trace_level()
    if [ "${MULLE_FLAG_LOG_TERSE:-}" = 'YES' -o "${MULLE_FLAG_LOG_TERSE:-}" = 'WARN' ]
    then
       alias log_info=': #'
+      alias log_vibe=': #'
    fi
 
    if [ "${MULLE_FLAG_LOG_TERSE:-}" = 'YES' ]
@@ -785,15 +801,17 @@ logging_initialize_color()
 
    C_RESET_BOLD="${C_RESET}${C_BOLD}"
 
-   C_ERROR="${C_BR_RED}${C_BOLD}"
-   C_WARNING="${C_RED}${C_BOLD}"
-   C_INFO="${C_CYAN}${C_BOLD}"
-   C_VERBOSE="${C_GREEN}${C_BOLD}"
-   C_FLUFF="${C_GREEN}${C_BOLD}"
-   C_SETTING="${C_GREEN}${C_FAINT}"
-   C_TRACE="${C_FLUFF}${C_FAINT}"
-   C_TRACE2="${C_RESET}${C_FAINT}"
    C_DEBUG="${C_SPECIAL_BLUE}"
+   C_ERROR="${C_BR_RED}${C_BOLD}"
+   C_FLUFF="${C_GREEN}${C_BOLD}"
+   C_INFO="${C_CYAN}${C_BOLD}"
+   C_SETTING="${C_GREEN}${C_FAINT}"
+   C_TRACE2="${C_RESET}${C_FAINT}"
+   C_TRACE="${C_FLUFF}${C_FAINT}"
+   C_VERBOSE="${C_GREEN}${C_BOLD}"
+   C_WARNING="${C_RED}${C_BOLD}"
+
+   C_VIBE="${C_INFO}"
 
    C_ERROR_TEXT="${C_RESET}${C_BR_RED}${C_BOLD}"
 }
@@ -826,15 +844,17 @@ logging_deinitialize_color()
 
    C_RESET_BOLD="${C_RESET}${C_BOLD}"
 
-   C_ERROR="${C_BR_RED}${C_BOLD}"
-   C_WARNING="${C_RED}${C_BOLD}"
-   C_INFO="${C_CYAN}${C_BOLD}"
-   C_VERBOSE="${C_GREEN}${C_BOLD}"
-   C_FLUFF="${C_GREEN}${C_BOLD}"
-   C_SETTING="${C_GREEN}${C_FAINT}"
-   C_TRACE="${C_FLUFF}${C_FAINT}"
-   C_TRACE2="${C_RESET}${C_FAINT}"
    C_DEBUG="${C_SPECIAL_BLUE}"
+   C_ERROR="${C_BR_RED}${C_BOLD}"
+   C_FLUFF="${C_GREEN}${C_BOLD}"
+   C_INFO="${C_CYAN}${C_BOLD}"
+   C_SETTING="${C_GREEN}${C_FAINT}"
+   C_TRACE2="${C_RESET}${C_FAINT}"
+   C_TRACE="${C_FLUFF}${C_FAINT}"
+   C_VERBOSE="${C_GREEN}${C_BOLD}"
+   C_WARNING="${C_RED}${C_BOLD}"
+
+   C_VIBE="${C_INFO}"
 
    C_ERROR_TEXT="${C_RESET}${C_BR_RED}${C_BOLD}"
 }
@@ -1432,7 +1452,7 @@ function r_concat()
 }
 
 
-function r_concat_if_missing()
+function r_concat_unique()
 {
    local separator="${3:- }"
 
@@ -1446,6 +1466,10 @@ function r_concat_if_missing()
    r_concat "$@"
 }
 
+function r_concat_if_missing()
+{
+   r_concat_unique "$@"
+}
 
 
 r_remove_duplicate_separators()
@@ -3870,11 +3894,11 @@ _r_make_tmp_in_dir_uuidgen()
 
       case "${filetype}" in
          *d*)
-            exekutor "${MKDIR}" "${RVAL}" 2> /dev/null && return 0
+            rexekutor "${MKDIR}" "${RVAL}" 2> /dev/null && return 0
          ;;
 
          *)
-            exekutor "${TOUCH}" "${RVAL}" 2> /dev/null && return 0
+            rexekutor "${TOUCH}" "${RVAL}" 2> /dev/null && return 0
          ;;
       esac
    done

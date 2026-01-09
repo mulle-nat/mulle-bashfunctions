@@ -100,6 +100,7 @@ r_reflow_paragraph()
 
    RVAL=""
 
+   shell_disable_glob
    # Split text into words
    for word in $text
    do
@@ -123,6 +124,7 @@ r_reflow_paragraph()
          fi
       fi
    done
+   shell_enable_glob
 
    # Add the last line if it's not empty
    if [ ${#current_line} -gt 0 ]
@@ -146,6 +148,8 @@ r_reflow_paragraph()
 #    non-paragraph lines. Paragraphs are detected as consecutive lines starting
 #    with the specified indent string, terminated by empty lines or lines
 #    without the required indentation.
+#    Lines starting with '|' are reflowed as a single line ending a previous
+#    paragraph. Line starting with ':' are just printed as is with no reflow
 #
 #    Parameters:
 #      column_width - Total column width (default: 80)
@@ -154,24 +158,52 @@ r_reflow_paragraph()
 #    Example: reflow_file 72 "    " < input.txt
 #             # Reflows paragraphs in input.txt to 72 columns with 4-space indent
 #
-function reflow_file()
+reflow_file()
 {
    local column_width="${1:-80}"
    local indent="${2:-   }"
-
    local min_indent_length=${#indent}
+
    local in_paragraph='NO'
    local line
    local paragraph_text=""
    local text_part
 
+   # Helper function to end current paragraph
+   end_paragraph()
+   {
+      if [ "$in_paragraph" = 'YES' ]
+      then
+         r_reflow_paragraph "$paragraph_text" "$column_width" "$indent"
+         printf "%s\n" "${RVAL}"
+         in_paragraph='NO'
+         paragraph_text=""
+      fi
+   }
+
    while IFS= read -r line || [[ -n "$line" ]]
    do
+      case "${line}" in
+      '|'*)
+         # End current paragraph and reflow the line content
+         end_paragraph
+         r_reflow_paragraph "${line#|}" "$column_width" "$indent"
+         printf "%s\n" "${RVAL}"
+         continue
+      ;;
+      ':'*)
+         # End current paragraph and output the line content as-is
+         end_paragraph
+         printf "%s\n" "${line#:}"
+         continue
+      ;;
+      esac
+
       # Check if line starts with required number of spaces
       if [[ "$line" =~ ^[[:space:]]{${min_indent_length},} ]]
       then
          # Extract text after the leading spaces
-         text_part=$(printf "%s" "$line" | sed 's/^[[:space:]]*//')
+         text_part="${line#"${line%%[![:space:]]*}"}"
 
          if [ "$in_paragraph" = 'YES' ]
          then
@@ -183,29 +215,15 @@ function reflow_file()
             paragraph_text="$text_part"
          fi
       else
-         # Not a paragraph line
-         if [ "$in_paragraph" = 'YES' ]
-         then
-            # End of paragraph - reflow and output
-            r_reflow_paragraph "$paragraph_text" "$column_width" "$indent"
-            printf "%s\n" "${RVAL}"
-            in_paragraph='NO'
-            paragraph_text=""
-         fi
-
-         # Output non-paragraph line as-is
+         # End current paragraph and output non-paragraph line as-is
+         end_paragraph
          printf "%s\n" "$line"
       fi
    done
 
    # Handle case where file ends with a paragraph
-   if [ "$in_paragraph" = 'YES' ]
-   then
-      r_reflow_paragraph "$paragraph_text" "$column_width" "$indent"
-      printf "%s\n" "${RVAL}"
-   fi
+   end_paragraph
 }
-
 
 #
 # usage_cat [min_width] [max_width]
