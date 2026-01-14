@@ -87,6 +87,14 @@ main()
    r_expanded_string 'a${b:-c${d:-e}}g${h:-i}j'
    expect_output "${RVAL}" "a${b:-c${d:-e}}g${h:-i}j"
 
+   # Test escaped sequences
+   r_expanded_string 'prefix \${SHELL} suffix'
+   expect_output "${RVAL}" "prefix \${SHELL} suffix"
+
+   MYVAR="expanded"
+   r_expanded_string 'a \${SHELL} b ${MYVAR} c'
+   expect_output "${RVAL}" "a \${SHELL} b expanded c"
+
    echo "All tests passed" >&2
 }
 

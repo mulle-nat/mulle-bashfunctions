@@ -2167,35 +2167,37 @@ _r_prefix_with_unquoted_string()
    local c="$2"
 
    local prefix
-   local e_prefix
    local head
+   local backslashes
+   local before
 
    head=""
    while :
    do
       prefix="${s%%"${c}"*}"             # a${
-      if [ "${prefix}" = "${_s}" ]
+      if [ "${prefix}" = "${s}" ]
       then
-         RVAL=
+         RVAL="${head}${s}"
          return 1
       fi
 
-      e_prefix="${_s%%\\"${c}"*}"         # a\\${ or whole string if no match
-      if [ "${e_prefix}" = "${_s}" ]
+      before="${prefix}"
+      backslashes=0
+      while [ ${#before} -gt 0 ] && [ "${before:$(( ${#before} - 1)):1}" = "\\" ]
+      do
+         backslashes=$((backslashes + 1))
+         before="${before%?}"
+      done
+
+      if [ $((backslashes % 2)) -ne 0 ]
       then
-         RVAL="${head}${prefix}"
-         return 0
+         head="${head}${prefix}${c}"
+         s="${s:$(( ${#prefix} + ${#c}))}"
+         continue
       fi
 
-      if [ "${#e_prefix}" -gt "${#prefix}" ]
-      then
-         RVAL="${head}${prefix}"
-         return 0
-      fi
-
-      e_prefix="${e_prefix}\\${c}"
-      head="${head}${e_prefix}"
-      s="${s:${#e_prefix}}"
+      RVAL="${head}${prefix}"
+      return 0
    done
 }
 
@@ -2221,6 +2223,16 @@ _r_expand_string()
       found=$?
       prefix_opener="${RVAL}" # can be empty
 
+      if [ ${found} -ne 0 ]
+      then
+         case "${_s}" in
+            *\\\${*)
+               RVAL="${head}${prefix_opener}"
+               return 0
+            ;;
+         esac
+      fi
+
       if ! _r_prefix_with_unquoted_string "${_s}" '}'
       then
          if [ ${found} -eq 0 ]
@@ -2232,12 +2244,26 @@ _r_expand_string()
 
       else
          prefix_closer="${RVAL}"
-         if [ ${found} -ne 0 -o ${#prefix_closer} -lt ${#prefix_opener} ]
+         if [ ${found} -ne 0 ]
          then
             _s="${_s:${#prefix_closer}}"
             _s="${_s#\}}"
             RVAL="${head}${prefix_closer}"
             return 0
+         fi
+
+         if [ ${#prefix_closer} -lt ${#prefix_opener} ]
+         then
+            case "${prefix_opener}" in
+               *\\\${*)
+                  ;;
+               *)
+                  _s="${_s:${#prefix_closer}}"
+                  _s="${_s#\}}"
+                  RVAL="${head}${prefix_closer}"
+                  return 0
+               ;;
+            esac
          fi
       fi
 
@@ -2312,6 +2338,11 @@ function r_expanded_string()
 
    _r_expand_string
    rval=$?
+
+   if [ $rval -eq 0 ]
+   then
+      RVAL="$(printf '%s' "${RVAL}" | sed 's/\\\${/${/g')"
+   fi
 
    return $rval
 }
