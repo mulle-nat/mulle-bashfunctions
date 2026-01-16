@@ -74,6 +74,7 @@ Commands:
 :   common-unames  : list of known values for uname
 :   env            : print environment needed for "mulle-bashfunctions.sh"
 :   eval <cmd>     : evaluate cmd inside of mulle-bashfunctions
+:   flags          : show flags available in all mulle-bash scripts
 :   globals [-a]   : list global MULLE_ prefixed variables, -a for all globals
 :   functions      : list defined functions
 :   hostname       : show system hostname as used by mulle-bashfunctions
@@ -1153,6 +1154,43 @@ mulle_bashfunctions_extract()
 }
 
 
+mulle_bashfunctions_flags()
+{
+         cat <<'EOF'
+These flags are commonly understood by mulle-bash scripts.
+
+Your script parses them with `options_technical_flags "$1"` and
+and executes them with `options_setup_trace "${MULLE_TRACE}" && set -x`:
+
+   -n, --dry-run                : Don't execute commands, just show them
+   -s, --silent                 : Suppress all output except errors
+   --silent-but-warn            : Suppress output except warnings and errors
+   -v, --verbose                : Enable verbose output (-vv, -vvv for more)
+
+   -ld, --log-debug             : Enable debug logging output
+   -le, --log-environment       : Log environment variables and state
+   -ls, --log-settings          : Log settings and configuration
+   -lx, --log-exekutor          : Log external command execution
+   -lt, --trace                 : Enable bash/zsh tracing with line numbers
+   -tx, --trace-immediately     : Enable tracing immediately (set -x)
+   -tp, --trace-profile         : Enable profiling with timestamps
+   -tpwd, --trace-pwd           : Show working directory in trace output
+   -tfpwd, --trace-full-pwd     : Show full path in trace output
+   -l-                          : Disable all logging flags
+   -t-                          : Disable tracing
+
+   --mulle-no-color             : turn off colorization
+   --mulle-no-error             : turn off error reporting
+   --mulle-list-technical-flags : a short list of available flags
+
+Uppercase variants (e.g., -V, -lD, -lE, -lS, -lX, -lT) don't propagate to
+child scripts.
+
+Use the MULLE_TECHNICAL_FLAGS environment variable to forward most of these
+flags to other mulle-bash scripts.
+EOF
+}
+
 
 main()
 {
@@ -1234,6 +1272,10 @@ MULLE_UNAME=\"${MULLE_UNAME}\""
 
       'extract'|'unembed')
          mulle_boot_extract "$@" | mulle_bashfunctions_extract "$@"
+      ;;
+
+      'flags')
+         mulle_bashfunctions_flags "$@"
       ;;
 
       'functions')
