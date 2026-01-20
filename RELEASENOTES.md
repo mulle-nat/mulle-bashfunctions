@@ -1,3 +1,23 @@
+## 6.7.0
+
+
+* added flags command to show more flag help
+
+* fix escape bug in `r_expanded_string`
+
+
+feature: add new logging level and improve etc operations
+
+* new ``log_vibe`` function for conditional info/verbose output
+* new ``etc_copy_from_share`` function for flexible etc setup
+* new ``r_concat_unique`` function replaces ``r_concat_if_missing``
+* improved ``reflow_file`` with special line prefixes ('|' and ':')
+
+
+
+* new include file usage for nicer usage output (reflows paragraphs based on terminal width)
+
+
 ### 6.6.3
 
 * that was too harsh, the exit will only happen if you set `MULLE_BASH_EXE_SHELL_STRICT` to YES

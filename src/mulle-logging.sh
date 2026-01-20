@@ -146,7 +146,17 @@ _log_vibe()
    then
       _log_info "$*"
    else
-      _log_verbose "${*//${C_VIBE}/${C_VERBOSE}}"
+      if [ ${ZSH_VERSION+x} ]
+      then
+         local msg="${(j: :)@}"
+
+         # zsh: dreckige nutzlose kack shell
+         x="${C_VIBE[3,7]}"
+         y="${C_VERBOSE[3,7]}"
+         _log_verbose "${msg//$x/$y}"
+      else
+         _log_verbose "${*//${C_VIBE}/${C_VERBOSE}}"
+      fi
    fi
 }
 
@@ -590,22 +600,22 @@ logging_initialize_color()
 
    if [ -z "${NO_COLOR:-}" -a "${MULLE_NO_COLOR:-}" != 'YES' ] && [ ! -f /dev/stderr ]
    then
-      C_RESET="\033[0m"
+      C_RESET=$'\033'"[0m"
 
       # Useable Foreground colours, for black/white white/black
-      C_RED="\033[0;31m"     C_GREEN="\033[0;32m"
-      C_BLUE="\033[0;34m"    C_MAGENTA="\033[0;35m"
-      C_CYAN="\033[0;36m"
+      C_RED=$'\033'"[0;31m"     C_GREEN=$'\033'"[0;32m"
+      C_BLUE=$'\033'"[0;34m"    C_MAGENTA=$'\033'"[0;35m"
+      C_CYAN=$'\033'"[0;36m"
 
-      C_BR_RED="\033[0;91m"
-      C_BR_GREEN="\033[0;92m"
-      C_BR_BLUE="\033[0;94m"
-      C_BR_CYAN="\033[0;96m"
-      C_BR_MAGENTA="\033[0;95m"
-      C_BOLD="\033[1m"
-      C_FAINT="\033[2m"
-      C_UNDERLINE="\033[4m"
-      C_SPECIAL_BLUE="\033[38;5;39;40m"
+      C_BR_RED=$'\033'"[0;91m"
+      C_BR_GREEN=$'\033'"[0;92m"
+      C_BR_BLUE=$'\033'"[0;94m"
+      C_BR_CYAN=$'\033'"[0;96m"
+      C_BR_MAGENTA=$'\033'"[0;95m"
+      C_BOLD=$'\033'"[1m"
+      C_FAINT=$'\033'"[2m"
+      C_UNDERLINE=$'\033'"[4m"
+      C_SPECIAL_BLUE=$'\033'"[38;5;39;40m"
 
       if [ "${MULLE_LOGGING_TRAP:-}" != 'NO' ]
       then

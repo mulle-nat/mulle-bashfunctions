@@ -81,6 +81,11 @@ MULLE_PARALLEL_SH='included'
 # COLOR
 
 
+#
+# very_short_sleep <us>
+#
+#    Does a microsecond sleep
+#
 very_short_sleep()
 {
    local us="$1"
