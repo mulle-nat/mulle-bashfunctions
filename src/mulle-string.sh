@@ -487,6 +487,8 @@ function r_slash_concat()
 #    the item separator. Here the item is called a "line" and the list is
 #    called "lines". There is extensive support for handling such line lists.
 #
+#    Use  `find_item to search.
+#
 # SUBTITLE Lists
 # COLOR
 
@@ -501,7 +503,10 @@ function r_list_remove()
 {
    local sep="${3:- }"
 
-   RVAL="${sep}$1${sep}//${sep}$2${sep}/}"
+   local s
+
+   s="${sep}$1${sep}"
+   RVAL="${s//${sep}$2${sep}/${sep}}"
    RVAL="${RVAL##"${sep}"}"
    RVAL="${RVAL%%"${sep}"}"
 }
@@ -651,7 +656,7 @@ function r_remove_last_line()
 #
 # find_item <s> <search> [separator]
 #
-#    Check if a search string is contained as a substring of a string s. The
+#    Check if a search string contains a substring of a string s. The
 #    string consists of separated by separator, which by default is the ','.
 #
 #    Returns 0 if found, 1 if not found

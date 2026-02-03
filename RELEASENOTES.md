@@ -1,3 +1,9 @@
+## 6.8.0
+
+* add toc command for AI coding support
+* fix `r_colon_remove` and other remove functions (argh)
+
+
 ## 6.7.0
 
 

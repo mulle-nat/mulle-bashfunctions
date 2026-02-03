@@ -1,0 +1,95 @@
+#! /bin/sh
+
+[ "${TRACE}" = 'YES' ] && set -x && : "$0" "$@"
+
+###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
+MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${MULLE_BASHFUNCTIONS_LIBEXEC_DIR:-`mulle-bashfunctions libexec-dir`}" || exit 1
+
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-boot.sh"          || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashglobal.sh"    || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-compatibility.sh" || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-logging.sh"       || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-options.sh"       || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-string.sh"        || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-path.sh"          || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-exekutor.sh"      || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-file.sh"          || exit 1
+###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
+
+if [ ${ZSH_VERSION+x} ]
+then
+   setopt sh_word_split
+fi
+
+
+expect_output()
+{
+   local output="$1"
+   local expected="$2"
+
+   if [ "${output}" != "${expected}" ]
+   then
+      echo "Got \"${output}\". Expected: \"${expected}\"" >&2
+      stacktrace >&2
+      exit 1
+   fi
+}
+
+
+test_colon_remove()
+{
+# EMPTY LIST
+   r_colon_remove "" "item"
+   expect_output "${RVAL}" ""
+
+# SINGLE ITEM - REMOVE IT
+   r_colon_remove "item" "item"
+   expect_output "${RVAL}" ""
+
+# SINGLE ITEM - REMOVE NON-EXISTENT
+   r_colon_remove "item" "other"
+   expect_output "${RVAL}" "item"
+
+# TWO ITEMS - REMOVE FIRST
+   r_colon_remove "first:second" "first"
+   expect_output "${RVAL}" "second"
+
+# TWO ITEMS - REMOVE SECOND
+   r_colon_remove "first:second" "second"
+   expect_output "${RVAL}" "first"
+
+# THREE ITEMS - REMOVE MIDDLE
+   r_colon_remove "first:middle:last" "middle"
+   expect_output "${RVAL}" "first:last"
+
+# UTF-8 STRINGS - GERMAN
+   r_colon_remove "äpfel:birnen:kirschen" "birnen"
+   expect_output "${RVAL}" "äpfel:kirschen"
+
+# UTF-8 STRINGS - JAPANESE
+   r_colon_remove "りんご:バナナ:オレンジ" "バナナ"
+   expect_output "${RVAL}" "りんご:オレンジ"
+
+# UTF-8 STRINGS - EMOJI
+   r_colon_remove "🍎:🍌:🍊" "🍌"
+   expect_output "${RVAL}" "🍎:🍊"
+
+# UTF-8 STRINGS - CYRILLIC
+   r_colon_remove "яблоко:банан:апельсин" "банан"
+   expect_output "${RVAL}" "яблоко:апельсин"
+
+# UTF-8 STRINGS - MIXED
+   r_colon_remove "apple:äpfel:りんご:🍎" "äpfel"
+   expect_output "${RVAL}" "apple:りんご:🍎"
+}
+
+
+main()
+{
+   test_colon_remove
+
+   echo "All tests passed" >&2
+}
+
+
+main "$@"

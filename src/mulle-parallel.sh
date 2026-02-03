@@ -329,7 +329,7 @@ __parallel_status()
    # only append to status file if error
    if [ $rval -ne 0 ]
    then
-      log_warning "warning: Parallel job \"$*\" failed with $rval"
+      log_warning "warning: Parallel job \"$*\" failed with $rval in \"$PWD\""
       redirect_append_exekutor "${_parallel_statusfile}" printf "%s\n" "${rval};$*"
    fi
 }

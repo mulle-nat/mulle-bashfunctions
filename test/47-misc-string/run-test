@@ -1,0 +1,91 @@
+#! /bin/sh
+
+[ "${TRACE}" = 'YES' ] && set -x && : "$0" "$@"
+
+###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
+MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${MULLE_BASHFUNCTIONS_LIBEXEC_DIR:-`mulle-bashfunctions libexec-dir`}" || exit 1
+
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-boot.sh"          || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashglobal.sh"    || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-compatibility.sh" || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-logging.sh"       || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-options.sh"       || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-string.sh"        || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-path.sh"          || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-exekutor.sh"      || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-file.sh"          || exit 1
+###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
+
+if [ ${ZSH_VERSION+x} ]
+then
+   setopt sh_word_split
+fi
+
+
+expect_output()
+{
+   local output="$1"
+   local expected="$2"
+
+   if [ "${output}" != "${expected}" ]
+   then
+      echo "Got \"${output}\". Expected: \"${expected}\"" >&2
+      stacktrace >&2
+      exit 1
+   fi
+}
+
+
+test_remove_duplicate_separators()
+{
+   r_remove_duplicate_separators "" ":"
+   expect_output "${RVAL}" ""
+
+   r_remove_duplicate_separators "a::b" ":"
+   expect_output "${RVAL}" "a:b"
+
+   r_remove_duplicate_separators "a:::b" ":"
+   expect_output "${RVAL}" "a:b"
+
+   r_remove_duplicate_separators "::a::b::" ":"
+   expect_output "${RVAL}" ":a:b:"
+}
+
+
+test_remove_ugly()
+{
+   r_remove_ugly "" ":"
+   expect_output "${RVAL}" ""
+
+   r_remove_ugly "a::b" ":"
+   expect_output "${RVAL}" "a:b"
+
+   r_remove_ugly "::a::b::" ":"
+   expect_output "${RVAL}" "a:b"
+}
+
+
+test_fnv1a_32()
+{
+   r_fnv1a_32 ""
+   expect_output "${RVAL}" "2166136261"
+
+   r_fnv1a_32 "hello"
+   expect_output "${RVAL}" "1335831723"
+
+   r_fnv1a_32 "world"
+   expect_output "${RVAL}" "933488787"
+}
+
+
+main()
+{
+   test_remove_duplicate_separators
+   test_remove_ugly
+   test_fnv1a_32
+
+   echo "All tests passed" >&2
+}
+
+
+main "$@"

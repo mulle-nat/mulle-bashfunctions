@@ -229,7 +229,7 @@ main()
    share="${prefix}/share/mulle-bashfunctions/${PROJECT_VERSION}"
 
    mkdir -p "${bin}" || installer_fail "could not create ${bin}"
-#   mkdir -p "${share}" || installer_fail "could not create ${share}"
+   mkdir -p "${share}/dox" || installer_fail "could not create ${share}/dox"
    mkdir -p "${libexec}" || installer_fail "could not create ${libexec}"
 
 
@@ -241,6 +241,13 @@ main()
       # -v doesn't work on old BSDs
       install -m "${mode}" "${i}" "${libexec}" || exit 1
    done
+
+   # install documentation
+   if [ -f "asset/dox/TOC.md" ]
+   then
+      install -m 644 "asset/dox/TOC.md" "${share}/dox/" || exit 1
+      printf "install: ${C_CYAN}${C_BOLD}%s${C_RESET}\n" "${share}/dox/TOC.md" >&2
+   fi
 
    envshare="${prefix}/share/mulle-sde/mulle-nat"
    mkdir -p "${envshare}" 2> /dev/null

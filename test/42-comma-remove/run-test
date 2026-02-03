@@ -1,0 +1,85 @@
+#! /bin/sh
+
+[ "${TRACE}" = 'YES' ] && set -x && : "$0" "$@"
+
+###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
+MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${MULLE_BASHFUNCTIONS_LIBEXEC_DIR:-`mulle-bashfunctions libexec-dir`}" || exit 1
+
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-boot.sh"          || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashglobal.sh"    || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-compatibility.sh" || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-logging.sh"       || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-options.sh"       || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-string.sh"        || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-path.sh"          || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-exekutor.sh"      || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-file.sh"          || exit 1
+###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
+
+if [ ${ZSH_VERSION+x} ]
+then
+   setopt sh_word_split
+fi
+
+
+expect_output()
+{
+   local output="$1"
+   local expected="$2"
+
+   if [ "${output}" != "${expected}" ]
+   then
+      echo "Got \"${output}\". Expected: \"${expected}\"" >&2
+      stacktrace >&2
+      exit 1
+   fi
+}
+
+
+test_comma_remove()
+{
+# EMPTY LIST
+   r_comma_remove "" "item"
+   expect_output "${RVAL}" ""
+
+# SINGLE ITEM - REMOVE IT
+   r_comma_remove "item" "item"
+   expect_output "${RVAL}" ""
+
+# SINGLE ITEM - REMOVE NON-EXISTENT
+   r_comma_remove "item" "other"
+   expect_output "${RVAL}" "item"
+
+# TWO ITEMS - REMOVE FIRST
+   r_comma_remove "first,second" "first"
+   expect_output "${RVAL}" "second"
+
+# TWO ITEMS - REMOVE SECOND
+   r_comma_remove "first,second" "second"
+   expect_output "${RVAL}" "first"
+
+# THREE ITEMS - REMOVE MIDDLE
+   r_comma_remove "first,middle,last" "middle"
+   expect_output "${RVAL}" "first,last"
+
+# UTF-8 STRINGS
+   r_comma_remove "äpfel,birnen,kirschen" "birnen"
+   expect_output "${RVAL}" "äpfel,kirschen"
+
+   r_comma_remove "りんご,バナナ,オレンジ" "バナナ"
+   expect_output "${RVAL}" "りんご,オレンジ"
+
+   r_comma_remove "🍎,🍌,🍊" "🍌"
+   expect_output "${RVAL}" "🍎,🍊"
+}
+
+
+main()
+{
+   test_comma_remove
+
+   echo "All tests passed" >&2
+}
+
+
+main "$@"

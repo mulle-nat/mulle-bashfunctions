@@ -1774,7 +1774,10 @@ function r_list_remove()
 {
    local sep="${3:- }"
 
-   RVAL="${sep}$1${sep}//${sep}$2${sep}/}"
+   local s
+
+   s="${sep}$1${sep}"
+   RVAL="${s//${sep}$2${sep}/${sep}}"
    RVAL="${RVAL##"${sep}"}"
    RVAL="${RVAL%%"${sep}"}"
 }
@@ -6289,7 +6292,7 @@ __parallel_status()
 
    if [ $rval -ne 0 ]
    then
-      log_warning "warning: Parallel job \"$*\" failed with $rval"
+      log_warning "warning: Parallel job \"$*\" failed with $rval in \"$PWD\""
       redirect_append_exekutor "${_parallel_statusfile}" printf "%s\n" "${rval};$*"
    fi
 }

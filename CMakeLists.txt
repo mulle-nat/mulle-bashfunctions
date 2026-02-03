@@ -1,6 +1,6 @@
 cmake_minimum_required( VERSION 3.13...99.99)
 
-project( mulle-bashfunctions VERSION 6.7.0 LANGUAGES NONE)
+project( mulle-bashfunctions VERSION 6.8.0 LANGUAGES NONE)
 
 
 #
@@ -176,6 +176,10 @@ set( MULLE_SDE_EXTENSION_DIRS
    "src/mulle-nat/file.sh"
 )
 
+set( DOX_FILES
+   "asset/dox/TOC.md"
+)
+
 
 file( GLOB LIBRARY_SCRIPTS
    "src/*.sh"
@@ -198,6 +202,7 @@ set( PROJECT_VERSION "${MULLE_BASHFUNCTIONS_VERSION}")
 message( STATUS "SCRIPTS is ${SCRIPTS}")
 message( STATUS "LIBRARY_SCRIPTS is ${LIBRARY_SCRIPTS}")
 message( STATUS "MULLE_SDE_EXTENSION_DIRS is ${MULLE_SDE_EXTENSION_DIRS}")
+message( STATUS "DOX_FILES is ${DOX_FILES}")
 
 
 
@@ -213,6 +218,10 @@ PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
             GROUP_EXECUTE GROUP_READ
             WORLD_EXECUTE WORLD_READ
 DESTINATION "libexec/mulle-bashfunctions/${PROJECT_VERSION}")
+
+
+install( FILES ${DOX_FILES}
+DESTINATION "share/mulle-bashfunctions/${PROJECT_VERSION}/dox")
 
 
 install( DIRECTORY ${MULLE_SDE_EXTENSION_DIRS}

@@ -56,6 +56,7 @@ Usage:
 |   * list the available libraries, which you can "include"
 |   * run an arbitrary mulle-bashfunction with eval and r-eval
 |   * get some information about the execution environment
+|   * 🤖 AI must study \`${MULLE_EXECUTABLE_NAME} toc\` before writing code 🤖
 |
 Example:
    Load mulle-bashfunctions into the current interactive shell:
@@ -85,6 +86,7 @@ Commands:
 :   path [variant] : path to "mulle-bashfunctions.sh"
 :   r-eval <cmd>   : evaluate cmd inside of mulle-bashfunctions and print RVAL
 :   shell          : path of executing shell
+:   toc            : show library documentation (TOC.md)
 :   username       : show username as used by mulle-bashfunctions
 :   uname          : show system short name as used by mulle-bashfunctions
 :   uuid           : generate a UUID
@@ -1409,6 +1411,24 @@ EOF
 
       'shell')
          printf "%s\n" `ps -h -o cmd -p $$ | awk '{ print $1 }'`
+      ;;
+
+      'toc')
+         # Try installed location first
+         local tocfile="${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/../share/mulle-bashfunctions/${MULLE_BASHFUNCTIONS_VERSION}/dox/TOC.md"
+         if [ ! -f "${tocfile}" ]
+         then
+            # Fall back to source location (script directory)
+            local scriptdir
+            scriptdir="$(cd "$(dirname "${MULLE_EXECUTABLE}")" && pwd -P)"
+            tocfile="${scriptdir}/asset/dox/TOC.md"
+         fi
+         if [ -f "${tocfile}" ]
+         then
+            cat "${tocfile}"
+         else
+            fail "TOC.md not found"
+         fi
       ;;
 
       'uname')

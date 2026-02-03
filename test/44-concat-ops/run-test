@@ -1,0 +1,155 @@
+#! /bin/sh
+
+[ "${TRACE}" = 'YES' ] && set -x && : "$0" "$@"
+
+###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
+MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${MULLE_BASHFUNCTIONS_LIBEXEC_DIR:-`mulle-bashfunctions libexec-dir`}" || exit 1
+
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-boot.sh"          || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashglobal.sh"    || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-compatibility.sh" || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-logging.sh"       || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-options.sh"       || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-string.sh"        || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-path.sh"          || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-exekutor.sh"      || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-file.sh"          || exit 1
+###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
+
+if [ ${ZSH_VERSION+x} ]
+then
+   setopt sh_word_split
+fi
+
+
+expect_output()
+{
+   local output="$1"
+   local expected="$2"
+
+   if [ "${output}" != "${expected}" ]
+   then
+      echo "Got \"${output}\". Expected: \"${expected}\"" >&2
+      stacktrace >&2
+      exit 1
+   fi
+}
+
+
+test_colon_concat()
+{
+   r_colon_concat "" "first"
+   expect_output "${RVAL}" "first"
+
+   r_colon_concat "first" "second"
+   expect_output "${RVAL}" "first:second"
+
+   r_colon_concat "first:second" "third"
+   expect_output "${RVAL}" "first:second:third"
+}
+
+
+test_colon_concat_if_missing()
+{
+   r_colon_concat_if_missing "" "first"
+   expect_output "${RVAL}" "first"
+
+   r_colon_concat_if_missing "first" "second"
+   expect_output "${RVAL}" "first:second"
+
+   r_colon_concat_if_missing "first:second" "second"
+   expect_output "${RVAL}" "first:second"
+}
+
+
+test_comma_concat_if_missing()
+{
+   r_comma_concat_if_missing "" "first"
+   expect_output "${RVAL}" "first"
+
+   r_comma_concat_if_missing "first" "second"
+   expect_output "${RVAL}" "first,second"
+
+   r_comma_concat_if_missing "first,second" "second"
+   expect_output "${RVAL}" "first,second"
+}
+
+
+test_semicolon_concat()
+{
+   r_semicolon_concat "" "first"
+   expect_output "${RVAL}" "first"
+
+   r_semicolon_concat "first" "second"
+   expect_output "${RVAL}" "first;second"
+}
+
+
+test_slash_concat()
+{
+   r_slash_concat "" "first"
+   expect_output "${RVAL}" "first"
+
+   r_slash_concat "first" "second"
+   expect_output "${RVAL}" "first/second"
+
+   r_slash_concat "first/" "second"
+   expect_output "${RVAL}" "first//second"
+
+   r_slash_concat "first" "/second"
+   expect_output "${RVAL}" "first//second"
+}
+
+
+test_concat_if_missing()
+{
+   r_concat_if_missing "" "first" ":"
+   expect_output "${RVAL}" "first"
+
+   r_concat_if_missing "first" "second" ":"
+   expect_output "${RVAL}" "first:second"
+
+   r_concat_if_missing "first:second" "second" ":"
+   expect_output "${RVAL}" "first:second"
+}
+
+
+test_concat_unique()
+{
+   r_concat_unique "" "first" ":"
+   expect_output "${RVAL}" "first"
+
+   r_concat_unique "first" "second" ":"
+   expect_output "${RVAL}" "first:second"
+
+   r_concat_unique "first:second" "second" ":"
+   expect_output "${RVAL}" "first:second"
+}
+
+
+test_append()
+{
+   r_append "" "first"
+   expect_output "${RVAL}" "first"
+
+   r_append "hello" " world"
+   expect_output "${RVAL}" "hello world"
+}
+
+
+main()
+{
+   test_colon_concat
+   test_colon_concat_if_missing
+   test_comma_concat_if_missing
+   test_semicolon_concat
+   test_slash_concat
+   test_concat_if_missing
+   test_concat_unique
+   test_append
+
+   echo "All tests passed" >&2
+}
+
+
+main "$@"

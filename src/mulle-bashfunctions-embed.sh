@@ -1591,7 +1591,10 @@ function r_list_remove()
 {
    local sep="${3:- }"
 
-   RVAL="${sep}$1${sep}//${sep}$2${sep}/}"
+   local s
+
+   s="${sep}$1${sep}"
+   RVAL="${s//${sep}$2${sep}/${sep}}"
    RVAL="${RVAL##"${sep}"}"
    RVAL="${RVAL%%"${sep}"}"
 }

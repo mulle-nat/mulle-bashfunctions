@@ -1,0 +1,108 @@
+#! /bin/sh
+
+[ "${TRACE}" = 'YES' ] && set -x && : "$0" "$@"
+
+###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
+MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${MULLE_BASHFUNCTIONS_LIBEXEC_DIR:-`mulle-bashfunctions libexec-dir`}" || exit 1
+
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-boot.sh"          || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashglobal.sh"    || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-compatibility.sh" || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-logging.sh"       || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-options.sh"       || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-string.sh"        || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-path.sh"          || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-exekutor.sh"      || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-file.sh"          || exit 1
+###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
+
+if [ ${ZSH_VERSION+x} ]
+then
+   setopt sh_word_split
+fi
+
+
+expect_output()
+{
+   local output="$1"
+   local expected="$2"
+
+   if [ "${output}" != "${expected}" ]
+   then
+      echo "Got \"${output}\". Expected: \"${expected}\"" >&2
+      stacktrace >&2
+      exit 1
+   fi
+}
+
+
+test_escaped_spaces()
+{
+   r_escaped_spaces ""
+   expect_output "${RVAL}" ""
+
+   r_escaped_spaces "hello world"
+   expect_output "${RVAL}" "hello\\ world"
+
+   r_escaped_spaces "hello  world"
+   expect_output "${RVAL}" "hello\\ \\ world"
+}
+
+
+test_escaped_grep_pattern()
+{
+   r_escaped_grep_pattern ""
+   expect_output "${RVAL}" ""
+
+   r_escaped_grep_pattern "hello.world"
+   expect_output "${RVAL}" "hello\\.world"
+
+   r_escaped_grep_pattern "a*b"
+   expect_output "${RVAL}" "a\\*b"
+}
+
+
+test_escaped_shell_string()
+{
+   r_escaped_shell_string ""
+   expect_output "${RVAL}" "''"
+
+   r_escaped_shell_string "hello"
+   expect_output "${RVAL}" "hello"
+
+   r_escaped_shell_string "hello world"
+   expect_output "${RVAL}" "hello\\ world"
+
+   r_escaped_shell_string "hello'world"
+   expect_output "${RVAL}" "hello\\'world"
+}
+
+
+test_escaped_json()
+{
+   r_escaped_json ""
+   expect_output "${RVAL}" ""
+
+   r_escaped_json "hello"
+   expect_output "${RVAL}" "hello"
+
+   r_escaped_json 'hello"world'
+   expect_output "${RVAL}" 'hello\"world'
+
+   r_escaped_json 'hello\world'
+   expect_output "${RVAL}" 'hello\\world'
+}
+
+
+main()
+{
+   test_escaped_spaces
+   test_escaped_grep_pattern
+   test_escaped_shell_string
+   test_escaped_json
+
+   echo "All tests passed" >&2
+}
+
+
+main "$@"

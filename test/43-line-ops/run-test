@@ -1,0 +1,146 @@
+#! /bin/sh
+
+[ "${TRACE}" = 'YES' ] && set -x && : "$0" "$@"
+
+###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
+MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${MULLE_BASHFUNCTIONS_LIBEXEC_DIR:-`mulle-bashfunctions libexec-dir`}" || exit 1
+
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-boot.sh"          || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashglobal.sh"    || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-compatibility.sh" || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-logging.sh"       || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-options.sh"       || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-string.sh"        || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-path.sh"          || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-exekutor.sh"      || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-file.sh"          || exit 1
+###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
+
+if [ ${ZSH_VERSION+x} ]
+then
+   setopt sh_word_split
+fi
+
+
+expect_output()
+{
+   local output="$1"
+   local expected="$2"
+
+   if [ "${output}" != "${expected}" ]
+   then
+      echo "Got \"${output}\". Expected: \"${expected}\"" >&2
+      stacktrace >&2
+      exit 1
+   fi
+}
+
+
+test_add_line()
+{
+   r_add_line "" "first"
+   expect_output "${RVAL}" "first"
+
+   r_add_line "first" "second"
+   expect_output "${RVAL}" "first
+second"
+
+   r_add_line "first
+second" "third"
+   expect_output "${RVAL}" "first
+second
+third"
+}
+
+
+test_add_unique_line()
+{
+   r_add_unique_line "" "first"
+   expect_output "${RVAL}" "first"
+
+   r_add_unique_line "first" "second"
+   expect_output "${RVAL}" "first
+second"
+
+   r_add_unique_line "first
+second" "first"
+   expect_output "${RVAL}" "first
+second"
+}
+
+
+test_remove_line_once()
+{
+   r_remove_line_once "first" "first"
+   expect_output "${RVAL}" ""
+
+   r_remove_line_once "first
+second" "first"
+   expect_output "${RVAL}" "second"
+
+   r_remove_line_once "first
+second
+first" "first"
+   expect_output "${RVAL}" "second
+first"
+}
+
+
+test_get_last_line()
+{
+   r_get_last_line "first"
+   expect_output "${RVAL}" "first"
+
+   r_get_last_line "first
+second
+third"
+   expect_output "${RVAL}" "third"
+}
+
+
+test_remove_last_line()
+{
+   r_remove_last_line "first"
+   expect_output "${RVAL}" ""
+
+   r_remove_last_line "first
+second
+third"
+   expect_output "${RVAL}" "first
+second"
+}
+
+
+test_line_at_index()
+{
+   r_line_at_index "first
+second
+third" 0
+   expect_output "${RVAL}" "first"
+
+   r_line_at_index "first
+second
+third" 1
+   expect_output "${RVAL}" "second"
+
+   r_line_at_index "first
+second
+third" 2
+   expect_output "${RVAL}" "third"
+}
+
+
+main()
+{
+   test_add_line
+   test_add_unique_line
+   test_remove_line_once
+   test_get_last_line
+   test_remove_last_line
+   test_line_at_index
+
+   echo "All tests passed" >&2
+}
+
+
+main "$@"
