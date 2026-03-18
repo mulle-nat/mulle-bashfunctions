@@ -107,17 +107,17 @@ function r_insert_line_at_index()
    _array_value_check "${value}"
 
    local line
-   local rval
+   local rc
 
    RVAL=
-   rval=1
+   rc=1
 
    .foreachline line in ${array}
    .do
       if [ $i -eq 0 ]
       then
          r_add_line "${RVAL}" "${value}"
-         rval=0
+         rc=0
       fi
       r_add_line "${RVAL}" "${line}"
       i=$((i - 1))
@@ -126,10 +126,10 @@ function r_insert_line_at_index()
    if [ $i -eq 0 ]
    then
       r_add_line "${RVAL}" "${value}"
-      rval=0
+      rc=0
    fi
 
-   return $rval
+   return $rc
 }
 
 
@@ -291,23 +291,23 @@ function r_assoc_array_get()
 #   key="`_assoc_array_key_check "${key}"`"
 
    local line
-   local rval
+   local rc
 
    RVAL=
-   rval=1
+   rc=1
 
    .foreachline line in ${array}
    .do
       case "${line}" in
          "${key}="*)
             RVAL="${line#*=}"
-            rval=0
+            rc=0
             .break
          ;;
       esac
    .done
 
-   return $rval
+   return $rc
 }
 
 

@@ -63,14 +63,14 @@ function r_qsort()
    local smaller=()
    local larger=()
 
-   local rval
+   local rc
 
    for i in "$@"
    do
       ${SORT_COMPARE_FUNCTION:-default_sort_compare} "$i" "$pivot"
-      rval=$?
+      rc=$?
 
-      if [ $rval -eq $ascending ]
+      if [ $rc -eq $ascending ]
       then
          smaller+=( "$i" )
       else
@@ -176,9 +176,9 @@ function r_mergesort()
          fi
 
          ${SORT_COMPARE_FUNCTION:-default_sort_compare} "${smaller[$i]}" "${larger[$j]}"
-         rval=$?
+         rc=$?
 
-         if [ $rval -eq $ascending ]
+         if [ $rc -eq $ascending ]
          then
             RVAL+=( "${smaller[$i]}" )
             i=$((i + 1))
@@ -250,9 +250,9 @@ function r_mergesort()
 #          b="${in[@]:$i_1:1}"
 #
 #          ${SORT_COMPARE_FUNCTION:-default_sort_compare} "${a}" "${b}"
-#          rval=$?
+#          rc=$?
 #
-#          if [ $rval -eq $descending ]
+#          if [ $rc -eq $descending ]
 #          then
 #             RVAL+=( "${b}" )
 #             b="$a"

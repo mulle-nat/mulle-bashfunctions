@@ -1781,9 +1781,9 @@ ${lines}
    pattern="${pattern:2}"
    pattern="${pattern%???}"
 
-   local rval
+   local rc
 
-   rval=1
+   rc=1
 
    shell_is_extglob_enabled || _internal_fail "extglob must be enabled"
 
@@ -1791,18 +1791,18 @@ ${lines}
    then
       case "${escaped_lines}" in
          *"\\n${~pattern}\\n"*)
-            rval=0
+            rc=0
          ;;
       esac
    else
       case "${escaped_lines}" in
          *"\\n${pattern}\\n"*)
-            rval=0
+            rc=0
          ;;
       esac
    fi
 
-   return $rval
+   return $rc
 }
 
 
@@ -2346,17 +2346,17 @@ function r_expanded_string()
    local _s="${string}"
    local _expand="${expand}"
 
-   local rval
+   local rc
 
    _r_expand_string
-   rval=$?
+   rc=$?
 
-   if [ $rval -eq 0 ]
+   if [ $rc -eq 0 ]
    then
       RVAL="$(printf '%s' "${RVAL}" | sed 's/\\\${/${/g')"
    fi
 
-   return $rval
+   return $rc
 }
 
 
@@ -3602,12 +3602,12 @@ function mkdir_if_missing()
       return 0
    fi
 
-   local rval
+   local rc
 
    exekutor mkdir -p "$1"
-   rval="$?"
+   rc="$?"
 
-   if [ "${rval}" -eq 0 ]
+   if [ "${rc}" -eq 0 ]
    then
       log_fluff "Created directory \"$1\" (${PWD#"${MULLE_USER_PWD}/"})"
       return 0
@@ -3627,7 +3627,7 @@ function mkdir_if_missing()
    then
       fail "failed to create directory \"$1\" because a file is there"
    fi
-   fail "failed to create directory \"$1\" from $PWD ($rval)"
+   fail "failed to create directory \"$1\" from $PWD ($rc)"
 }
 
 
@@ -4547,7 +4547,7 @@ function inplace_sed()
    local args
    local filename
 
-   local rval 
+   local rc
 
 
    case "${MULLE_UNAME}" in
@@ -4577,8 +4577,8 @@ function inplace_sed()
          tmpfile="${RVAL}"
 
          redirect_eval_exekutor "${tmpfile}" 'sed' "${args}" "'${filename}'"
-         rval=$?
-         if [ $rval -eq 0 ]
+         rc=$?
+         if [ $rc -eq 0 ]
          then
             exekutor cp "${tmpfile}" "${filename}"
          fi
@@ -4587,11 +4587,11 @@ function inplace_sed()
 
       *)
          exekutor sed -i'' "$@"
-         rval=$?
+         rc=$?
       ;;
    esac
 
-   return ${rval}
+   return ${rc}
 }
 
 fi
@@ -4655,17 +4655,17 @@ function r_insert_line_at_index()
    _array_value_check "${value}"
 
    local line
-   local rval
+   local rc
 
    RVAL=
-   rval=1
+   rc=1
 
    .foreachline line in ${array}
    .do
       if [ $i -eq 0 ]
       then
          r_add_line "${RVAL}" "${value}"
-         rval=0
+         rc=0
       fi
       r_add_line "${RVAL}" "${line}"
       i=$((i - 1))
@@ -4674,10 +4674,10 @@ function r_insert_line_at_index()
    if [ $i -eq 0 ]
    then
       r_add_line "${RVAL}" "${value}"
-      rval=0
+      rc=0
    fi
 
-   return $rval
+   return $rc
 }
 
 
@@ -4779,23 +4779,23 @@ function r_assoc_array_get()
 
 
    local line
-   local rval
+   local rc
 
    RVAL=
-   rval=1
+   rc=1
 
    .foreachline line in ${array}
    .do
       case "${line}" in
          "${key}="*)
             RVAL="${line#*=}"
-            rval=0
+            rc=0
             .break
          ;;
       esac
    .done
 
-   return $rval
+   return $rc
 }
 
 
@@ -6103,14 +6103,14 @@ __parallel_status()
 {
    log_entry "__parallel_status" "$@"
 
-   local rval="$1"; shift
+   local errcode="$1"; shift
 
    [ -z "${_parallel_statusfile}" ] && _internal_fail "_parallel_statusfile must be defined"
 
-   if [ $rval -ne 0 ]
+   if [ $errcode -ne 0 ]
    then
-      log_warning "warning: Parallel job \"$*\" failed with $rval in \"$PWD\""
-      redirect_append_exekutor "${_parallel_statusfile}" printf "%s\n" "${rval};$*"
+      log_warning "warning: Parallel job \"$*\" failed with $errcode in \"$PWD\""
+      redirect_append_exekutor "${_parallel_statusfile}" printf "%s\n" "${errcode};$*"
    fi
 }
 
@@ -6125,7 +6125,7 @@ function __parallel_execute()
    log_debug "Running job #${_parallel_jobs}: $*"
 
    (
-      local rval
+      local rc
 
       ( exekutor "$@" ) # run in subshell to capture exit code
       __parallel_status $? "$@"
@@ -6137,7 +6137,26 @@ function __parallel_end()
 {
    log_entry "__parallel_end" "$@"
 
+   local _old_int_trap
+
+   if [ "${MULLE_PARALLEL_KILL_ON_INT}" != 'NO' ]
+   then
+      _old_int_trap="$(trap -p INT)"
+
+      trap 'kill -TERM 0 2>/dev/null; trap - INT; kill -INT $$' INT
+   fi
+
    wait
+
+   if [ "${MULLE_PARALLEL_KILL_ON_INT}" != 'NO' ]
+   then
+      if [ -n "${_old_int_trap}" ]
+      then
+         eval "${_old_int_trap}"
+      else
+         trap - INT
+      fi
+   fi
 
    _parallel_fails="`exekutor wc -l "${_parallel_statusfile}" | awk '{ printf $1 }'`"
 
@@ -6225,14 +6244,14 @@ function r_qsort()
    local smaller=()
    local larger=()
 
-   local rval
+   local rc
 
    for i in "$@"
    do
       ${SORT_COMPARE_FUNCTION:-default_sort_compare} "$i" "$pivot"
-      rval=$?
+      rc=$?
 
-      if [ $rval -eq $ascending ]
+      if [ $rc -eq $ascending ]
       then
          smaller+=( "$i" )
       else
@@ -6309,9 +6328,9 @@ function r_mergesort()
          fi
 
          ${SORT_COMPARE_FUNCTION:-default_sort_compare} "${smaller[$i]}" "${larger[$j]}"
-         rval=$?
+         rc=$?
 
-         if [ $rval -eq $ascending ]
+         if [ $rc -eq $ascending ]
          then
             RVAL+=( "${smaller[$i]}" )
             i=$((i + 1))

@@ -24,12 +24,12 @@ fi
 
 expect_rval()
 {
-   local rval="$1"
+   local errcode="$1"
    local expected="$2"
 
-   if [ "${rval}" != "${expected}" ]
+   if [ "${errcode}" != "${expected}" ]
    then
-      echo "Got \"${rval}\". Expected: \"${expected}\"" >&2
+      echo "Got \"${errcode}\". Expected: \"${expected}\"" >&2
       stacktrace >&2
       exit 1
    fi

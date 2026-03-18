@@ -322,15 +322,15 @@ __parallel_status()
 {
    log_entry "__parallel_status" "$@"
 
-   local rval="$1"; shift
+   local errcode="$1"; shift
 
    [ -z "${_parallel_statusfile}" ] && _internal_fail "_parallel_statusfile must be defined"
 
    # only append to status file if error
-   if [ $rval -ne 0 ]
+   if [ $errcode -ne 0 ]
    then
-      log_warning "warning: Parallel job \"$*\" failed with $rval in \"$PWD\""
-      redirect_append_exekutor "${_parallel_statusfile}" printf "%s\n" "${rval};$*"
+      log_warning "warning: Parallel job \"$*\" failed with $errcode in \"$PWD\""
+      redirect_append_exekutor "${_parallel_statusfile}" printf "%s\n" "${errcode};$*"
    fi
 }
 
@@ -355,7 +355,7 @@ function __parallel_execute()
    log_debug "Running job #${_parallel_jobs}: $*"
 
    (
-      local rval
+      local rc
 
       ( exekutor "$@" ) # run in subshell to capture exit code
       __parallel_status $? "$@"
@@ -377,7 +377,35 @@ function __parallel_end()
 {
    log_entry "__parallel_end" "$@"
 
+   local _old_int_trap
+
+   if [ "${MULLE_PARALLEL_KILL_ON_INT}" != 'NO' ]
+   then
+      _old_int_trap="$(trap -p INT)"
+
+      # On CTRL-C (SIGINT) during wait:
+      #  1) kill -TERM 0: send TERM to our entire process group, which
+      #     includes all background children. TERM not INT, because
+      #     background processes ignore INT per POSIX. This can't escape
+      #     the process group boundary, so the terminal is safe.
+      #  2) trap - INT: reset INT to default so we die properly
+      #  3) kill -INT $$: re-raise INT on ourselves, so the caller sees
+      #     exit status 130 (SIGINT) and knows it was a CTRL-C death
+      #
+      trap 'kill -TERM 0 2>/dev/null; trap - INT; kill -INT $$' INT
+   fi
+
    wait
+
+   if [ "${MULLE_PARALLEL_KILL_ON_INT}" != 'NO' ]
+   then
+      if [ -n "${_old_int_trap}" ]
+      then
+         eval "${_old_int_trap}"
+      else
+         trap - INT
+      fi
+   fi
 
    # use exekutor because the file ain't there in dry mode
    _parallel_fails="`exekutor wc -l "${_parallel_statusfile}" | awk '{ printf $1 }'`"

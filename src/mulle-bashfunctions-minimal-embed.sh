@@ -1781,9 +1781,9 @@ ${lines}
    pattern="${pattern:2}"
    pattern="${pattern%???}"
 
-   local rval
+   local rc
 
-   rval=1
+   rc=1
 
    shell_is_extglob_enabled || _internal_fail "extglob must be enabled"
 
@@ -1791,18 +1791,18 @@ ${lines}
    then
       case "${escaped_lines}" in
          *"\\n${~pattern}\\n"*)
-            rval=0
+            rc=0
          ;;
       esac
    else
       case "${escaped_lines}" in
          *"\\n${pattern}\\n"*)
-            rval=0
+            rc=0
          ;;
       esac
    fi
 
-   return $rval
+   return $rc
 }
 
 
@@ -2346,17 +2346,17 @@ function r_expanded_string()
    local _s="${string}"
    local _expand="${expand}"
 
-   local rval
+   local rc
 
    _r_expand_string
-   rval=$?
+   rc=$?
 
-   if [ $rval -eq 0 ]
+   if [ $rc -eq 0 ]
    then
       RVAL="$(printf '%s' "${RVAL}" | sed 's/\\\${/${/g')"
    fi
 
-   return $rval
+   return $rc
 }
 
 

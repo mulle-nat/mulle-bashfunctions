@@ -1,6 +1,6 @@
 cmake_minimum_required( VERSION 3.13...99.99)
 
-project( mulle-bashfunctions VERSION 6.8.0 LANGUAGES NONE)
+project( mulle-bashfunctions VERSION 6.9.0 LANGUAGES NONE)
 
 
 #

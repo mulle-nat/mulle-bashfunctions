@@ -539,7 +539,7 @@ Pure shell base64 encoding implementation.
 
 #### Library Loading
 
-Use `.include 'logging'` to load library `"${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-logging.sh"`
+Use `include 'logging'` to load library `"${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-logging.sh"`
 do not use direct loading code.
 
 

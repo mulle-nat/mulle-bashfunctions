@@ -1781,9 +1781,9 @@ ${lines}
    pattern="${pattern:2}"
    pattern="${pattern%???}"
 
-   local rval
+   local rc
 
-   rval=1
+   rc=1
 
    shell_is_extglob_enabled || _internal_fail "extglob must be enabled"
 
@@ -1791,18 +1791,18 @@ ${lines}
    then
       case "${escaped_lines}" in
          *"\\n${~pattern}\\n"*)
-            rval=0
+            rc=0
          ;;
       esac
    else
       case "${escaped_lines}" in
          *"\\n${pattern}\\n"*)
-            rval=0
+            rc=0
          ;;
       esac
    fi
 
-   return $rval
+   return $rc
 }
 
 
@@ -2346,17 +2346,17 @@ function r_expanded_string()
    local _s="${string}"
    local _expand="${expand}"
 
-   local rval
+   local rc
 
    _r_expand_string
-   rval=$?
+   rc=$?
 
-   if [ $rval -eq 0 ]
+   if [ $rc -eq 0 ]
    then
       RVAL="$(printf '%s' "${RVAL}" | sed 's/\\\${/${/g')"
    fi
 
-   return $rval
+   return $rc
 }
 
 
@@ -3602,12 +3602,12 @@ function mkdir_if_missing()
       return 0
    fi
 
-   local rval
+   local rc
 
    exekutor mkdir -p "$1"
-   rval="$?"
+   rc="$?"
 
-   if [ "${rval}" -eq 0 ]
+   if [ "${rc}" -eq 0 ]
    then
       log_fluff "Created directory \"$1\" (${PWD#"${MULLE_USER_PWD}/"})"
       return 0
@@ -3627,7 +3627,7 @@ function mkdir_if_missing()
    then
       fail "failed to create directory \"$1\" because a file is there"
    fi
-   fail "failed to create directory \"$1\" from $PWD ($rval)"
+   fail "failed to create directory \"$1\" from $PWD ($rc)"
 }
 
 
@@ -4547,7 +4547,7 @@ function inplace_sed()
    local args
    local filename
 
-   local rval 
+   local rc
 
 
    case "${MULLE_UNAME}" in
@@ -4577,8 +4577,8 @@ function inplace_sed()
          tmpfile="${RVAL}"
 
          redirect_eval_exekutor "${tmpfile}" 'sed' "${args}" "'${filename}'"
-         rval=$?
-         if [ $rval -eq 0 ]
+         rc=$?
+         if [ $rc -eq 0 ]
          then
             exekutor cp "${tmpfile}" "${filename}"
          fi
@@ -4587,11 +4587,11 @@ function inplace_sed()
 
       *)
          exekutor sed -i'' "$@"
-         rval=$?
+         rc=$?
       ;;
    esac
 
-   return ${rval}
+   return ${rc}
 }
 
 fi

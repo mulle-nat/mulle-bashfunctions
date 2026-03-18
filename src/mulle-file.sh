@@ -62,12 +62,12 @@ function mkdir_if_missing()
       return 0
    fi
 
-   local rval
+   local rc
 
    exekutor mkdir -p "$1"
-   rval="$?"
+   rc="$?"
 
-   if [ "${rval}" -eq 0 ]
+   if [ "${rc}" -eq 0 ]
    then
       log_fluff "Created directory \"$1\" (${PWD#"${MULLE_USER_PWD}/"})"
       return 0
@@ -87,7 +87,7 @@ function mkdir_if_missing()
    then
       fail "failed to create directory \"$1\" because a file is there"
    fi
-   fail "failed to create directory \"$1\" from $PWD ($rval)"
+   fail "failed to create directory \"$1\" from $PWD ($rc)"
 }
 
 
@@ -810,7 +810,7 @@ function modification_timestamp()
 }
 
 #
-# timestamp_now <file>
+# timestamp_now
 #
 #    Get the current time (now). Output to stdout.
 #    This is just: date '+%s'
@@ -1257,7 +1257,7 @@ function inplace_sed()
    local filename
 #   local permissions
 
-   local rval 
+   local rc
 
    # inplace sed for darwin/freebsd is broken, if there is a 'q' command.
    #
@@ -1307,8 +1307,8 @@ function inplace_sed()
          tmpfile="${RVAL}"
 
          redirect_eval_exekutor "${tmpfile}" 'sed' "${args}" "'${filename}'"
-         rval=$?
-         if [ $rval -eq 0 ]
+         rc=$?
+         if [ $rc -eq 0 ]
          then
 #         exekutor chmod "${permissions}" "${tmpfile}"
          # move gives permission errors, this keeps everything OK
@@ -1319,11 +1319,11 @@ function inplace_sed()
 
       *)
          exekutor sed -i'' "$@"
-         rval=$?
+         rc=$?
       ;;
    esac
 
-   return ${rval}
+   return ${rc}
 }
 
 fi

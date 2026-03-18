@@ -1,0 +1,135 @@
+#! /bin/sh
+
+[ "${TRACE}" = 'YES' ] && set -x && : "$0" "$@"
+
+TEST_DIR="`dirname -- "$0"`"
+PROJECT_DIR="$( cd "${TEST_DIR}/../.." ; pwd -P)"
+
+MULLE_BASHFUNCTIONS="${PROJECT_DIR}/mulle-bashfunctions"
+export MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${MULLE_BASHFUNCTIONS_LIBEXEC_DIR:-${PROJECT_DIR}/src}"
+
+
+fail()
+{
+   echo "FAIL: $*" >&2
+   exit 1
+}
+
+
+test_good_file()
+{
+   if ! "${MULLE_BASHFUNCTIONS}" log-checker "${TEST_DIR}/good.sh" 2>/dev/null
+   then
+      fail "good.sh should pass without errors"
+   fi
+}
+
+
+test_bad_file()
+{
+   if "${MULLE_BASHFUNCTIONS}" log-checker "${TEST_DIR}/bad.sh" 2>/dev/null
+   then
+      fail "bad.sh should fail"
+   fi
+
+   local output
+
+   output="`"${MULLE_BASHFUNCTIONS}" log-checker "${TEST_DIR}/bad.sh" 2>&1`"
+
+   case "${output}" in
+      *'use _log_info instead'*)
+      ;;
+      *)
+         fail "expected suggestion to use _log_info, got: ${output}"
+      ;;
+   esac
+
+   case "${output}" in
+      *'use _log_verbose instead'*)
+      ;;
+      *)
+         fail "expected suggestion to use _log_verbose, got: ${output}"
+      ;;
+   esac
+
+   case "${output}" in
+      *'use _log_debug instead'*)
+      ;;
+      *)
+         fail "expected suggestion to use _log_debug, got: ${output}"
+      ;;
+   esac
+
+   # multiline string literal (unclosed quote)
+   case "${output}" in
+      *'use _log_warning instead'*)
+      ;;
+      *)
+         fail "expected suggestion to use _log_warning for multiline string, got: ${output}"
+      ;;
+   esac
+}
+
+
+test_repair()
+{
+   local tmpfile="${TEST_DIR}/repair-tmp.sh"
+
+   cp "${TEST_DIR}/bad.sh" "${tmpfile}"
+
+   "${MULLE_BASHFUNCTIONS}" log-checker --repair "${tmpfile}" 2>/dev/null
+
+   # after repair, the file should pass clean
+   if ! "${MULLE_BASHFUNCTIONS}" log-checker "${tmpfile}" 2>/dev/null
+   then
+      fail "repaired file should pass, content:"
+   fi
+
+   # verify the replacements are _log_ now
+   case "`cat "${tmpfile}"`" in
+      *_log_info*)
+      ;;
+      *)
+         fail "expected _log_info in repaired file"
+      ;;
+   esac
+
+   case "`cat "${tmpfile}"`" in
+      *_log_verbose*)
+      ;;
+      *)
+         fail "expected _log_verbose in repaired file"
+      ;;
+   esac
+
+   case "`cat "${tmpfile}"`" in
+      *_log_warning*)
+      ;;
+      *)
+         fail "expected _log_warning in repaired file"
+      ;;
+   esac
+
+   rm -f "${tmpfile}"
+}
+
+
+test_missing_file()
+{
+   # should not crash, just warn
+   "${MULLE_BASHFUNCTIONS}" log-checker "${TEST_DIR}/nonexistent.sh" 2>/dev/null
+   :  # don't fail the test on this
+}
+
+
+main()
+{
+   test_good_file
+   test_bad_file
+   test_repair
+   test_missing_file
+
+   echo "All tests passed" >&2
+}
+
+main "$@"
