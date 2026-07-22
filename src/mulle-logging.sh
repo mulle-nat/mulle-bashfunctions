@@ -499,7 +499,7 @@ stacktrace()
    # don't stack trace when tracing
    case "$-" in
       *x*)
-         return
+         return 0
       ;;
    esac
 
@@ -516,6 +516,8 @@ stacktrace()
       i=$((i + 1))
       [ $i -gt $max ] && break
    done
+
+   return 0
 }
 
 

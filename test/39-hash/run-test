@@ -15,16 +15,36 @@ MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${MULLE_BASHFUNCTIONS_LIBEXEC_DIR:-`mulle-bashf
 
 main()
 {
+   local hash
+   local other
+
    _options_mini_main "$@" && set -x
 
    r_fnv1a_32 "VfL Bochum 1848"
    printf -v hash "%08x" "${RVAL}"
 
    [ "${hash}" = "2bfecce4" ] || _internal_fail "hash is broken"
+
+   r_fnv1a_32 ""
+   printf -v hash "%08x" "${RVAL}"
+   [ "${hash}" = "811c9dc5" ] || _internal_fail "empty hash changed"
+
+   r_fnv1a_32 "/tmp/foo/bar"
+   printf -v hash "%08x" "${RVAL}"
+   [ "${hash}" = "719353ee" ] || _internal_fail "filepath hash changed"
+
+   r_fnv1a_32 "./relative/path.txt"
+   printf -v hash "%08x" "${RVAL}"
+   [ "${hash}" = "0b8e0dee" ] || _internal_fail "relative filepath hash changed"
+
+   r_fnv1a_32 "/tmp/foo/bar"
+   printf -v hash "%08x" "${RVAL}"
+   r_fnv1a_32 "/tmp/foo/baz"
+   printf -v other "%08x" "${RVAL}"
+   [ "${hash}" != "${other}" ] || _internal_fail "different inputs should hash differently"
+
    log_info "----- ALL PASSED -----"
 }
 
 
 main "$@"
-
-

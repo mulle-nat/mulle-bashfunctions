@@ -309,7 +309,7 @@ function r_shell_indirect_expand()
 #
 # shell_is_variable_defined <name>
 #
-#    Check if a variable with <name> is defined.
+#    Check if a variable with <name> is defined (even if empty).
 #
 function shell_is_variable_defined()
 {
@@ -317,10 +317,28 @@ function shell_is_variable_defined()
 
    if [ ${ZSH_VERSION+x} ]
    then
-      [[ -n ${(P)key} ]]
+      [[ ${(P)key+x} ]]
       return $?
    fi
-   [ "${!key}" ]
+   [ "${!key+x}" ]
+}
+
+
+#
+# shell_is_variable_undefined_or_empty <name>
+#
+#    Check if a variable with <name> is undefined or set to empty string.
+#
+function shell_is_variable_undefined_or_empty()
+{
+   local key="$1"
+
+   if [ ${ZSH_VERSION+x} ]
+   then
+      [[ -z ${(P)key} ]]
+      return $?
+   fi
+   [ -z "${!key}" ]
 }
 
 

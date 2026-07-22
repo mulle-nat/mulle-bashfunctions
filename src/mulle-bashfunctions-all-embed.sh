@@ -357,10 +357,23 @@ function shell_is_variable_defined()
 
    if [ ${ZSH_VERSION+x} ]
    then
-      [[ -n ${(P)key} ]]
+      [[ ${(P)key+x} ]]
       return $?
    fi
-   [ "${!key}" ]
+   [ "${!key+x}" ]
+}
+
+
+function shell_is_variable_undefined_or_empty()
+{
+   local key="$1"
+
+   if [ ${ZSH_VERSION+x} ]
+   then
+      [[ -z ${(P)key} ]]
+      return $?
+   fi
+   [ -z "${!key}" ]
 }
 
 
@@ -704,7 +717,7 @@ stacktrace()
 {
    case "$-" in
       *x*)
-         return
+         return 0
       ;;
    esac
 
@@ -721,6 +734,8 @@ stacktrace()
       i=$((i + 1))
       [ $i -gt $max ] && break
    done
+
+   return 0
 }
 
 
@@ -3682,15 +3697,43 @@ rmdir_safer()
    then
       r_assert_sane_path "${directory}"
 
-      case "${MULLE_UNAME}" in
-         'android'|'sunos')
-            exekutor chmod -R ugo+wX "${RVAL}" 2> /dev/null
+      local _safe_dir="${RVAL}"
+      local _parent
+      local _parent_perms
+      local _need_parent_chmod
+
+      r_dirname "${_safe_dir}"
+      _parent="${RVAL}"
+
+      _parent_perms="`lso "${_parent}" 2>/dev/null`"
+      case "${_parent_perms}" in
+         [2367]*)
+            _need_parent_chmod='NO'   # owner-write already set
          ;;
          *)
-            exekutor chmod -R ugo+wX "${RVAL}"  || fail "Failed to make \"${RVAL}\" writable"
+            _need_parent_chmod='YES'
          ;;
       esac
-      exekutor rm -rf "${RVAL}"  >&2 || fail "failed to remove \"${RVAL}\""
+
+      if [ "${_need_parent_chmod}" = 'YES' ]
+      then
+         exekutor chmod u+w "${_parent}" 2>/dev/null
+      fi
+
+      case "${MULLE_UNAME}" in
+         'android'|'sunos')
+            exekutor chmod -R ugo+wX "${_safe_dir}" 2> /dev/null
+         ;;
+         *)
+            exekutor chmod -R ugo+wX "${_safe_dir}"  || fail "Failed to make \"${_safe_dir}\" writable"
+         ;;
+      esac
+      exekutor rm -rf "${_safe_dir}"  >&2 || fail "failed to remove \"${_safe_dir}\""
+
+      if [ "${_need_parent_chmod}" = 'YES' -a -n "${_parent_perms}" ]
+      then
+         exekutor chmod "${_parent_perms}" "${_parent}" 2>/dev/null
+      fi
    fi
 }
 
@@ -5891,6 +5934,287 @@ function etc_repair_files()
 
 fi
 :
+if ! [ ${MULLE_LOCK_SH+x} ]
+then
+MULLE_LOCK_SH='included'
+
+
+function lock::__pidfile_path()
+{
+   [ $# -eq 1 ] || _internal_fail "API error"
+
+   RVAL="${1}/pid"
+}
+
+
+function lock::__current_pid()
+{
+   RVAL="${MULLE_EXECUTABLE_PID:-${BASHPID:-$$}}"
+}
+
+
+function lock::__write_pidfile()
+{
+   [ $# -eq 1 ] || _internal_fail "API error"
+
+   local lockdir="$1"
+   local pidfile
+   local pid
+
+   lock::__pidfile_path "${lockdir}"
+   pidfile="${RVAL}"
+   lock::__current_pid
+   pid="${RVAL}"
+
+   if ! printf "%s\n" "${pid}" > "${pidfile}"
+   then
+      rmdir "${lockdir}" 2>/dev/null || :
+      _internal_fail "Failed to write lock owner pid to \"${pidfile}\""
+   fi
+}
+
+
+function lock::__read_pidfile()
+{
+   [ $# -eq 1 ] || _internal_fail "API error"
+
+   local lockdir="$1"
+   local pidfile
+
+   RVAL=""
+
+   lock::__pidfile_path "${lockdir}"
+   pidfile="${RVAL}"
+
+   if ! [ -f "${pidfile}" ]
+   then
+      return 1
+   fi
+
+   IFS= read -r RVAL < "${pidfile}" || RVAL=""
+   [ ! -z "${RVAL}" ]
+}
+
+
+function lock::__pid_is_alive()
+{
+   [ $# -eq 1 ] || _internal_fail "API error"
+
+   case "${1}" in
+      ''|*[!0-9]*)
+         return 1
+      ;;
+   esac
+
+   [ "${1}" -eq 0 ] 2>/dev/null && return 1
+
+   kill -0 "${1}" 2>/dev/null
+}
+
+
+function lock::__cleanup_lockdir()
+{
+   [ $# -eq 1 ] || _internal_fail "API error"
+
+   local lockdir="$1"
+   local pidfile
+
+   lock::__pidfile_path "${lockdir}"
+   pidfile="${RVAL}"
+
+   rm -f "${pidfile}" 2>/dev/null || :
+   rmdir "${lockdir}" 2>/dev/null || :
+}
+
+
+function lock::acquire()
+{
+   log_entry "lock::acquire" "$@"
+
+   local lockdir="$1"
+   local stale_seconds="${2:-30}"
+
+   local current_time
+   local creation_time
+   local elapsed
+   local stale_lockdir
+   local age
+   local owner_pid
+   local owner_state
+   local current_pid
+
+   lock::__current_pid
+   current_pid="${RVAL}"
+
+   if mkdir "${lockdir}" 2>/dev/null
+   then
+     lock::__write_pidfile "${lockdir}"
+     log_debug "${current_pid} acquired lock \"${lockdir}\""
+     return 0
+   fi
+
+   log_fluff "${current_pid} waiting for lock \"${lockdir}\""
+
+   while :
+   do
+     if mkdir "${lockdir}" 2>/dev/null
+     then
+        lock::__write_pidfile "${lockdir}"
+        log_verbose "${current_pid} acquired lock \"${lockdir}\" after waiting"
+        return 1
+     fi
+
+      creation_time="$(modification_timestamp "${lockdir}")"
+      [ -z "${creation_time}" ] && creation_time="$(date +%s)"
+
+      current_time="$(date +%s)"
+      elapsed=$((current_time - creation_time))
+
+      owner_pid=""
+      owner_state='missing'
+      if lock::__read_pidfile "${lockdir}"
+      then
+         owner_pid="${RVAL}"
+         if [ "${owner_pid}" = "${current_pid}" ]
+         then
+            fail "Recursive lock attempt on \"${lockdir}\" by pid ${current_pid}"
+         fi
+
+         if lock::__pid_is_alive "${owner_pid}"
+         then
+            owner_state='alive'
+         else
+            owner_state='dead'
+         fi
+      fi
+
+      if [ "${owner_state}" = 'dead' ]
+      then
+         stale_lockdir="${lockdir}.stale.${current_pid}.${current_time}"
+
+         if mv "${lockdir}" "${stale_lockdir}" 2>/dev/null
+         then
+            if mkdir "${lockdir}" 2>/dev/null
+            then
+               lock::__write_pidfile "${lockdir}"
+               lock::__cleanup_lockdir "${stale_lockdir}"
+               log_warning "${current_pid} broke dead-owner lock \"${lockdir}\" (pid ${owner_pid})"
+               return 3
+            fi
+
+            lock::__cleanup_lockdir "${stale_lockdir}"
+            sleep 1
+            continue
+         fi
+      fi
+
+      if [ "${elapsed}" -ge "${stale_seconds}" ]
+      then
+         stale_lockdir="${lockdir}.stale.${current_pid}.${current_time}"
+
+         if ! mv "${lockdir}" "${stale_lockdir}" 2>/dev/null
+         then
+            sleep 1
+            continue
+         fi
+
+         if ! mkdir "${lockdir}" 2>/dev/null
+         then
+            lock::__cleanup_lockdir "${stale_lockdir}"
+            sleep 1
+            continue
+         fi
+
+         lock::__write_pidfile "${lockdir}"
+
+         creation_time="$(modification_timestamp "${stale_lockdir}")"
+         [ -z "${creation_time}" ] && creation_time="${current_time}"
+         current_time="$(date +%s)"
+         age=$((current_time - creation_time))
+         lock::__cleanup_lockdir "${stale_lockdir}"
+
+         if [ "${age}" -ge "${stale_seconds}" ]
+         then
+            case "${owner_state}" in
+               alive)
+                  log_warning "${current_pid} broke stale lock \"${lockdir}\" (${age}s old, pid ${owner_pid} still alive)"
+               ;;
+               dead)
+                  log_warning "${current_pid} broke stale lock \"${lockdir}\" (${age}s old, pid ${owner_pid} not alive)"
+               ;;
+               *)
+                  log_warning "${current_pid} broke stale lock \"${lockdir}\" (${age}s old)"
+               ;;
+            esac
+            return 3
+         fi
+
+         log_fluff "${current_pid} lock wasn't stale (${age}s), retrying"
+         lock::__cleanup_lockdir "${lockdir}"
+      fi
+
+      if [ "${owner_state}" = 'alive' ]
+      then
+         log_fluff "${current_pid} waiting for lock \"${lockdir}\" owned by pid ${owner_pid} (${elapsed}s elapsed)"
+      else
+         log_fluff "${current_pid} waiting for lock \"${lockdir}\" (${elapsed}s elapsed)"
+      fi
+      sleep 1
+   done
+}
+
+
+function lock::release()
+{
+   log_entry "lock::release" "$@"
+
+   local lockdir="$1"
+
+   lock::__pidfile_path "${lockdir}"
+   rm -f "${RVAL}" 2>/dev/null || :
+   rmdir "${lockdir}" 2>/dev/null || log_debug "Lock \"${lockdir}\" already released"
+}
+
+
+function lock::exekutor()
+{
+   log_entry "lock::exekutor" "$@"
+
+   [ $# -ge 2 ] || _internal_fail "API error"
+
+   local lockdir="$1"
+   local stale_seconds='30'
+   local rc
+
+   shift
+
+   case "${1}" in
+      ''|*[!0-9]*)
+      ;;
+      *)
+         stale_seconds="$1"
+         shift
+      ;;
+   esac
+
+   [ $# -ne 0 ] || fail "Usage: lock::exekutor <lockdir> [stale_seconds] -- <command> [args...]"
+   [ "$1" = '--' ] || fail "Usage: lock::exekutor <lockdir> [stale_seconds] -- <command> [args...]"
+
+   shift
+
+   [ $# -ne 0 ] || fail "Usage: lock::exekutor <lockdir> [stale_seconds] -- <command> [args...]"
+
+   lock::acquire "${lockdir}" "${stale_seconds}" || return $?
+
+   exekutor "$@"
+   rc=$?
+
+   lock::release "${lockdir}"
+   return ${rc}
+}
+
+
+fi
 if ! [ ${MULLE_PARALLEL_SH+x} ]
 then
 MULLE_PARALLEL_SH='included'

@@ -37,6 +37,121 @@ expect_output()
 }
 
 
+expect_no_contains()
+{
+   local output="$1"
+   local unexpected="$2"
+
+   case "${output}" in
+      *"${unexpected}"*)
+         echo "Got \"${output}\". Unexpectedly contained: \"${unexpected}\"" >&2
+         stacktrace >&2
+         exit 1
+      ;;
+   esac
+}
+
+
+expect_line()
+{
+   local output="$1"
+   local line_number="$2"
+   local expected="$3"
+   local line
+
+   line="`printf "%s\n" "${output}" | sed -n "${line_number}p"`"
+   expect_output "${line}" "${expected}"
+}
+
+
+r_uncolorized()
+{
+   RVAL="`printf "%s\n" "$1" | sed -e "s/$(printf '\033')\\[[0-9;]*m//g"`"
+}
+
+
+r_stacktrace_marker_line()
+{
+   RVAL="`grep -n -F -m 1 -- ": # $1" "$0" | sed -e 's/:.*//'`"
+   if [ -z "${RVAL}" ]
+   then
+      echo "Marker \"$1\" not found in \"$0\"" >&2
+      stacktrace >&2
+      exit 1
+   fi
+
+   RVAL=$((RVAL + 1))
+}
+
+
+r_stacktrace_file()
+{
+   if [ ${ZSH_VERSION+x} ]
+   then
+      RVAL="${0##*/}"
+   else
+      RVAL="${0}"
+   fi
+}
+
+
+stacktrace_level_2()
+{
+   : # STACKTRACE_LEVEL_2_CALL
+   stacktrace
+}
+
+
+stacktrace_level_1()
+{
+   : # STACKTRACE_LEVEL_1_CALL
+   stacktrace_level_2
+}
+
+
+test_stacktrace()
+{
+   local expected_file
+   local expected_level_2_line
+   local expected_level_1_line
+   local expected_test_line
+   local expected_main_line
+   local output
+
+   r_stacktrace_file
+   expected_file="${RVAL}"
+   r_stacktrace_marker_line "STACKTRACE_LEVEL_2_CALL"
+   expected_level_2_line="${RVAL}"
+   r_stacktrace_marker_line "STACKTRACE_LEVEL_1_CALL"
+   expected_level_1_line="${RVAL}"
+   r_stacktrace_marker_line "TEST_STACKTRACE_CALL"
+   expected_test_line="${RVAL}"
+   r_stacktrace_marker_line "MAIN_STACKTRACE_CALL"
+   expected_main_line="${RVAL}"
+
+   : # TEST_STACKTRACE_CALL
+   output="`stacktrace_level_1 2>&1`"
+   expect_output "$?" "0"
+   r_uncolorized "${output}"
+   output="${RVAL}"
+
+   if [ ${ZSH_VERSION+x} ]
+   then
+      expect_line "${output}" 1 "1: #${expected_level_2_line} stacktrace_level_2 ${expected_file}"
+      expect_line "${output}" 2 "2: #${expected_level_1_line} stacktrace_level_1 ${expected_file}"
+      expect_line "${output}" 3 "3: #${expected_test_line} test_stacktrace ${expected_file}"
+      expect_line "${output}" 4 "4: #${expected_main_line} main ${expected_file}"
+   else
+      expect_line "${output}" 1 "1: #${expected_level_1_line} stacktrace_level_1 ${expected_file}"
+      expect_line "${output}" 2 "2: #${expected_test_line} test_stacktrace ${expected_file}"
+      expect_line "${output}" 3 "3: #${expected_main_line} main ${expected_file}"
+   fi
+
+   expect_no_contains "${output}" " stacktrace "
+   expect_no_contains "${output}" " caller "
+}
+
+
 
 test_tee()
 {
@@ -69,6 +184,8 @@ test_tee()
 
 main()
 {
+   : # MAIN_STACKTRACE_CALL
+   test_stacktrace
    test_tee
 
    echo "All tests passed" >&2
@@ -76,4 +193,3 @@ main()
 
 
 main "$@"
-

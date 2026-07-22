@@ -357,10 +357,23 @@ function shell_is_variable_defined()
 
    if [ ${ZSH_VERSION+x} ]
    then
-      [[ -n ${(P)key} ]]
+      [[ ${(P)key+x} ]]
       return $?
    fi
-   [ "${!key}" ]
+   [ "${!key+x}" ]
+}
+
+
+function shell_is_variable_undefined_or_empty()
+{
+   local key="$1"
+
+   if [ ${ZSH_VERSION+x} ]
+   then
+      [[ -z ${(P)key} ]]
+      return $?
+   fi
+   [ -z "${!key}" ]
 }
 
 
@@ -704,7 +717,7 @@ stacktrace()
 {
    case "$-" in
       *x*)
-         return
+         return 0
       ;;
    esac
 
@@ -721,6 +734,8 @@ stacktrace()
       i=$((i + 1))
       [ $i -gt $max ] && break
    done
+
+   return 0
 }
 
 
@@ -3682,15 +3697,43 @@ rmdir_safer()
    then
       r_assert_sane_path "${directory}"
 
-      case "${MULLE_UNAME}" in
-         'android'|'sunos')
-            exekutor chmod -R ugo+wX "${RVAL}" 2> /dev/null
+      local _safe_dir="${RVAL}"
+      local _parent
+      local _parent_perms
+      local _need_parent_chmod
+
+      r_dirname "${_safe_dir}"
+      _parent="${RVAL}"
+
+      _parent_perms="`lso "${_parent}" 2>/dev/null`"
+      case "${_parent_perms}" in
+         [2367]*)
+            _need_parent_chmod='NO'   # owner-write already set
          ;;
          *)
-            exekutor chmod -R ugo+wX "${RVAL}"  || fail "Failed to make \"${RVAL}\" writable"
+            _need_parent_chmod='YES'
          ;;
       esac
-      exekutor rm -rf "${RVAL}"  >&2 || fail "failed to remove \"${RVAL}\""
+
+      if [ "${_need_parent_chmod}" = 'YES' ]
+      then
+         exekutor chmod u+w "${_parent}" 2>/dev/null
+      fi
+
+      case "${MULLE_UNAME}" in
+         'android'|'sunos')
+            exekutor chmod -R ugo+wX "${_safe_dir}" 2> /dev/null
+         ;;
+         *)
+            exekutor chmod -R ugo+wX "${_safe_dir}"  || fail "Failed to make \"${_safe_dir}\" writable"
+         ;;
+      esac
+      exekutor rm -rf "${_safe_dir}"  >&2 || fail "failed to remove \"${_safe_dir}\""
+
+      if [ "${_need_parent_chmod}" = 'YES' -a -n "${_parent_perms}" ]
+      then
+         exekutor chmod "${_parent_perms}" "${_parent}" 2>/dev/null
+      fi
    fi
 }
 

@@ -165,15 +165,46 @@ rmdir_safer()
    then
       r_assert_sane_path "${directory}"
 
-      case "${MULLE_UNAME}" in
-         'android'|'sunos')
-            exekutor chmod -R ugo+wX "${RVAL}" 2> /dev/null
+      local _safe_dir="${RVAL}"
+      local _parent
+      local _parent_perms
+      local _need_parent_chmod
+
+      r_dirname "${_safe_dir}"
+      _parent="${RVAL}"
+
+      # To unlink a directory entry the parent needs owner-write.
+      # lso returns the octal mode e.g. "755", "555". The hundreds digit
+      # encodes rwx for the owner: digits 0-1 lack write, 2-3 and 6-7 have it.
+      _parent_perms="`lso "${_parent}" 2>/dev/null`"
+      case "${_parent_perms}" in
+         [2367]*)
+            _need_parent_chmod='NO'   # owner-write already set
          ;;
          *)
-            exekutor chmod -R ugo+wX "${RVAL}"  || fail "Failed to make \"${RVAL}\" writable"
+            _need_parent_chmod='YES'
          ;;
       esac
-      exekutor rm -rf "${RVAL}"  >&2 || fail "failed to remove \"${RVAL}\""
+
+      if [ "${_need_parent_chmod}" = 'YES' ]
+      then
+         exekutor chmod u+w "${_parent}" 2>/dev/null
+      fi
+
+      case "${MULLE_UNAME}" in
+         'android'|'sunos')
+            exekutor chmod -R ugo+wX "${_safe_dir}" 2> /dev/null
+         ;;
+         *)
+            exekutor chmod -R ugo+wX "${_safe_dir}"  || fail "Failed to make \"${_safe_dir}\" writable"
+         ;;
+      esac
+      exekutor rm -rf "${_safe_dir}"  >&2 || fail "failed to remove \"${_safe_dir}\""
+
+      if [ "${_need_parent_chmod}" = 'YES' -a -n "${_parent_perms}" ]
+      then
+         exekutor chmod "${_parent_perms}" "${_parent}" 2>/dev/null
+      fi
    fi
 }
 

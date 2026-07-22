@@ -62,6 +62,63 @@ main()
       log_info "Failed as expected"
    fi
 
+   # --- rmdir_safer: basic removal ---
+   local sub
+
+   sub="${directory}/rmdir_basic"
+   mkdir_if_missing "${sub}"
+   touch "${sub}/file"
+   rmdir_safer "${sub}"
+   if [ -e "${sub}" ]
+   then
+      _internal_fail "rmdir_safer failed to remove ${sub}"
+   fi
+   log_info "rmdir_safer basic: passed"
+
+   # --- rmdir_safer: no-op on non-existent path ---
+   rmdir_safer "${directory}/does_not_exist"
+   log_info "rmdir_safer nonexistent: passed"
+
+   # --- rmdir_safer: write-protected parent ---
+   # Create parent/child, remove write from parent, then rmdir_safer child.
+   # Parent permissions must be restored afterwards.
+   case "${MULLE_UNAME}" in
+      'mingw'|'msys')
+         log_info "rmdir_safer write-protected parent: skipped on ${MULLE_UNAME}"
+      ;;
+      *)
+         local protected_parent
+         local child
+
+         protected_parent="${directory}/protected_parent"
+         child="${protected_parent}/child"
+
+         mkdir_if_missing "${child}"
+         touch "${child}/file"
+
+         chmod 555 "${protected_parent}"
+
+         rmdir_safer "${child}"
+
+         if [ -e "${child}" ]
+         then
+            chmod 755 "${protected_parent}"   # repair so tmp cleanup works
+            _internal_fail "rmdir_safer failed to remove child under write-protected parent"
+         fi
+
+         # Parent permissions must be restored to 555
+         local perms_after
+         perms_after="`lso "${protected_parent}"`"
+         if [ "${perms_after}" != "555" ]
+         then
+            _internal_fail "rmdir_safer did not restore parent permissions (got ${perms_after}, expected 555)"
+         fi
+
+         chmod 755 "${protected_parent}"   # make it writable again for cleanup
+         log_info "rmdir_safer write-protected parent: passed"
+      ;;
+   esac
+
    log_info "----- ALL PASSED -----"
 
    cd ..

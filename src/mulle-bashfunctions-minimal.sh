@@ -540,10 +540,23 @@ function shell_is_variable_defined()
 
    if [ ${ZSH_VERSION+x} ]
    then
-      [[ -n ${(P)key} ]]
+      [[ ${(P)key+x} ]]
       return $?
    fi
-   [ "${!key}" ]
+   [ "${!key+x}" ]
+}
+
+
+function shell_is_variable_undefined_or_empty()
+{
+   local key="$1"
+
+   if [ ${ZSH_VERSION+x} ]
+   then
+      [[ -z ${(P)key} ]]
+      return $?
+   fi
+   [ -z "${!key}" ]
 }
 
 
@@ -887,7 +900,7 @@ stacktrace()
 {
    case "$-" in
       *x*)
-         return
+         return 0
       ;;
    esac
 
@@ -904,6 +917,8 @@ stacktrace()
       i=$((i + 1))
       [ $i -gt $max ] && break
    done
+
+   return 0
 }
 
 

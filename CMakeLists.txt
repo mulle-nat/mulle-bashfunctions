@@ -55,6 +55,7 @@ set( ALL_ADDITIONAL_SCRIPTS
 "src/mulle-base64.sh"
 "src/mulle-case.sh"
 "src/mulle-etc.sh"
+"src/mulle-lock.sh"
 "src/mulle-parallel.sh"
 "src/mulle-sort.sh"
 "src/mulle-url.sh"
