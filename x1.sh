@@ -1,0 +1,1083 @@
+#! /usr/bin/env mulle-bash
+
+
+
+#
+# Checks that log_ alias calls (log_info, log_verbose, etc.) are not fed
+# multiline strings. When aliased to `: #` the lines after the first would
+# be executed as commands. Suggest using the _log_ prefix variant instead.
+#
+log_checker()
+{
+   log_entry "log_checker" "$@"
+
+   local rval=0
+   local option_repair='NO'
+
+   while [ $# -ne 0 ]
+   do
+      case "$1" in
+         --repair)
+            option_repair='YES'
+         ;;
+
+         -*)
+            fail "Unknown log-checker option \"$1\""
+         ;;
+
+         *)
+            break
+         ;;
+      esac
+      shift
+   done
+
+   if [ $# -eq 0 ]
+   then
+      fail "Usage: mulle-bashfunctions log-checker [--repair] <file> ..."
+   fi
+
+   local filename
+
+   for filename in "$@"
+   do
+      if [ ! -f "${filename}" ]
+      then
+         log_warning "${filename}: not found"
+         continue
+      fi
+
+      local line
+      local lineno=0
+      local in_log=""
+      local log_lineno=""
+      local log_funcname=""
+
+      while IFS= read -r line || [ -n "${line}" ]
+      do
+         lineno=$((lineno + 1))
+
+         #
+         # If we are tracking an open multiline (continuation or unclosed
+         # quote) from a previous log_ line, check if it ends here.
+         #
+         if [ -n "${in_log}" ]
+         then
+            case "${in_log}" in
+               continuation)
+                  case "${line}" in
+                     *\\)
+                     ;;
+
+                     *)
+                        log_error "${filename}:${log_lineno}: \"${log_funcname}\" spans multiple lines (use _${log_funcname} instead)"
+                        if [ "${option_repair}" = 'YES' ]
+                        then
+                           inplace_sed -e "${log_lineno}s/^\([[:space:]]*\)${log_funcname}/\1_${log_funcname}/" \
+                                       -e "${log_lineno}s/\([^_a-zA-Z0-9]\)${log_funcname}/\1_${log_funcname}/" \
+                                       "${filename}"
+                           log_info "repaired ${filename}:${log_lineno}"
+                        fi
+                        rval=1
+                        in_log=""
+                     ;;
+                  esac
+               ;;
+
+               openquote)
+                  # look for closing double quote (not escaped)
+                  case "${line}" in
+                     *'"'*)
+                        log_error "${filename}:${log_lineno}: \"${log_funcname}\" has multiline string argument (use _${log_funcname} instead)"
+                        if [ "${option_repair}" = 'YES' ]
+                        then
+                           inplace_sed -e "${log_lineno}s/^\([[:space:]]*\)${log_funcname}/\1_${log_funcname}/" \
+                                       -e "${log_lineno}s/\([^_a-zA-Z0-9]\)${log_funcname}/\1_${log_funcname}/" \
+                                       "${filename}"
+                           log_info "repaired ${filename}:${log_lineno}"
+                        fi
+                        rval=1
+                        in_log=""
+                     ;;
+                  esac
+               ;;
+            esac
+            continue
+         fi
+
+         #
+         # Check if line contains a log_ alias call (not _log_).
+         # The call can appear after && or || or ; etc., so we use
+         # a regex-like grep approach rather than prefix matching.
+         #
+         # We use sed to extract the log_ function name if present.
+         # Match word-boundary: log_ preceded by start-of-trimmed,
+         # space, tab, ;, &, |, or !
+         #
+         local funcname
+
+         # strip the line down: remove everything before the log_ call
+         # but make sure we don't match _log_ or other_log_
+         funcname=""
+         case "${line}" in
+            *'log_debug'*|*'log_entry'*|*'log_error'*|*'log_fluff'*|\
+            *'log_info'*|*'log_vibe'*|*'log_setting'*|*'log_trace'*|\
+            *'log_verbose'*|*'log_warning'*)
+               # extract: get the part starting with log_
+               # but verify the char before it is not [a-zA-Z0-9_]
+               local rest="${line}"
+               while :
+               do
+                  case "${rest}" in
+                     *log_*)
+                        # get prefix before first log_
+                        local before="${rest%%log_*}"
+                        local after="${rest#*log_}"
+
+                        # check char before log_ (last char of before)
+                        local preceding
+                        if [ -n "${before}" ]
+                        then
+                           preceding="${before#"${before%?}"}"
+                        else
+                           preceding=""
+                        fi
+
+                        case "${preceding}" in
+                           [a-zA-Z0-9_])
+                              # part of another identifier, skip past this match
+                              rest="${after}"
+                              continue
+                           ;;
+                        esac
+
+                        # extract the function name
+                        local candidate="log_${after%%[[:space:]\"]*}"
+                        case "${candidate}" in
+                           *'log_debug'*|*'log_entry'*|*'log_error'*|*'log_fluff'*|\
+                           *'log_info'*|*'log_vibe'*|*'log_setting'*|*'log_trace'*|\
+                           *'log_verbose'*|*'log_warning'*)
+                              funcname="${candidate}"
+                           ;;
+
+                           *)
+                              rest="${after}"
+                              continue
+                           ;;
+                        esac
+                        break
+                     ;;
+
+                     *)
+                        break
+                     ;;
+                  esac
+               done
+            ;;
+         esac
+
+         if [ -z "${funcname}" ]
+         then
+            continue
+         fi
+
+         log_funcname="${funcname}"
+
+         # check for line continuation
+         case "${line}" in
+            *\\)
+               in_log='continuation'
+               log_lineno="${lineno}"
+               continue
+            ;;
+         esac
+
+         # count unescaped double quotes after the function name to detect
+         # unclosed strings (literal newlines in quotes)
+         local args="${line#*"${funcname}"}"
+         local tmp="${args}"
+         local count=0
+
+         while :
+         do
+            case "${tmp}" in
+               *'"'*)
+                  local left="${tmp%%'"'*}"
+                  # check if preceded by backslash
+                  case "${left}" in
+                     *\\)
+                        tmp="${tmp#*'"'}"
+                        continue
+                     ;;
+                  esac
+                  count=$((count + 1))
+                  tmp="${tmp#*'"'}"
+               ;;
+
+               *)
+                  break
+               ;;
+            esac
+         done
+
+         # odd number of unescaped quotes means an unclosed string
+         if [ $((count % 2)) -ne 0 ]
+         then
+            in_log='openquote'
+            log_lineno="${lineno}"
+         fi
+      done < "${filename}"
+
+      # unterminated at EOF
+      if [ -n "${in_log}" ]
+      then
+         case "${in_log}" in
+            continuation)
+               log_error "${filename}:${log_lineno}: \"${log_funcname}\" spans multiple lines (use _${log_funcname} instead)"
+            ;;
+
+            openquote)
+               log_error "${filename}:${log_lineno}: \"${log_funcname}\" has multiline string argument (use _${log_funcname} instead)"
+            ;;
+         esac
+         if [ "${option_repair}" = 'YES' ]
+         then
+            inplace_sed -e "${log_lineno}s/^\([[:space:]]*\)${log_funcname}/\1_${log_funcname}/" \
+                        -e "${log_lineno}s/\([^_a-zA-Z0-9]\)${log_funcname}/\1_${log_funcname}/" \
+                        "${filename}"
+            log_info "repaired ${filename}:${log_lineno}"
+         fi
+         rval=1
+      fi
+   done
+
+   return ${rval}
+}
+
+
+new_function()
+{
+   local name="${1:-my-script}"
+   local prefix="${2:-NO}"
+
+   include "case"
+
+   local upcase_identifier
+
+   r_smart_upcase_identifier "${name}"
+   upcase_identifier="${RVAL}"
+
+   local downcase_identifier
+
+   r_smart_downcase_identifier "${name}"
+   downcase_identifier="${RVAL}"
+
+   case "${prefix}" in
+      'YES')
+         prefix="${prefix}"
+      ;;
+
+      'NO')
+         prefix=""
+      ;;
+
+      *)
+      ;;
+   esac
+
+   local EOF_string="EOF"
+
+   cat <<EOF
+#! /usr/bin/env mulle-bash
+#! MULLE_BASHFUNCTIONS_VERSION=${MULLE_BASHFUNCTIONS_VERSION}
+# shellcheck shell=bash
+#
+#
+#  ${name}.sh
+#
+#  Copyright (c) `date +%Y` ${MULLE_USERNAME}
+#  All rights reserved.
+#
+#
+#  Redistribution and use in source and binary forms, with or without
+#  modification, are permitted provided that the following conditions are met:
+#
+#  Redistributions of source code must retain the above copyright notice, this
+#  list of conditions and the following disclaimer.
+#
+#  Redistributions in binary form must reproduce the above copyright notice,
+#  this list of conditions and the following disclaimer in the documentation
+#  and/or other materials provided with the distribution.
+#
+#  Neither the name of ${ORGANIZATION:-<ORGANIZATION>} nor the names of its contributors
+#  may be used to endorse or promote products derived from this software
+#  without specific prior written permission.
+#
+#  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+#  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+#  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+#  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+#  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+#  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+#  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+#  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+#  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+#  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+#  POSSIBILITY OF SUCH DAMAGE.
+#
+
+[ "\${TRACE}" = 'YES' -o "\${${upcase_identifier}_TRACE}" = 'YES' ] \
+&& set -x  \
+&& : "\$0" "\$@"
+
+### >> START OF mulle-boot.sh >>
+### << END OF mulle-boot.sh <<
+
+#
+# Versioning of this script
+#
+MULLE_EXECUTABLE_VERSION="0.0.0"
+
+
+### >> START OF mulle-bashfunctions-embed.sh >>
+### << END OF mulle-bashfunctions-embed.sh <<
+
+${prefix}print_flags()
+{
+   echo "   -f    : force operation"
+
+   ##
+   ## ADD YOUR FLAGS DESCRIPTIONS HERE
+   ##
+
+   options_technical_flags_usage \
+                "         : "
+}
+
+
+${prefix}usage()
+{
+   [ \$# -ne 0 ] && log_error "\$*"
+
+
+   cat <<EOF >&2
+Usage:
+   ${name} [flags]
+
+   ##
+   ## ADD YOUR USAGE DESCRIPTION HERE
+   ##
+
+Flags:
+${EOF_string}
+   ${prefix}print_flags | LC_ALL=C sort >&2
+
+   exit 1
+}
+
+
+${prefix}main()
+{
+   #
+   # simple option/flag handling
+   #
+   local OPTION_VALUE
+
+   while [ \$# -ne 0 ]
+   do
+      if options_technical_flags "\$1"
+      then
+         shift
+         continue
+      fi
+
+      case "\$1" in
+         -f|--force)
+            MULLE_FLAG_MAGNUM_FORCE='YES'
+         ;;
+
+         -h*|--help|help)
+            ${prefix}usage
+         ;;
+
+         --value)
+            [ \$# -eq 1 ] && ${prefix}usage "missing argument to \$1"
+            shift
+
+            OPTION_VALUE="\$1"
+         ;;
+
+         --version)
+            printf "%s\n" "\${MULLE_EXECUTABLE_VERSION}"
+            exit 0
+         ;;
+
+
+         ##
+         ## ADD YOUR FLAGS HERE
+         ##
+
+         -*)
+            ${prefix}usage "Unknown flag \"\$1\""
+         ;;
+
+         *)
+            break
+         ;;
+      esac
+
+      shift
+   done
+
+   options_setup_trace "\${MULLE_TRACE}" && set -x
+
+   ##
+   ## ADD YOUR CODE HERE
+   ##
+   log_info "Does nothing, but will soon"
+}
+
+${prefix}main "\$@"
+EOF
+}
+
+
+r_parse_functionname()
+{
+   local line="$1"
+
+   RVAL="${line%#*}"
+   RVAL="${RVAL#"${RVAL%%[![:space:]]*}"}"
+   RVAL="${RVAL#function}"
+   RVAL="${RVAL#"${RVAL%%[![:space:]]*}"}"
+   RVAL="${RVAL%()}"
+   RVAL="${RVAL%"${RVAL##*[![:space:]]}"}" # remove tail space
+   RVAL="${RVAL#"${RVAL%%[![:space:]]*}"}" # remove head space
+}
+
+
+print_apropos_text()
+{
+   local text="$1"
+   local line="$2"
+   local isep="$3"
+
+   r_parse_functionname "${line}"
+   if [ "${text#${RVAL}}" = "${text}" ]
+   then
+      text="`sed -e 's/^/   /' <<< "${text}" `"
+      printf "%s%s\n\n%s\n" "${isep}" "${RVAL}" "${text}"
+   else
+      printf "%s%s\n" "${isep}" "${text}"
+   fi
+}
+
+
+r_apropos_library_function()
+{
+   log_entry "r_apropos_library_function" "$@"
+
+   local library="$1"
+   local search="$2"
+   local options="$3"
+   local isep="$4"
+
+   local text
+   local line
+   local sep
+   local space
+
+   space=""
+   sep="${space}"
+
+   # TODO: might optionally also search preceeding text
+   #       (see man: how to capture it)
+   while IFS=$'\n' read -r line
+   do
+      case "${line}" in
+         '#'*)
+            line="${line#\#}"
+            line="${line#\ }"
+            if [ ! -z "${text}" -o ! -z "${line}" ]
+            then
+               text="${text}${sep}${line}"
+               sep=$'\n'"${space}"
+            fi
+            continue
+         ;;
+
+         *${search}*\(\))
+            print_apropos_text "${text}" "${line}"
+            isep=$'\n'
+            text=
+            sep="${space}"
+         ;;
+
+         *\(\)*)
+            case ",${options}," in
+               *',no-text,'*)
+               ;;
+
+               *)
+                  if grep -E "${search}" <<< "${text}" > /dev/null
+                  then
+                     print_apropos_text "${text}" "${line}"
+                     isep=$'\n'
+                  fi
+               ;;
+            esac
+            text=
+            sep="${space}"
+         ;;
+
+         *)
+            text=
+            sep="${space}"
+         ;;
+      esac
+   done < <( cat "${library}" )
+
+   RVAL="${isep}"
+}
+
+
+apropos_function()
+{
+   log_entry "apropos_function" "$@"
+
+   local options
+
+   while [ $# -ne 0 ]
+   do
+      case "$1" in
+         -i)
+            r_comma_concat "${options}" "identifier"
+            options="${RVAL}"
+            shift
+            continue
+         ;;
+
+         --no-text)
+            r_comma_concat "${options}" "no-text"
+            options="${RVAL}"
+            shift
+            continue
+         ;;
+      esac
+      break
+   done
+
+   [ $# -eq 0 ] && usage "${MULLE_EXECUTABLE_FAIL_PREFIX}: Missing name"
+   [ $# -gt 1 ] && shift && usage "${MULLE_EXECUTABLE_FAIL_PREFIX}: Superfluous parameter \"$*\""
+
+   local name="$1"
+
+   local paths
+
+   r_all_library_paths
+   paths="${RVAL}"
+
+   local search
+
+   search="${name}"
+   case ",${options}," in
+      *',identifier,'*)
+         r_lowercase "${name}"
+         r_identifier "${RVAL}"
+         search="${RVAL}"
+      ;;
+   esac
+
+   local library
+   local isep
+
+   IFS=$'\n'
+   for library in ${paths}
+   do
+      if r_apropos_library_function "${library}" "${search}" "${options}" "${isep}"
+      then
+         isep="${RVAL}"
+      fi
+   done
+   IFS="${DEFAULT_IFS}"
+}
+
+
+MINIMAL_HEAD_MARKER='### >> START OF mulle-bashfunctions-minimal-embed.sh >>'
+MINIMAL_FOOT_MARKER='### << END OF mulle-bashfunctions-minimal-embed.sh <<'
+
+DEFAULT_HEAD_MARKER='### >> START OF mulle-bashfunctions-embed.sh >>'
+DEFAULT_FOOT_MARKER='### << END OF mulle-bashfunctions-embed.sh <<'
+
+ALL_HEAD_MARKER='### >> START OF mulle-bashfunctions-all-embed.sh >>'
+ALL_FOOT_MARKER='### << END OF mulle-bashfunctions-all-embed.sh <<'
+
+BOOT_HEAD_MARKER='### >> START OF mulle-boot.sh >>'
+BOOT_FOOT_MARKER='### << END OF mulle-boot.sh <<'
+
+
+mulle_bashfunctions_embed_usage()
+{
+   [ $# -ne 0 ] && log_error "$*"
+
+   cat <<EOF >&2
+Usage:
+   mulle-bashfunctions embed
+
+   This lazy script just reads from stdio and outputs to stdout.
+
+   Inserts or updates the mulle-boot.sh code between these two markers:
+
+   ${BOOT_HEAD_MARKER}
+   ${BOOT_FOOT_MARKER}
+
+   If there is a \`#!/usr/bin/env mulle-bash\` line on top, it will be replaced
+   by \`bin/sh\`. If these markers are missing the embed can not work.
+   The place should be at the very, very top (below the \${TRACE} = 'YES', if
+   that exists.
+
+   Inserts or updates the mulle-bashfunctions-embed.sh code between these two
+   markers for minimal:
+
+   ${MINIMAL_HEAD_MARKER}
+   ${MINIMAL_FOOT_MARKER}
+
+   default:
+
+   ${DEFAULT_HEAD_MARKER}
+   ${DEFAULT_FOOT_MARKER}
+
+   all:
+
+   ${ALL_HEAD_MARKER}
+   ${ALL_FOOT_MARKER}
+
+   If these markers are missing in your script the embed can not work. To
+   change the chose mulle-bashfunctions edit the markers in your script.
+   A convenient place to place these marker sis right after the booter
+   (below MULLE_EXECUTABLE_VERSION if that line exists).
+
+   Use mulle-bashfunctions boot-embed/boot-extract, if you just want to add
+   or remove the boot code.
+
+EOF
+   exit 1
+}
+
+
+mulle_boot_embed()
+{
+   while [ $# -ne 0 ]
+   do
+      case "$1" in
+         *)
+            mulle_bashfunctions_embed_usage
+         ;;
+      esac
+   done
+
+   local line
+   local found='NO'
+
+   # initial state, searching for start
+   while IFS=$'\n' read -r line
+   do
+      if [ "${line}" = "#! /usr/bin/env mulle-bash" ]
+      then
+         printf "%s\n" "#! /bin/sh"
+         continue
+      fi
+
+      if [ "${line}" = "${BOOT_HEAD_MARKER}" ]
+      then
+         found='YES'
+         break
+      fi
+      printf "%s\n" "${line}"
+   done
+
+   if [ "${found}" = 'NO' ]
+   then
+      mulle_bashfunctions_embed_usage "Add boot markers to your source, before running embed"
+   fi
+
+   # start found and consumed now put in embed.sh
+   cat "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-boot.sh" || exit 1
+
+   if [ "${found}" = 'YES' ]
+   then
+      # now search for end
+      while IFS=$'\n' read -r line
+      do
+         if [ "${line}" = "${BOOT_FOOT_MARKER}" ]
+         then
+            break
+         fi
+      done
+   fi
+
+   # output rest
+   while IFS=$'\n' read -r line
+   do
+      printf "%s\n" "${line}"
+   done
+}
+
+
+
+mulle_bashfunctions_flags()
+{
+         cat <<'EOF'
+These flags are commonly understood by mulle-bash scripts. They belong right
+after the command and not anywhere else.
+e.g.
+   mulle-sde -n -lx exec ls
+
+Your script parses them with `options_technical_flags "$1"` and
+and executes them with `options_setup_trace "${MULLE_TRACE}" && set -x`:
+
+   -n, --dry-run                : Don't execute commands, just show them
+   -s, --silent                 : Suppress all output except errors
+   --silent-but-warn            : Suppress output except warnings and errors
+   -v, --verbose                : Enable verbose output (-vv, -vvv for more)
+
+   -ld, --log-debug             : Enable debug logging output
+   -le, --log-environment       : Log environment variables and state
+   -ls, --log-settings          : Log settings and configuration
+   -lx, --log-exekutor          : Log external command execution
+   -lt, --trace                 : Enable bash/zsh tracing with line numbers
+   -tx, --trace-immediately     : Enable tracing immediately (set -x)
+   -tp, --trace-profile         : Enable profiling with timestamps
+   -tpwd, --trace-pwd           : Show working directory in trace output
+   -tfpwd, --trace-full-pwd     : Show full path in trace output
+   -l-                          : Disable all logging flags
+   -t-                          : Disable tracing
+
+   --mulle-no-color             : turn off colorization
+   --mulle-no-error             : turn off error reporting
+   --mulle-list-technical-flags : a short list of available flags
+
+Uppercase variants (e.g., -V, -lD, -lE, -lS, -lX, -lT) don't propagate to
+child scripts.
+
+Use the MULLE_TECHNICAL_FLAGS environment variable to forward most of these
+flags to other mulle-bash scripts.
+EOF
+}
+
+
+main()
+{
+   #
+   # simple option handling
+   #
+   while [ $# -ne 0 ]
+   do
+      if options_technical_flags "$1"
+      then
+         shift
+         continue
+      fi
+
+      case "$1" in
+         -h|--help)
+            usage
+         ;;
+
+         -f|--force)
+            MULLE_FLAG_MAGNUM_FORCE='YES'
+         ;;
+
+         --version)
+            printf "%s\n" "${MULLE_BASHFUNCTIONS_VERSION}"
+            exit 0
+         ;;
+
+         -*)
+            log_error "${MULLE_EXECUTABLE_FAIL_PREFIX}: Unknown option \"$1\""
+            usage
+         ;;
+
+         *)
+            break
+         ;;
+      esac
+
+      shift
+   done
+
+   options_setup_trace "${MULLE_TRACE}" && set -x
+
+   local cmd
+
+   cmd="${1:-libexec-dir}"
+   [ $# -eq 0 ] || shift
+
+   MULLE_EXECUTABLE_FAIL_PREFIX="${MULLE_EXECUTABLE_NAME} ${cmd}"
+
+   case "${cmd}" in
+      'help')
+         usage
+      ;;
+
+      'apropos')
+         apropos_function "$@" || exit 1
+      ;;
+
+      'env')
+         echo "\
+MULLE_BASHFUNCTIONS_LIBEXEC_DIR=\"${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}\"
+MULLE_USERNAME=\"${MULLE_USERNAME}\"
+MULLE_HOSTNAME=\"${MULLE_HOSTNAME}\"
+MULLE_UNAME=\"${MULLE_UNAME}\""
+      ;;
+
+      'embed-boot')
+         mulle_boot_embed "$@"
+      ;;
+
+      'embed')
+         mulle_boot_embed "$@" | mulle_bashfunctions_embed "$@"
+      ;;
+
+      'extract-boot')
+         mulle_boot_extract "$@"
+      ;;
+
+      'extract'|'unembed')
+         mulle_boot_extract "$@" | mulle_bashfunctions_extract "$@"
+      ;;
+
+      'flags')
+         mulle_bashfunctions_flags "$@"
+      ;;
+
+      'functions')
+         list_functions "$@" || exit 1
+      ;;
+
+      globals)
+         if [ $# -ne 0 ]
+         then
+            declare -p | sed 's/^declare -[^ ]*[ ]*//p' | sort | sort -u
+         else
+            declare -p | sed -n 's/^declare -[^ ]* \(MULLE_[^=]*\)=\(.*\)$/\1=\2/p' | sort | sort -u
+         fi
+      ;;
+
+      'hostname')
+         printf "%s\n" "${MULLE_HOSTNAME}"
+      ;;
+
+      'init'|'script')
+         fail "Use mulle-sde add --extension \"mulle-nat/file.sh\" instead"
+      ;;
+
+      'libexec-dir')
+         printf "%s\n" "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}"
+      ;;
+
+      'libraries')
+         list_libraries "$@" || exit 1
+      ;;
+
+      'log-checker')
+         include "path"
+         include "file"
+         log_checker "$@" || exit 1
+      ;;
+
+      'load')
+         local format
+         local check
+
+         [ $# -ne 0 -a "$1" = "--if-missing" ] && check='YES' && shift
+         [ $# -ne 0 ] && format="-$1" && shift
+
+         if [ "${check}" = 'YES' ]
+         then
+            echo "if [ -z \"\${MULLE_BASHGLOBAL_SH}\" ]; then"
+         fi
+
+         echo "\
+MULLE_BASHFUNCTIONS_LIBEXEC_DIR=\"${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}\"
+export MULLE_BASHFUNCTIONS_LIBEXEC_DIR
+MULLE_USERNAME=\"${MULLE_USERNAME}\"
+export MULLE_USERNAME
+MULLE_HOSTNAME=\"${MULLE_HOSTNAME}\"
+export MULLE_HOSTNAME
+MULLE_UNAME=\"${MULLE_UNAME}\"
+export MULLE_UNAME
+. \"${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions${format}.sh\""
+         if [ "${check}" = 'YES' ]
+         then
+            echo "fi"
+         fi
+      ;;
+
+
+      'common-unames')
+         cat <<EOF
+android
+darwin
+dragonfly
+freebsd
+hpux
+linux
+mingw
+msys
+netbsd
+openbsd
+sunos
+windows
+EOF
+      ;;
+
+      'man')
+         man_function "$@" || exit 1
+      ;;
+
+      'new')
+         new_function "$@" || exit 1
+      ;;
+
+      'ncores')
+         include "path"
+         include "file"
+         include "parallel"
+
+         r_get_core_count
+         printf "%s\n" "${RVAL}"
+      ;;
+
+      'path')
+         local format
+
+         [ $# -ne 0 ] && format="-$1"
+
+         echo "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions${format}.sh"
+      ;;
+
+      # useful for accessing a single function from the library
+      'eval')
+         include "path"
+         include "file"
+         include "case"
+         include "parallel"
+         include "sort"
+         include "url"
+         include "version"
+
+         "$@"
+         return $?
+      ;;
+
+      # useful for accessing a r function from the library
+      'r-eval')
+         include "path"
+         include "file"
+         include "case"
+         include "parallel"
+         include "sort"
+         include "url"
+         include "version"
+
+         "$@" || return $?
+         printf "%s\n" "${RVAL}"
+         return 0
+      ;;
+
+      'shell')
+         printf "%s\n" `ps -h -o cmd -p $$ | awk '{ print $1 }'`
+      ;;
+
+      'toc')
+         # Try installed location first
+         local tocfile="${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/../share/mulle-bashfunctions/${MULLE_BASHFUNCTIONS_VERSION}/dox/TOC.md"
+         if [ ! -f "${tocfile}" ]
+         then
+            # Fall back to source location (script directory)
+            local scriptdir
+            scriptdir="$(cd "$(dirname "${MULLE_EXECUTABLE}")" && pwd -P)"
+            tocfile="${scriptdir}/asset/dox/TOC.md"
+         fi
+         if [ -f "${tocfile}" ]
+         then
+            cat "${tocfile}"
+         else
+            fail "TOC.md not found"
+         fi
+      ;;
+
+      'uname')
+         printf "%s\n" "${MULLE_UNAME}"
+      ;;
+
+      'username')
+         printf "%s\n" "${MULLE_USERNAME}"
+      ;;
+
+      'uuid')
+         include "path"
+         include "file"
+
+         r_uuidgen
+         printf "%s\n" "${RVAL}"
+      ;;
+
+      'version')
+         printf "%s\n" "${MULLE_BASHFUNCTIONS_VERSION}"
+      ;;
+
+      'versions')
+         list_versions "$@" || exit 1
+      ;;
+
+      *)
+         usage "${MULLE_EXECUTABLE_FAIL_PREFIX}: Unknown command \"${cmd}\""
+      ;;
+   esac
+}
+
+
+_init()
+{
+   if [ ${ZSH_VERSION+x} ]
+   then
+     setopt sh_word_split
+   fi
+
+   #
+   # commands with minimal trap setup. libexec-dir is the most common call
+   # and will exit quickly
+   #
+   if [ $# -eq 1 ]
+   then
+      case "$1" in
+         libexec-dir|library-path)
+            printf "%s\n" "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}"
+            exit 0
+         ;;
+
+         version)
+            printf "%s\n" "${MULLE_BASHFUNCTIONS_VERSION}"
+            exit 0
+         ;;
+      esac
+   fi
+
+   # shellcheck source=src/mulle-logging.sh
+   include "logging" || _internal_fail "include mulle-version.sh fail"
+   # shellcheck source=src/mulle-version.sh
+   include "version" || _internal_fail "include mulle-version.sh fail"
+   # shellcheck source=src/mulle-usage.sh
+   include "usage" || _internal_fail "include mulle-usage.sh fail"
+
+   shell_enable_pipefail
+   shell_enable_extglob
+}
+
+
+_init "$@"
+main "$@"
+

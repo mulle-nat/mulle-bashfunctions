@@ -1,0 +1,122 @@
+#! /bin/bash
+#
+# Test that SIGINT during __parallel_end kills background children.
+#
+# Strategy: We DON'T run the parallel code in this process at all.
+# We write a helper script to a temp file, run it in a separate
+# process group via perl setsid, send it INT from outside, then
+# check if the children are dead.
+#
+[ "${TRACE}" = 'YES' ] && set -x && : "$0" "$@"
+
+###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
+MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${MULLE_BASHFUNCTIONS_LIBEXEC_DIR:-`mulle-bashfunctions libexec-dir`}" || exit 1
+###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###   ###
+
+PIDFILE="/tmp/mulle-parallel-int-test-$$"
+
+fail()
+{
+   echo "FAIL: $*" >&2
+   rm -f "${PIDFILE}.1" "${PIDFILE}.2" "${PIDFILE}.ready" "${PIDFILE}.helper"
+   exit 1
+}
+
+main()
+{
+   rm -f "${PIDFILE}.1" "${PIDFILE}.2" "${PIDFILE}.ready" "${PIDFILE}.helper"
+
+   # write helper script that will be the target of our INT
+   cat > "${PIDFILE}.helper" << HELPER
+#! /bin/bash
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-boot.sh"
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashglobal.sh"
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-compatibility.sh"
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-logging.sh"
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-options.sh"
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-string.sh"
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-path.sh"
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-exekutor.sh"
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-file.sh"
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-parallel.sh"
+
+slow_child()
+{
+   sh -c 'echo \$PPID' > "${PIDFILE}.\$1"
+   sleep 30
+}
+
+_parallel_statusfile=""
+_parallel_maxjobs=""
+_parallel_jobs=""
+_parallel_fails=""
+
+__parallel_begin
+__parallel_execute slow_child 1
+__parallel_execute slow_child 2
+sleep 0.5
+echo \$\$ > "${PIDFILE}.ready"
+__parallel_end 2>/dev/null
+HELPER
+   chmod +x "${PIDFILE}.helper"
+
+   # run helper in its own process group so kill -TERM 0 stays contained
+   perl -e 'use POSIX; POSIX::setsid(); exec @ARGV' -- \
+      env MULLE_PARALLEL_KILL_ON_INT="${MULLE_PARALLEL_KILL_ON_INT}" \
+      bash "${PIDFILE}.helper" &
+   local helper_pid=$!
+
+   # wait for helper to signal it's ready (children started, about to wait)
+   local i=0
+   while [ ! -f "${PIDFILE}.ready" ] && [ $i -lt 40 ]
+   do
+      sleep 0.1
+      i=$((i + 1))
+   done
+
+   [ -f "${PIDFILE}.ready" ] || { kill -9 $helper_pid 2>/dev/null; wait $helper_pid 2>/dev/null; fail "helper never ready"; }
+
+   local target_pid
+   target_pid="$(cat "${PIDFILE}.ready")"
+
+   [ -f "${PIDFILE}.1" ] && [ -f "${PIDFILE}.2" ] || { kill -9 $helper_pid 2>/dev/null; wait $helper_pid 2>/dev/null; fail "children never started"; }
+
+   local child1 child2
+   child1="$(cat "${PIDFILE}.1")"
+   child2="$(cat "${PIDFILE}.2")"
+
+   # send CTRL-C to the helper
+   kill -INT "$target_pid" 2>/dev/null
+
+   # wait for helper to die (with a timeout so we don't hang)
+   local j=0
+   while kill -0 "$helper_pid" 2>/dev/null && [ $j -lt 20 ]
+   do
+      sleep 0.1
+      j=$((j + 1))
+   done
+   kill -9 "$helper_pid" 2>/dev/null
+   wait "$helper_pid" 2>/dev/null
+
+   sleep 0.3
+
+   # check children are dead
+   local failed=0
+   for pid in "$child1" "$child2"
+   do
+      if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null
+      then
+         echo "FAIL: child $pid still alive" >&2
+         kill -9 "$pid" 2>/dev/null
+         failed=1
+      fi
+   done
+
+   rm -f "${PIDFILE}.1" "${PIDFILE}.2" "${PIDFILE}.ready" "${PIDFILE}.helper"
+
+   [ $failed -ne 0 ] && fail "children survived CTRL-C"
+
+   echo "All tests passed" >&2
+}
+
+main "$@"

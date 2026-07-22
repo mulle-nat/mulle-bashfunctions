@@ -1,0 +1,237 @@
+#! /bin/sh
+
+[ "${TRACE}" = 'YES' ] && set -x && : "$0" "$@"
+
+TEST_DIR="`dirname -- "$0"`"
+PROJECT_DIR="$( cd "${TEST_DIR}/../.." ; pwd -P)"
+
+MULLE_BASHFUNCTIONS_LIBEXEC_DIR="${MULLE_BASHFUNCTIONS_LIBEXEC_DIR:-${PROJECT_DIR}/src}"
+export MULLE_BASHFUNCTIONS_LIBEXEC_DIR
+
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-boot.sh" || exit 1
+. "${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions.sh" || exit 1
+
+if [ ${ZSH_VERSION+x} ]
+then
+   setopt sh_word_split
+fi
+
+include "lock"
+
+
+fail()
+{
+   echo "FAIL: $*" >&2
+   exit 1
+}
+
+
+assert_equal()
+{
+   if [ "$1" != "$2" ]
+   then
+      fail "expected \"$2\", got \"$1\""
+   fi
+}
+
+
+assert_contains()
+{
+   case "$1" in
+      *"$2"*)
+      ;;
+      *)
+         fail "expected \"$2\" in \"$1\""
+      ;;
+   esac
+}
+
+
+test_pidfile_written()
+{
+   local lockdir="${TMPDIR}/pid.lock"
+   local pid
+   local expected_pid
+
+   expected_pid="${MULLE_EXECUTABLE_PID:-${BASHPID:-$$}}"
+
+   lock::acquire "${lockdir}" 300
+   assert_equal "$?" "0"
+
+   [ -f "${lockdir}/pid" ] || fail "pid file missing after acquire"
+   IFS= read -r pid < "${lockdir}/pid" || pid=""
+   assert_equal "${pid}" "${expected_pid}"
+
+   lock::release "${lockdir}"
+   [ ! -e "${lockdir}/pid" ] || fail "pid file still present after release"
+   [ ! -d "${lockdir}" ] || fail "lock dir still present after release"
+}
+
+
+test_dead_owner_breaks_immediately()
+{
+   local lockdir="${TMPDIR}/dead.lock"
+   local pid
+   local expected_pid
+   local start
+   local end
+   local elapsed
+
+   mkdir "${lockdir}" || fail "failed to create stale lock dir"
+   printf "%s\n" "99999999" > "${lockdir}/pid" || fail "failed to create stale pid file"
+
+   expected_pid="${MULLE_EXECUTABLE_PID:-${BASHPID:-$$}}"
+   start="`date +%s`"
+   lock::acquire "${lockdir}" 300
+   assert_equal "$?" "3"
+   end="`date +%s`"
+   elapsed=$((end - start))
+
+   [ ${elapsed} -lt 3 ] || fail "dead owner lock did not break quickly (${elapsed}s)"
+
+   IFS= read -r pid < "${lockdir}/pid" || pid=""
+   assert_equal "${pid}" "${expected_pid}"
+
+   lock::release "${lockdir}"
+}
+
+
+test_recursive_lock_fails()
+{
+   local lockdir="${TMPDIR}/recursive.lock"
+   local output
+
+   lock::acquire "${lockdir}" 300
+   assert_equal "$?" "0"
+
+   if output="`( lock::acquire "${lockdir}" 300 ) 2>&1`"
+   then
+      fail "recursive lock acquisition unexpectedly succeeded"
+   fi
+
+   assert_contains "${output}" "Recursive lock attempt"
+   assert_contains "${output}" "${lockdir}"
+
+   lock::release "${lockdir}"
+}
+
+
+test_lock_exekutor_success()
+{
+   local lockdir="${TMPDIR}/exekutor-success.lock"
+   local outfile="${TMPDIR}/exekutor-success.out"
+
+   lock::exekutor "${lockdir}" -- /bin/sh -c 'printf "%s\n" "$1" > "$2"' -- ok "${outfile}"
+   assert_equal "$?" "0"
+
+   [ -f "${outfile}" ] || fail "lock::exekutor success command did not create output"
+   assert_equal "`cat "${outfile}"`" "ok"
+   [ ! -d "${lockdir}" ] || fail "lock::exekutor leaked lock on success"
+}
+
+
+test_lock_exekutor_failure()
+{
+   local lockdir="${TMPDIR}/exekutor-failure.lock"
+
+   lock::exekutor "${lockdir}" -- /bin/sh -c 'exit 7'
+   assert_equal "$?" "7"
+   [ ! -d "${lockdir}" ] || fail "lock::exekutor leaked lock on failure"
+}
+
+
+make_holder_script()
+{
+   HOLDER_SCRIPT="${TMPDIR}/holder.sh"
+
+   cat > "${HOLDER_SCRIPT}" <<EOF
+#! /bin/sh
+MULLE_BASHFUNCTIONS_LIBEXEC_DIR='${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}'
+export MULLE_BASHFUNCTIONS_LIBEXEC_DIR
+. '${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-boot.sh' || exit 1
+. '${MULLE_BASHFUNCTIONS_LIBEXEC_DIR}/mulle-bashfunctions.sh' || exit 1
+if [ \${ZSH_VERSION+x} ]
+then
+   setopt sh_word_split
+fi
+include "lock"
+lock::acquire '${1}' 300 || exit 1
+printf '%s\n' 'ready' > '${2}'
+sleep 2
+lock::release '${1}'
+EOF
+   chmod +x "${HOLDER_SCRIPT}" || fail "failed to chmod holder script"
+}
+
+
+test_live_owner_waits()
+{
+   local lockdir="${TMPDIR}/live.lock"
+   local marker="${TMPDIR}/holder.ready"
+   local holder_shell
+   local start
+   local end
+   local elapsed
+
+   make_holder_script "${lockdir}" "${marker}"
+
+   holder_shell="`command -v bash || command -v zsh`"
+   [ ! -z "${holder_shell}" ] || fail "need bash or zsh for holder process"
+
+   "${holder_shell}" "${HOLDER_SCRIPT}" "${lockdir}" "${marker}" &
+   HOLDER_PID="$!"
+
+   while [ ! -f "${marker}" ]
+   do
+      kill -0 "${HOLDER_PID}" 2>/dev/null || fail "holder process exited too early"
+      sleep 1
+   done
+
+   start="`date +%s`"
+   lock::acquire "${lockdir}" 300
+   assert_equal "$?" "1"
+   end="`date +%s`"
+   elapsed=$((end - start))
+
+   [ ${elapsed} -ge 1 ] || fail "live owner lock should have waited"
+
+   wait "${HOLDER_PID}" || fail "holder process failed"
+   HOLDER_PID=""
+
+   lock::release "${lockdir}"
+}
+
+
+cleanup()
+{
+   if [ ! -z "${HOLDER_PID:-}" ]
+   then
+      kill "${HOLDER_PID}" 2>/dev/null || :
+      wait "${HOLDER_PID}" 2>/dev/null || :
+   fi
+
+   if [ ! -z "${TMPDIR:-}" ]
+   then
+      rmdir_safer "${TMPDIR}"
+   fi
+}
+
+
+main()
+{
+   r_make_tmp_directory
+   TMPDIR="${RVAL}"
+   trap cleanup EXIT
+
+   test_pidfile_written
+   test_dead_owner_breaks_immediately
+   test_recursive_lock_fails
+   test_lock_exekutor_success
+   test_lock_exekutor_failure
+   test_live_owner_waits
+
+   echo "All tests passed" >&2
+}
+
+
+main "$@"

@@ -1,3 +1,8 @@
+## 6.9.0
+
+Various small improvements
+
+
 ## 6.8.0
 
 * add toc command for AI coding support
