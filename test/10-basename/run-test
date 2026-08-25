@@ -53,6 +53,14 @@ r_os_basename()
          RVAL="${RVAL//\/\//\/}"
       ;;
    esac
+
+   # uutils coreutils (Rust) has a bug where basename "/./", returns "/"
+   # instead of the POSIX-correct "." -- work around it
+   case "$1" in
+      /./)
+         RVAL="."
+      ;;
+   esac
 }
 
 

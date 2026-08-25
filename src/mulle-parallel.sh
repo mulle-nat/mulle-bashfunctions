@@ -291,6 +291,12 @@ wait_for_load_average()
 #     local _parallel_fails
 #     local _parallel_statusfile
 #
+#     Set MULLE_PARALLEL_JOB_CONTROL=YES before calling to enable process
+#     group management. This allows `kill -TERM` on the parent to kill all
+#     spawned children and their subprocesses. Without it (the default),
+#     only the immediate background jobs are waited on, and programmatic
+#     kills may leave orphaned grandchildren.
+#
 function __parallel_begin()
 {
    log_entry "__parallel_begin" "$@"
@@ -310,6 +316,23 @@ function __parallel_begin()
       then
          r_get_core_count
          _parallel_maxjobs="${RVAL}"
+      fi
+   fi
+
+   # Enable job control so background jobs get their own process groups.
+   # This allows killing an entire job tree. zsh doesn't support this in
+   # scripts, so fall back to plain PID kills there.
+   # Default is NO for backwards compatibility. Set MULLE_PARALLEL_JOB_CONTROL=YES
+   # to enable.
+   _parallel_has_job_control='NO'
+   if [ "${MULLE_PARALLEL_JOB_CONTROL}" = 'YES' ]
+   then
+      if [ ${ZSH_VERSION+x} ]
+      then
+         log_debug "Job control not available in zsh scripts"
+      else
+         set -m
+         _parallel_has_job_control='YES'
       fi
    fi
 }
@@ -360,6 +383,11 @@ function __parallel_execute()
       ( exekutor "$@" ) # run in subshell to capture exit code
       __parallel_status $? "$@"
    ) &
+
+   if [ "${_parallel_has_job_control}" = 'YES' ]
+   then
+      printf "%s\n" "$!" >> "${_parallel_statusfile}.pids"
+   fi
 }
 
 
@@ -379,32 +407,28 @@ function __parallel_end()
 
    local _old_int_trap
 
-   if [ "${MULLE_PARALLEL_KILL_ON_INT}" != 'NO' ]
+   if [ "${_parallel_has_job_control}" = 'YES' ]
    then
-      _old_int_trap="$(trap -p INT)"
+      _old_int_trap="$(trap -p TERM)"
 
-      # On CTRL-C (SIGINT) during wait:
-      #  1) kill -TERM 0: send TERM to our entire process group, which
-      #     includes all background children. TERM not INT, because
-      #     background processes ignore INT per POSIX. This can't escape
-      #     the process group boundary, so the terminal is safe.
-      #  2) trap - INT: reset INT to default so we die properly
-      #  3) kill -INT $$: re-raise INT on ourselves, so the caller sees
-      #     exit status 130 (SIGINT) and knows it was a CTRL-C death
+      # With set -m each background job has its own process group (PGID=PID).
+      # On TERM, kill each job's entire process group, then re-raise.
       #
-      trap 'kill -TERM 0 2>/dev/null; trap - INT; kill -INT $$' INT
+      trap 'for _pid in $(cat "${_parallel_statusfile}.pids" 2>/dev/null); do kill -- -${_pid} 2>/dev/null; done; trap - TERM; kill -TERM $$' TERM
    fi
 
    wait
 
-   if [ "${MULLE_PARALLEL_KILL_ON_INT}" != 'NO' ]
+   if [ "${_parallel_has_job_control}" = 'YES' ]
    then
       if [ -n "${_old_int_trap}" ]
       then
          eval "${_old_int_trap}"
       else
-         trap - INT
+         trap - TERM
       fi
+
+      set +m
    fi
 
    # use exekutor because the file ain't there in dry mode
@@ -415,6 +439,7 @@ function __parallel_end()
    log_setting "${_parallel_statusfile} : `exekutor cat "${_parallel_statusfile}"`"
 
    exekutor rm "${_parallel_statusfile}"
+   rm -f "${_parallel_statusfile}.pids"
 
    if [ "${_parallel_fails:-1}" -ne 0 ]
    then

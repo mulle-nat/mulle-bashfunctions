@@ -134,7 +134,7 @@ EOF
       #
       # MEMO: this used to be  PATH="/bin:/usr/bin:${PATH}" but this tripped up
       #       our path search. It's now in the back as a fallback
-      PATH="${PATH}:/usr/bin:/bin}" exec "${exe_shell}" -c ". ${script} --no-auto-shell ${args}" "${script}"
+      PATH="${PATH}:/usr/bin:/bin" exec "${exe_shell}" -c ". ${script} --no-auto-shell ${args}" "${script}"
    fi
 else
    no_auto_shell='YES'

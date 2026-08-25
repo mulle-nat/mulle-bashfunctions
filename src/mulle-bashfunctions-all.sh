@@ -6603,6 +6603,18 @@ function __parallel_begin()
          _parallel_maxjobs="${RVAL}"
       fi
    fi
+
+   _parallel_has_job_control='NO'
+   if [ "${MULLE_PARALLEL_JOB_CONTROL}" = 'YES' ]
+   then
+      if [ ${ZSH_VERSION+x} ]
+      then
+         log_debug "Job control not available in zsh scripts"
+      else
+         set -m
+         _parallel_has_job_control='YES'
+      fi
+   fi
 }
 
 
@@ -6637,6 +6649,11 @@ function __parallel_execute()
       ( exekutor "$@" ) # run in subshell to capture exit code
       __parallel_status $? "$@"
    ) &
+
+   if [ "${_parallel_has_job_control}" = 'YES' ]
+   then
+      printf "%s\n" "$!" >> "${_parallel_statusfile}.pids"
+   fi
 }
 
 
@@ -6646,23 +6663,25 @@ function __parallel_end()
 
    local _old_int_trap
 
-   if [ "${MULLE_PARALLEL_KILL_ON_INT}" != 'NO' ]
+   if [ "${_parallel_has_job_control}" = 'YES' ]
    then
-      _old_int_trap="$(trap -p INT)"
+      _old_int_trap="$(trap -p TERM)"
 
-      trap 'kill -TERM 0 2>/dev/null; trap - INT; kill -INT $$' INT
+      trap 'for _pid in $(cat "${_parallel_statusfile}.pids" 2>/dev/null); do kill -- -${_pid} 2>/dev/null; done; trap - TERM; kill -TERM $$' TERM
    fi
 
    wait
 
-   if [ "${MULLE_PARALLEL_KILL_ON_INT}" != 'NO' ]
+   if [ "${_parallel_has_job_control}" = 'YES' ]
    then
       if [ -n "${_old_int_trap}" ]
       then
          eval "${_old_int_trap}"
       else
-         trap - INT
+         trap - TERM
       fi
+
+      set +m
    fi
 
    _parallel_fails="`exekutor wc -l "${_parallel_statusfile}" | awk '{ printf $1 }'`"
@@ -6672,6 +6691,7 @@ function __parallel_end()
    log_setting "${_parallel_statusfile} : `exekutor cat "${_parallel_statusfile}"`"
 
    exekutor rm "${_parallel_statusfile}"
+   rm -f "${_parallel_statusfile}.pids"
 
    if [ "${_parallel_fails:-1}" -ne 0 ]
    then
