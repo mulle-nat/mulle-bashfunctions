@@ -4437,6 +4437,7 @@ function dir_list_files()
          local line
          local dirpath
          local lines
+         local match 
 
          for dirpath in ${directory}
          do
@@ -4455,8 +4456,6 @@ function dir_list_files()
                         continue
                      fi
 
-                     local match 
-                     
                      match='YES'
                      if [ ! -z "${flagchars}" ]
                      then

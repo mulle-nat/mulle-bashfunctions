@@ -81,6 +81,7 @@ Commands:
 :   functions      : list defined functions
 :   hostname       : show system hostname as used by mulle-bashfunctions
 :   log-checker    : check scripts for multiline log_ alias calls (--repair)
+:   local-checker  : check functions for poisoned "local" declarations
 :   libraries      : list available libraries
 :   load [variant] : eval \`mulle-bashfunctions load <none|minimal|all>\`
 :   man <function> : show documention for function, if available
@@ -332,6 +333,435 @@ list_functions()
          fail "Library \"$1\" not found"
       fi
    fi
+}
+
+
+#
+# Checks functions for "poisoned" local declarations. In zsh (and as a matter
+# of hygiene in bash) the following are considered poison:
+#
+#   * two `local foo` declarations for the same name in one function body
+#   * any `local` declaration inside a loop (for/while/until/select ... do)
+#
+# Reports file:line for each offense. Seeker only, no repair.
+#
+local_checker()
+{
+   log_entry "local_checker" "$@"
+
+   local rval=0
+
+   while [ $# -ne 0 ]
+   do
+      case "$1" in
+         -*)
+            fail "Unknown local-checker option \"$1\""
+         ;;
+
+         *)
+            break
+         ;;
+      esac
+      shift
+   done
+
+   if [ $# -eq 0 ]
+   then
+      fail "Usage: mulle-bashfunctions local-checker <file> ..."
+   fi
+
+   #
+   # Write the awk scanner to a temp file. Using a quoted heredoc means we
+   # need no shell-escaping of the awk source at all.
+   #
+   local awkscript
+
+   r_make_tmp "local-checker" || return 1
+   awkscript="${RVAL}"
+
+   cat <<'AWKEOF' > "${awkscript}"
+#
+# Detect poisoned "local" declarations in shell functions.
+#
+# Emits one offense per line:  <lineno><TAB><kind><TAB><name>
+#   kind "dup"  : name already declared local in this function body
+#   kind "loop" : local declared inside a for/while/until/select loop
+#
+# Scope model: functions are declared as `name()` (optionally indented for
+# nested functions). Rather than balancing shell braces (unreliable because of
+# ${...}, case/esac, brace groups and quoted braces) we use indentation:
+#
+#   * a function header opens a scope at its own indent column
+#   * the scope is closed when a later non-blank code line is indented at or
+#     below the header column (that line belongs to an enclosing scope)
+#
+# A stack of scopes supports nested functions: entering a nested function
+# pushes a new scope; leaving it pops back to the enclosing function's table
+# so that reusing a name across sibling scopes is not a false "dup".
+#
+function indent_of(s,   n)
+{
+   n = 0
+   while (substr(s, n + 1, 1) == " " || substr(s, n + 1, 1) == "\t")
+      n++
+   return n
+}
+
+function push_scope(col)
+{
+   sp++
+   scope_indent[sp] = col
+   scope_loop[sp]   = 0
+   clear_scope(sp)     # ensure no stale entries from a prior sibling at this depth
+}
+
+function clear_scope(level,   k)
+{
+   for (k in seen)
+      if (index(k, level SUBSEP) == 1)
+         delete seen[k]
+}
+
+function pop_scope()
+{
+   clear_scope(sp)
+   sp--
+}
+
+#
+# Character-level shell lexer with a persistent state stack. Instead of the
+# unreliable per-line quote-parity heuristics, we scan each physical line one
+# character at a time and maintain the true lexical state across lines. The
+# lexer produces "code": a copy of the line in which the content of strings,
+# comments, command substitutions and heredoc bodies has been blanked out,
+# while structural characters (indentation, do/done, name(), local, ;, etc.)
+# survive. All downstream scope/loop/local logic runs on "code".
+#
+# State stack (st_stack[1..stk], stk==0 means top-level NORMAL):
+#   "S" single-quoted '...'  (no escapes, no substitutions)
+#   "D" double-quoted "..."  (backslash escapes; $(...) and `...` nest)
+#   "A" ansi-c    $'...'     (backslash escapes, no substitutions)
+#   "B" backtick  `...`      (backslash escapes; returns to enclosing state)
+#   "P" $( ... )  cmd subst  (full nesting; returns to enclosing state)
+#   "R" $(( ... )) arithmetic
+#
+# A heredoc pending after a NORMAL line is handled separately via hd_delim.
+#
+function lex_line(s,   n, i, c, c2, top, out)
+{
+   n   = length(s)
+   out = ""
+   i   = 1
+   while (i <= n)
+   {
+      c   = substr(s, i, 1)
+      top = (stk > 0) ? st_stack[stk] : ""
+
+      # ---- single quote body --------------------------------------------
+      if (top == "S")
+      {
+         if (c == "'") { stk-- ; out = out " " } else out = out " "
+         i++ ; continue
+      }
+      # ---- ansi-c $'...' body -------------------------------------------
+      if (top == "A")
+      {
+         if (c == "\\") { out = out "  " ; i += 2 ; continue }
+         if (c == "'")  { stk-- ; out = out " " } else out = out " "
+         i++ ; continue
+      }
+      # ---- double quote body --------------------------------------------
+      if (top == "D")
+      {
+         if (c == "\\") { out = out "  " ; i += 2 ; continue }
+         if (c == "\"") { stk-- ; out = out " " ; i++ ; continue }
+         if (c == "`")  { st_stack[++stk] = "B" ; out = out " " ; i++ ; continue }
+         if (c == "$" && substr(s, i+1, 1) == "(")
+         { st_stack[++stk] = "P" ; out = out "  " ; i += 2 ; continue }
+         out = out " " ; i++ ; continue
+      }
+      # ---- backtick body (escapes ok; ` closes) -------------------------
+      if (top == "B")
+      {
+         if (c == "\\") { out = out "  " ; i += 2 ; continue }
+         if (c == "`")  { stk-- ; out = out " " } else out = out " "
+         i++ ; continue
+      }
+      # ---- $( ... ) / $(( ... )) : structural, but blanked --------------
+      if (top == "P" || top == "R")
+      {
+         if (c == "\\") { out = out "  " ; i += 2 ; continue }
+         if (c == "'")  { st_stack[++stk] = "S" ; out = out " " ; i++ ; continue }
+         if (c == "\"") { st_stack[++stk] = "D" ; out = out " " ; i++ ; continue }
+         if (c == "`")  { st_stack[++stk] = "B" ; out = out " " ; i++ ; continue }
+         if (c == "$" && substr(s, i+1, 1) == "'")
+         { st_stack[++stk] = "A" ; out = out "  " ; i += 2 ; continue }
+         if (c == "$" && substr(s, i+1, 2) == "((")
+         { st_stack[++stk] = "R" ; out = out "   " ; i += 3 ; continue }
+         if (c == "$" && substr(s, i+1, 1) == "(")
+         { st_stack[++stk] = "P" ; out = out "  " ; i += 2 ; continue }
+         if (top == "R" && c == ")" && substr(s, i+1, 1) == ")")
+         { stk-- ; out = out "  " ; i += 2 ; continue }
+         if (top == "P" && c == ")") { stk-- ; out = out " " ; i++ ; continue }
+         out = out " " ; i++ ; continue
+      }
+
+      # ---- NORMAL --------------------------------------------------------
+      if (c == "\\") { out = out c substr(s, i+1, 1) ; i += 2 ; continue }
+      if (c == "#")
+      {
+         # a comment starts only at a word boundary (start of line or after
+         # whitespace); '#' mid-word (e.g. ${x#y} already blanked, or a#b)
+         # is not a comment.
+         c2 = (i == 1) ? " " : substr(s, i-1, 1)
+         if (c2 == " " || c2 == "\t")
+         {
+            while (i <= n) { out = out " " ; i++ }
+            break
+         }
+         out = out c ; i++ ; continue
+      }
+      if (c == "'")  { st_stack[++stk] = "S" ; out = out " " ; i++ ; continue }
+      if (c == "\"") { st_stack[++stk] = "D" ; out = out " " ; i++ ; continue }
+      if (c == "`")  { st_stack[++stk] = "B" ; out = out " " ; i++ ; continue }
+      if (c == "$" && substr(s, i+1, 1) == "'")
+      { st_stack[++stk] = "A" ; out = out "  " ; i += 2 ; continue }
+      if (c == "$" && substr(s, i+1, 2) == "((")
+      { st_stack[++stk] = "R" ; out = out "   " ; i += 3 ; continue }
+      if (c == "$" && substr(s, i+1, 1) == "(")
+      { st_stack[++stk] = "P" ; out = out "  " ; i += 2 ; continue }
+      out = out c ; i++ ; continue
+   }
+   return out
+}
+
+BEGIN {
+   sp       = 0        # scope stack pointer; 0 means "not in any function"
+   stk      = 0        # lexer state stack pointer; 0 == NORMAL top-level
+   hd_delim = ""
+}
+
+{
+   raw = $0
+
+   #
+   # Skip heredoc bodies entirely: their content is data, not code.
+   #
+   if (hd_delim != "")
+   {
+      term = raw
+      sub(/^[ \t]*/, "", term)
+      sub(/[ \t]*$/, "", term)
+      if (term == hd_delim)
+         hd_delim = ""
+      next
+   }
+
+   #
+   # Run the persistent lexer over this physical line. "code" has all string /
+   # comment / command-substitution content blanked, so quotes inside comments,
+   # escaped quotes, $'...', mixed quoting and multi-line strings all resolve
+   # correctly without parity guessing. If the lexer is still inside a string /
+   # substitution at end of line (stk>0), that state carries to the next line.
+   #
+   work = lex_line(raw)
+
+   #
+   # Backslash line-continuation at the code level. If, after lexing, the line
+   # ends in a single unescaped backslash while in NORMAL lexer state (stk==0),
+   # the logical line continues on the next physical line. Buffer it and join,
+   # so a continued case pattern or command whose continuation is indented at
+   # or below the enclosing scope (e.g. a `a|b|\` \n `c|d)` label at column 0)
+   # does not spuriously close the function scope. NR stays at the last
+   # physical line, which is fine: a `local` never ends in a continuation.
+   #
+   if (stk == 0)
+   {
+      cbs = 0
+      while (cbs < length(work) && substr(work, length(work) - cbs, 1) == "\\")
+         cbs++
+      if (cbs % 2 == 1)
+      {
+         join_buf = join_buf substr(work, 1, length(work) - 1)
+         next
+      }
+      if (join_buf != "")
+      {
+         work = join_buf work
+         join_buf = ""
+      }
+   }
+
+   # blank / comment-only lines never affect scope
+   if (work ~ /^[ \t]*$/)
+      next
+
+   #
+   # Lines consisting only of an opening or closing brace are structural in
+   # the common `name()` \n `{` ... `}` layout. They must not be treated as
+   # scope-closing "outer" lines (a lone `{` at the header's indent would
+   # otherwise immediately close the scope we just opened).
+   #
+   if (work ~ /^[ \t]*[{}][ \t]*$/)
+      next
+
+   col = indent_of(work)
+
+   #
+   # Close scopes we have exited: any scope whose header indent is >= the
+   # current line indent has ended (the current line belongs to an outer
+   # scope). Keep the scope whose header indent is strictly less than col.
+   #
+   while (sp > 0 && col <= scope_indent[sp])
+      pop_scope()
+
+   #
+   # A function header (possibly indented) opens a new scope at its indent.
+   #
+   if (work ~ /^[ \t]*(function[ \t]+)?[A-Za-z_:][A-Za-z0-9_:.+-]*[ \t]*\(\)[ \t]*\{?[ \t]*$/ ||
+       work ~ /^[ \t]*function[ \t]+[A-Za-z_:][A-Za-z0-9_:.+-]*[ \t]*\{?[ \t]*$/)
+   {
+      push_scope(col)
+      next
+   }
+
+   if (sp == 0)
+      next
+
+   # Update this scope's loop depth from the shell keywords do / done and the
+   # mulle macros .do / .done. These must be recognised only as standalone
+   # words, NOT as the tail of a qualified function name such as
+   # `sde::migrate::do` (a call, not a loop) which a naive tokenizer that
+   # splits on all non-word characters would wrongly see as a bare `do`.
+   #
+   # A loop keyword is valid when preceded by start-of-line, whitespace, or a
+   # command separator ( ; & | ( ) and followed by whitespace/separator/EOL.
+   # The mulle macros are written `.do` / `.done` at the start of a (possibly
+   # indented) line; the leading dot is part of the macro, and crucially is
+   # NOT preceded by a word character, so it is distinct from `x::do`.
+   #
+   # We walk the line and test each candidate occurrence for valid boundaries.
+   nn = split(work, tok, /[ \t;&|()]+/)
+   for (i = 1; i <= nn; i++)
+   {
+      if (tok[i] == "do" || tok[i] == ".do")
+         scope_loop[sp]++
+      else if (tok[i] == "done" || tok[i] == ".done")
+      {
+         if (scope_loop[sp] > 0)
+            scope_loop[sp]--
+      }
+   }
+
+   # find "local" declarations (word-anchored, allow leading separators)
+   if (work ~ /(^|[ \t;&|(){])local[ \t]/)
+   {
+      rest = work
+      sub(/^.*(^|[ \t;&|(){])local[ \t]+/, "", rest)
+      sub(/[;&|].*/, "", rest)
+
+      #
+      # Collapse the internal spaces of substitution / arithmetic / brace
+      # expansions in the declaration value so their contents are not split
+      # off and mistaken for additional declared names. For example
+      #   local width=$((column_width - indent_length - 1))
+      # must yield the single name "width", not also "column_width" and
+      # "indent_length". Squash one space at a time until none remain inside
+      # a $((...)), $(...), ${...} or `...` opener region.
+      #
+      while (match(rest, /(\$\(\(|\$\(|\$\{|`)[^ \t]*[ \t]/))
+         rest = substr(rest, 1, RSTART + RLENGTH - 2) "_" substr(rest, RSTART + RLENGTH)
+
+      m = split(rest, decl, /[ \t]+/)
+      for (i = 1; i <= m; i++)
+      {
+         name = decl[i]
+         if (name == "")
+            continue
+         if (name ~ /^-/)          # options like -r -a -i -A
+            continue
+         sub(/=.*/, "", name)       # strip assignment
+         sub(/\[.*/, "", name)      # strip array subscript
+         if (name !~ /^[A-Za-z_][A-Za-z0-9_]*$/)
+            continue
+
+         key = sp SUBSEP name
+         if (scope_loop[sp] > 0)
+            printf "%d\tloop\t%s\n", NR, name
+         else if (key in seen)
+            printf "%d\tdup\t%s\n", NR, name
+         else
+            seen[key] = NR
+      }
+   }
+
+   #
+   # Detect the start of a heredoc so following body lines are skipped.
+   # Handles <<WORD, <<-WORD, << 'WORD', <<"WORD", <<-\WORD. Excludes <<<.
+   # Only when the "<<" survives in the lexed code (i.e. it is real operator
+   # text, not inside a string) do we treat it as a heredoc opener; the
+   # delimiter word is then read from the raw line (its quotes were blanked
+   # in the lexed copy).
+   #
+   if (work ~ /<<-?/ && work !~ /<<</)
+   {
+      hdline = raw
+      if (hdline ~ /<<-?[ \t]*['"\\]?[A-Za-z_][A-Za-z0-9_]*/ && hdline !~ /<<</)
+      {
+         d = hdline
+         sub(/^.*<<-?[ \t]*/, "", d)
+         sub(/^['"\\]/, "", d)                 # drop opening quote/backslash
+         sub(/[^A-Za-z0-9_].*/, "", d)          # keep the delimiter word only
+         if (d != "")
+            hd_delim = d
+      }
+   }
+}
+AWKEOF
+
+   local filename
+   local offenses
+   local lineno
+   local kind
+   local name
+
+   for filename in "$@"
+   do
+      log_fluff "Checking ${C_RESET_BOLD}${filename}"
+
+      if [ ! -f "${filename}" ]
+      then
+         log_warning "${filename}: not found"
+         continue
+      fi
+
+      offenses="`awk -f "${awkscript}" "${filename}"`"
+
+      if [ -z "${offenses}" ] 
+      then
+         log_verbose "No problems found in ${C_RESET_BOLD}${filename}"
+         continue
+      fi 
+
+      while IFS="	" read -r lineno kind name
+      do
+         [ -z "${lineno}" ] && continue
+         case "${kind}" in
+            dup)
+               log_error "${filename}:${lineno}: local \"${name}\" redeclared in same function (poison)"
+            ;;
+
+            loop)
+               log_error "${filename}:${lineno}: local \"${name}\" declared inside a loop (poison)"
+            ;;
+         esac
+         rval=1
+      done <<< "${offenses}"
+   done
+
+   remove_file_if_present "${awkscript}"
+
+   return ${rval}
 }
 
 
@@ -1258,7 +1688,7 @@ mulle_bashfunctions_embed()
            "${line}" = "${DEFAULT_HEAD_MARKER}" -o \
            "${line}" = "${ALL_HEAD_MARKER}" ]
       then
-         local found="${line}"
+         found="${line}"
          break
       fi
       printf "%s\n" "${line}"
@@ -1400,7 +1830,7 @@ mulle_bashfunctions_extract()
            "${line}" = "${DEFAULT_HEAD_MARKER}" -o \
            "${line}" = "${ALL_HEAD_MARKER}" ]
       then
-         local found='YES'
+         found='YES'
          break
       fi
    done
@@ -1579,6 +2009,12 @@ MULLE_UNAME=\"${MULLE_UNAME}\""
 
       'libraries')
          list_libraries "$@" || exit 1
+      ;;
+
+      'local-checker')
+         include "path"
+         include "file"
+         local_checker "$@" || exit 1
       ;;
 
       'log-checker')
