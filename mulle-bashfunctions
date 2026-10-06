@@ -892,8 +892,6 @@ log_checker()
          # Match word-boundary: log_ preceded by start-of-trimmed,
          # space, tab, ;, &, |, or !
          #
-         local funcname
-
          # strip the line down: remove everything before the log_ call
          # but make sure we don't match _log_ or other_log_
          funcname=""
@@ -929,7 +927,7 @@ log_checker()
                         esac
 
                         # extract the function name
-                        local candidate="log_${after%%[[:space:]\"]*}"
+                        candidate="log_${after%%[[:space:]\"]*}"
                         case "${candidate}" in
                            log_debug|log_entry|log_error|log_fluff|\
                            log_info|log_vibe|log_setting|log_trace|\
@@ -971,9 +969,9 @@ log_checker()
 
          # count unescaped double quotes after the function name to detect
          # unclosed strings (literal newlines in quotes)
-         local args="${line#*"${funcname}"}"
-         local tmp="${args}"
-         local count=0
+         args="${line#*"${funcname}"}"
+         tmp="${args}"
+         count=0
 
          while :
          do
