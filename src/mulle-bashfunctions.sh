@@ -982,7 +982,7 @@ logging_initialize_color()
       ;;
    esac
 
-   if [ -z "${NO_COLOR:-}" -a "${MULLE_NO_COLOR:-}" != 'YES' ] && [ ! -f /dev/stderr ]
+   if [ -z "${NO_COLOR:-}" -a "${MULLE_NO_COLOR:-}" != 'YES' ] && { [ ! -f /dev/stderr ] || [ "${MULLE_COLOR:-}" = 'YES' ] ; }
    then
       C_RESET=$'\033'"[0m"
 
@@ -2538,11 +2538,18 @@ _r_expand_string()
 
 function r_expanded_string()
 {
-   local string="$1"
-   local expand="${2:-YES}"
+   case "$1" in
+      *'$'*|*'}'*|*$'\n')
+      ;;
 
-   local _s="${string}"
-   local _expand="${expand}"
+      *)
+         RVAL="$1"
+         return 0
+      ;;
+   esac
+
+   local _s="$1"
+   local _expand="${2:-YES}"
 
    local rc
 
@@ -2551,7 +2558,15 @@ function r_expanded_string()
 
    if [ $rc -eq 0 ]
    then
-      RVAL="$(printf '%s' "${RVAL}" | sed 's/\\\${/${/g')"
+      local _esc='\${'
+      local _unesc='${'
+
+      RVAL="${RVAL//"${_esc}"/${_unesc}}"
+
+      while [ "${RVAL%$'\n'}" != "${RVAL}" ]
+      do
+         RVAL="${RVAL%$'\n'}"
+      done
    fi
 
    return $rc

@@ -600,7 +600,7 @@ logging_initialize_color()
       ;;
    esac
 
-   if [ -z "${NO_COLOR:-}" -a "${MULLE_NO_COLOR:-}" != 'YES' ] && [ ! -f /dev/stderr ]
+   if [ -z "${NO_COLOR:-}" -a "${MULLE_NO_COLOR:-}" != 'YES' ] && { [ ! -f /dev/stderr ] || [ "${MULLE_COLOR:-}" = 'YES' ] ; }
    then
       C_RESET=$'\033'"[0m"
 

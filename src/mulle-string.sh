@@ -1643,11 +1643,23 @@ _r_expand_string()
 #
 function r_expanded_string()
 {
-   local string="$1"
-   local expand="${2:-YES}"
+   #
+   # Fast path: nothing to expand. '}' is excluded, because _r_expand_string
+   # treats it as a terminator. A trailing linefeed is excluded, because the
+   # previous implementation stripped those (via $(...)).
+   #
+   case "$1" in
+      *'$'*|*'}'*|*$'\n')
+      ;;
 
-   local _s="${string}"
-   local _expand="${expand}"
+      *)
+         RVAL="$1"
+         return 0
+      ;;
+   esac
+
+   local _s="$1"
+   local _expand="${2:-YES}"
 
    local rc
 
@@ -1656,7 +1668,18 @@ function r_expanded_string()
 
    if [ $rc -eq 0 ]
    then
-      RVAL="$(printf '%s' "${RVAL}" | sed 's/\\\${/${/g')"
+      # unescape \${ to ${ without forking (was: sed 's/\\\${/${/g')
+      # (quoted pattern vars, because zsh keeps \{ literal in the replacement)
+      local _esc='\${'
+      local _unesc='${'
+
+      RVAL="${RVAL//"${_esc}"/${_unesc}}"
+
+      # remove trailing linefeeds like the old $(...) did
+      while [ "${RVAL%$'\n'}" != "${RVAL}" ]
+      do
+         RVAL="${RVAL%$'\n'}"
+      done
    fi
 
    return $rc
