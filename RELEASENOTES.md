@@ -1,4 +1,4 @@
-### 6.9.1
+### 6.9.2
 
 * improve startup time
 
