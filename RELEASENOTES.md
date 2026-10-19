@@ -1,3 +1,17 @@
+### 6.9.1
+
+* improve startup time
+
+
+feature: add `MULLE_COLOR` override and speed up string expansion
+
+* honor ``MULLE_COLOR=YES`` to force colored log output even when stderr is not a terminal
+* ``r_expanded_string`` now returns immediately for strings that need no expansion
+* `\${` unescaping and trailing linefeed trimming no longer fork `sed`/`$(...)`, avoiding subshells
+
+
+* ironically fix duplicate locals in local checker code...
+
 ## 6.9.0
 
 Various small improvements
