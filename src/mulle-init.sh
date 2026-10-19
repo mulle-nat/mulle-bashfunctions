@@ -135,11 +135,17 @@ function r_resolve_symlinks()
    fi
 
    # could should use readlink -e/-m on linux ?
-   if filepath="`readlink "${RVAL}"`"
+   #
+   # only fork readlink when it actually is a symlink
+   #
+   if [ -L "${RVAL}" ]
    then
-      r_dirname "${RVAL}"
-      r_prepend_path_if_relative "${RVAL}" "${filepath}"
-      r_resolve_symlinks "${RVAL}" $(( max - 1 ))
+      if filepath="`readlink "${RVAL}"`"
+      then
+         r_dirname "${RVAL}"
+         r_prepend_path_if_relative "${RVAL}" "${filepath}"
+         r_resolve_symlinks "${RVAL}" $(( max - 1 ))
+      fi
    fi
 }
 

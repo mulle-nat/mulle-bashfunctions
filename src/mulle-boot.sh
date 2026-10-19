@@ -12,6 +12,11 @@
 if [ "${1:-}" != --no-auto-shell ]
 then
    _MULLE_UNAME="`uname`"
+   #
+   # export it, so the bash/zsh we exec does not have to run uname again
+   # (mulle-bashfunctions checks _MULLE_UNAME before forking uname)
+   #
+   export _MULLE_UNAME
    case "${_MULLE_UNAME}" in
       [Dd]arwin)
          [ -z "${ZSH_VERSION+x}" ]

@@ -2653,11 +2653,14 @@ function r_resolve_symlinks()
       return 1
    fi
 
-   if filepath="`readlink "${RVAL}"`"
+   if [ -L "${RVAL}" ]
    then
-      r_dirname "${RVAL}"
-      r_prepend_path_if_relative "${RVAL}" "${filepath}"
-      r_resolve_symlinks "${RVAL}" $(( max - 1 ))
+      if filepath="`readlink "${RVAL}"`"
+      then
+         r_dirname "${RVAL}"
+         r_prepend_path_if_relative "${RVAL}" "${filepath}"
+         r_resolve_symlinks "${RVAL}" $(( max - 1 ))
+      fi
    fi
 }
 

@@ -62,6 +62,11 @@ _fatal()
 if [ "${1:-}" != --no-auto-shell ]
 then
    _MULLE_UNAME="`PATH="/bin:/usr/bin:${PATH}" uname`"
+   #
+   # export it, so the bash/zsh we exec does not have to run uname again
+   # (mulle-bashfunctions checks _MULLE_UNAME before forking uname)
+   #
+   export _MULLE_UNAME
    case "${_MULLE_UNAME}" in
       [Dd]arwin)
          [ -z "${ZSH_VERSION+x}" ]
@@ -365,11 +370,15 @@ r_resolve_symlinks()
 
    RVAL="$1"
 
-   if filepath="`readlink "${RVAL}"`"
+   # only fork readlink when it actually is a symlink
+   if [ -L "${RVAL}" ]
    then
-      r_dirname "${RVAL}"
-      r_prepend_path_if_relative "${RVAL}" "${filepath}"
-      r_resolve_symlinks "${RVAL}"
+      if filepath="`readlink "${RVAL}"`"
+      then
+         r_dirname "${RVAL}"
+         r_prepend_path_if_relative "${RVAL}" "${filepath}"
+         r_resolve_symlinks "${RVAL}"
+      fi
    fi
 }
 
